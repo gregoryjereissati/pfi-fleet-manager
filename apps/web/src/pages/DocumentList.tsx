@@ -1,0 +1,188 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth0 } from '@auth0/auth0-react'
+import { useTranslation } from 'react-i18next'
+import { DocumentType, type DocumentStatus } from '@fleet-manager/shared'
+import { useDocuments } from '@/hooks/useDocuments'
+import { useVehicles } from '@/hooks/useVehicles'
+import { useToken } from '@/hooks/useToken'
+import { apiFetch } from '@/lib/api'
+import { canManageFleet } from '@/lib/roles'
+
+function getStatusClasses(status: DocumentStatus) {
+  if (status === 'EXPIRED') {
+    return 'bg-red-100 text-red-700'
+  }
+
+  if (status === 'EXPIRING_SOON') {
+    return 'bg-amber-100 text-amber-700'
+  }
+
+  return 'bg-green-100 text-green-700'
+}
+
+function getEntityLabel(vehiclePlate: string | null, driverName: string | null) {
+  return vehiclePlate ?? driverName ?? '-'
+}
+
+export function DocumentList() {
+  const { t } = useTranslation()
+  const { user } = useAuth0()
+  const getToken = useToken()
+  const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
+  const [vehicleId, setVehicleId] = useState('')
+  const [type, setType] = useState<DocumentType | ''>('')
+  const [status, setStatus] = useState<DocumentStatus | ''>('')
+
+  const canMutate = canManageFleet(user)
+  const { documents, loading, error, reload } = useDocuments({
+    vehicleId: vehicleId || undefined,
+    type,
+    status,
+    orderBy: 'expiryDate',
+    order: 'asc',
+  })
+
+  async function handleDelete(id: string) {
+    if (!window.confirm(t('documents.deleteConfirm'))) return
+
+    try {
+      const token = await getToken()
+      await apiFetch(`/documents/${id}`, token, { method: 'DELETE' })
+      reload()
+    } catch (err) {
+      window.alert((err as Error).message)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t('documents.title')}</h1>
+          <p className="text-sm text-gray-500">{t('documents.subtitle')}</p>
+        </div>
+        {canMutate && (
+          <Link
+            to="/documents/new"
+            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            {t('documents.new')}
+          </Link>
+        )}
+      </div>
+
+      <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-3">
+        <select
+          value={vehicleId}
+          onChange={(event) => setVehicleId(event.target.value)}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">{t('documents.filters.allVehicles')}</option>
+          {vehicles.map((vehicle) => (
+            <option key={vehicle.id} value={vehicle.id}>
+              {vehicle.plate} - {vehicle.brand} {vehicle.model}
+            </option>
+          ))}
+        </select>
+        <select
+          value={type}
+          onChange={(event) => setType(event.target.value as DocumentType | '')}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">{t('documents.filters.allTypes')}</option>
+          {Object.values(DocumentType).map((documentType) => (
+            <option key={documentType} value={documentType}>
+              {t(`documents.types.${documentType}`)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={status}
+          onChange={(event) => setStatus(event.target.value as DocumentStatus | '')}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">{t('documents.filters.allStatuses')}</option>
+          <option value="OK">{t('documents.statuses.OK')}</option>
+          <option value="EXPIRING_SOON">{t('documents.statuses.EXPIRING_SOON')}</option>
+          <option value="EXPIRED">{t('documents.statuses.EXPIRED')}</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
+      ) : error ? (
+        <p className="text-sm text-red-600">{error}</p>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="border-b border-gray-200 text-left text-gray-600">
+                  <th className="px-4 py-3 font-medium">{t('documents.columns.entity')}</th>
+                  <th className="px-4 py-3 font-medium">{t('documents.columns.type')}</th>
+                  <th className="px-4 py-3 font-medium">{t('documents.columns.expiryDate')}</th>
+                  <th className="px-4 py-3 font-medium">{t('documents.columns.status')}</th>
+                  <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {documents.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                      {t('documents.empty')}
+                    </td>
+                  </tr>
+                ) : (
+                  documents.map((document) => (
+                    <tr key={document.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {getEntityLabel(document.vehiclePlate, document.driverName)}
+                        <div className="text-xs text-gray-500">
+                          {document.vehiclePlate
+                            ? t('documents.entity.vehicle')
+                            : t('documents.entity.driver')}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">{t(`documents.types.${document.type}`)}</td>
+                      <td className="px-4 py-3">
+                        {new Date(document.expiryDate).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${getStatusClasses(document.status)}`}
+                        >
+                          {t(`documents.statuses.${document.status}`)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {canMutate ? (
+                          <div className="flex flex-wrap items-center gap-3">
+                            <Link
+                              to={`/documents/${document.id}/edit`}
+                              className="text-gray-700 hover:underline"
+                            >
+                              {t('actions.edit')}
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(document.id)}
+                              className="text-red-600 hover:underline"
+                            >
+                              {t('actions.remove')}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
