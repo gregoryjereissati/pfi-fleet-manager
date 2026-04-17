@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+}
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ExpenseType {
+  FUEL
+  MAINTENANCE
+  FINE
+  IPVA
+  INSURANCE
+  OTHER
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  DONE
+  OVERDUE
+}
+
+enum DocumentType {
+  CRLV
+  IPVA
+  SEGURO
+  CNH
+  LICENCA
+  OUTRO
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      UserRole @default(OPERATOR)
+  auth0Id   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vehicle {
+  id           String        @id @default(cuid())
+  plate        String        @unique
+  brand        String
+  model        String
+  year         Int
+  color        String
+  status       VehicleStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  expenses     Expense[]
+  maintenances Maintenance[]
+  documents    Document[]
+  drivers      Driver[]      @relation("VehicleDrivers")
+}
+
+model Driver {
+  id        String       @id @default(cuid())
+  name      String
+  cpf       String       @unique
+  cnh       String       @unique
+  cnhExpiry DateTime
+  phone     String?
+  status    DriverStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  vehicles  Vehicle[]    @relation("VehicleDrivers")
+  documents Document[]
+}
+
+model Expense {
+  id          String      @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  type        ExpenseType
+  amount      Decimal     @db.Decimal(10, 2)
+  date        DateTime
+  description String?
+  createdAt   DateTime    @default(now())
+}
+
+model Maintenance {
+  id            String            @id @default(cuid())
+  vehicleId     String
+  vehicle       Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  type          MaintenanceType
+  status        MaintenanceStatus @default(SCHEDULED)
+  description   String
+  scheduledDate DateTime
+  completedDate DateTime?
+  createdAt     DateTime          @default(now())
+}
+
+model Document {
+  id         String       @id @default(cuid())
+  vehicleId  String?
+  vehicle    Vehicle?     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverId   String?
+  driver     Driver?      @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  type       DocumentType
+  expiryDate DateTime
+  alertSent  Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+}
