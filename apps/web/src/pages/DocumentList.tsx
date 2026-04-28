@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth0 } from '@auth0/auth0-react'
 import { useTranslation } from 'react-i18next'
 import { DocumentType, type DocumentStatus } from '@fleet-manager/shared'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useVehicles } from '@/hooks/useVehicles'
 import { useToken } from '@/hooks/useToken'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 
@@ -27,14 +27,14 @@ function getEntityLabel(vehiclePlate: string | null, driverName: string | null) 
 
 export function DocumentList() {
   const { t } = useTranslation()
-  const { user } = useAuth0()
   const getToken = useToken()
+  const { currentUser } = useCurrentUser()
   const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<DocumentType | ''>('')
   const [status, setStatus] = useState<DocumentStatus | ''>('')
 
-  const canMutate = canManageFleet(user)
+  const canMutate = canManageFleet(currentUser?.role)
   const { documents, loading, error, reload } = useDocuments({
     vehicleId: vehicleId || undefined,
     type,

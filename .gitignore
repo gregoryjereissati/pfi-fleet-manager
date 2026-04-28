@@ -7,3 +7,5 @@ dist/
 coverage/
 .superpowers/
 .worktrees/
+.claude/
+*.log

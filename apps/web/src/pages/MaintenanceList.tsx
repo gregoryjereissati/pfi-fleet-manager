@@ -5,9 +5,9 @@ import { MaintenanceStatus, MaintenanceType } from '@fleet-manager/shared'
 import { useMaintenances } from '@/hooks/useMaintenances'
 import { useVehicles } from '@/hooks/useVehicles'
 import { useToken } from '@/hooks/useToken'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
-import { useAuth0 } from '@auth0/auth0-react'
 
 function getStatusClasses(status: MaintenanceStatus) {
   if (status === MaintenanceStatus.DONE) return 'bg-green-100 text-green-700'
@@ -17,14 +17,14 @@ function getStatusClasses(status: MaintenanceStatus) {
 
 export function MaintenanceList() {
   const { t } = useTranslation()
-  const { user } = useAuth0()
   const getToken = useToken()
+  const { currentUser } = useCurrentUser()
   const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<MaintenanceType | ''>('')
   const [status, setStatus] = useState<MaintenanceStatus | ''>('')
 
-  const canDelete = canManageFleet(user)
+  const canDelete = canManageFleet(currentUser?.role)
 
   const { maintenances, loading, error, reload } = useMaintenances({
     vehicleId: vehicleId || undefined,

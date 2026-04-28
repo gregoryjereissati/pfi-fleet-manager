@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth0 } from '@auth0/auth0-react'
 import { useTranslation } from 'react-i18next'
 import { VehicleStatus } from '@fleet-manager/shared'
 import { useVehicles, type VehicleFilters } from '@/hooks/useVehicles'
 import { useToken } from '@/hooks/useToken'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 
@@ -16,8 +16,8 @@ function getVehicleStatusLabel(status: VehicleStatus, t: (key: string) => string
 
 export function VehicleList() {
   const { t } = useTranslation()
-  const { user } = useAuth0()
   const getToken = useToken()
+  const { currentUser } = useCurrentUser()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [yearMin, setYearMin] = useState('')
@@ -25,7 +25,7 @@ export function VehicleList() {
   const [sortField, setSortField] = useState<VehicleSortField>('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  const canMutate = canManageFleet(user)
+  const canMutate = canManageFleet(currentUser?.role)
 
   const filters: VehicleFilters = {
     plate: search || undefined,

@@ -8,6 +8,7 @@ vi.mock('../../repositories/user.repository', () => ({
   userRepository: {
     findAll: vi.fn(),
     findById: vi.fn(),
+    findByAuth0Id: vi.fn(),
     updateRole: vi.fn(),
   },
 }));
@@ -33,6 +34,25 @@ describe('userService', () => {
 
       expect(result).toEqual([mockUser]);
       expect(userRepository.findAll).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('getCurrentUser', () => {
+    it('lança AppError 404 quando usuário autenticado não existe', async () => {
+      vi.mocked(userRepository.findByAuth0Id).mockResolvedValue(null);
+
+      await expect(userService.getCurrentUser('auth0|missing')).rejects.toThrow(
+        new AppError(404, 'User not found'),
+      );
+    });
+
+    it('retorna o usuário autenticado quando encontrado', async () => {
+      vi.mocked(userRepository.findByAuth0Id).mockResolvedValue(mockUser);
+
+      const result = await userService.getCurrentUser('auth0|1');
+
+      expect(result).toEqual(mockUser);
+      expect(userRepository.findByAuth0Id).toHaveBeenCalledWith('auth0|1');
     });
   });
 

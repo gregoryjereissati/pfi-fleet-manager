@@ -175,7 +175,7 @@ O `user_id` real do Gregory é `auth0|69e018c5d9e051a46c3af7cc` (Auth0 Dashboard
 
 ## Estado Atual do Projeto
 
-> **Última atualização:** 2026-04-17 (Sprint 4 — COMPLETA: documentos, alertas, cron job, badge no sidebar e sino no header)  
+> **Última atualização:** 2026-04-23 (Sprint 5 — COMPLETA + hotfixes de autenticação e RBAC: auto-cadastro no primeiro acesso e frontend alinhado ao role real do banco)  
 > **Atualizar esta seção a cada task concluída antes de fazer push.**
 
 ### ✅ Concluído
@@ -263,12 +263,12 @@ _Nenhum._
 - [x] [#36] Central de alertas de vencimento
 - [x] [#37] Notificações visuais de alertas no sidebar/header
 
-#### Sprint 5 — Dashboard Real, Usuários e Testes (issues: #6, #38–#40)
-- [ ] [#6] Endpoints de indicadores financeiros (backend)
-- [ ] [#38] Tela de gerenciamento de usuários (ADMIN)
-- [ ] Conectar Dashboard ao backend real (Recharts)
-- [ ] [#39] Testes unitários do backend
-- [ ] [#40] Validação do MVP com dados reais
+#### Sprint 5 — Dashboard Real, Usuários e Testes (issues: #6, #38–#40) — COMPLETA
+- [x] [#6] Endpoints de indicadores financeiros (backend)
+- [x] [#38] Tela de gerenciamento de usuários (ADMIN)
+- [x] Conectar Dashboard ao backend real (Recharts)
+- [x] [#39] Testes unitários do backend
+- [x] [#40] Validação do MVP com dados reais
 
 #### Sprint 6 — Deploy e Entrega (issues: #41–#44)
 - [ ] [#41] Deploy do frontend na Vercel
@@ -349,6 +349,12 @@ test(api): add integration tests for expenses
 | 2026-04-17 | Codex | Sprint 4: API de documentos | `document.repository` com status computado, `document.service` (TDD com 15 testes), controller e rotas `/documents` + `/documents/alerts/count`. Migration `DocumentType` aplicada e Prisma Client regenerado. |
 | 2026-04-17 | Codex | Sprint 4: Cron job de alertas | `alertCron.ts` registrado na API, execução diária via `node-cron` e marcação idempotente de `alertSent=true` para documentos vencidos ou vencendo em 30 dias. |
 | 2026-04-17 | Codex | Sprint 4: Frontend documentos e alertas | `DocumentList`, `DocumentForm`, `AlertCenter`, hooks `useDocuments`/`useAlertCount`, rotas `/documents` e `/alerts`, badge no Sidebar, sino no Header e i18n pt-BR/en-US atualizado. `tsc --noEmit` e `npm run build` do frontend passaram. |
+| 2026-04-23 | Codex | Sprint 5: API de indicadores | `dashboard.repository`, `dashboard.service` (TDD com 2 testes), controller e rota protegida `GET /dashboard/indicators`. `npx tsc --noEmit` e `npm run test:api` passaram. |
+| 2026-04-23 | Codex | Sprint 5: Gerenciamento de usuários | `useUsers`, página `UserList`, rota `/users`, link no Sidebar habilitado para ADMIN e i18n pt-BR/en-US atualizado. |
+| 2026-04-23 | Codex | Sprint 5: Dashboard real com Recharts | `useDashboard`, cards reais, `BarChart` por mês e `PieChart` por tipo em `Dashboard.tsx`. `apps/web` passou em `npx tsc --noEmit` e `npm run build`. |
+| 2026-04-23 | Gregory | Sprint 5: Validação do MVP com dados reais | Dashboard validado manualmente no browser após a implementação da sprint 5, com indicadores e gráficos funcionando corretamente. |
+| 2026-04-23 | Codex | Hotfix: auto-cadastro no authenticate | Novos usuários autenticados via Auth0 passam a ser criados automaticamente com role `OPERATOR` no primeiro acesso, liberando dashboard, despesas e manutenções. `authenticate.test.ts`, `npm run test:api` e `npx tsc --noEmit` da API passaram. |
+| 2026-04-23 | Codex | Hotfix: frontend usa role real do banco | `GET /users/me` adicionado na API e novo `useCurrentUser` no frontend para que Sidebar e ações da UI usem o role persistido no banco, corrigindo o acesso de admins à gestão de usuários. `npm run test:api`, `apps/api npx tsc --noEmit`, `apps/web npx tsc --noEmit` e `apps/web npm run build` passaram. |
 
 ---
 

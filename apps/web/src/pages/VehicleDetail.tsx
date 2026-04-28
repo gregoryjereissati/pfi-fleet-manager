@@ -1,8 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
-import { useAuth0 } from '@auth0/auth0-react'
 import { useTranslation } from 'react-i18next'
 import { VehicleStatus } from '@fleet-manager/shared'
 import { useVehicle } from '@/hooks/useVehicle'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { canManageFleet } from '@/lib/roles'
 
 function formatMoney(value: string) {
@@ -15,9 +15,9 @@ function formatMoney(value: string) {
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
-  const { user } = useAuth0()
+  const { currentUser } = useCurrentUser()
   const { vehicle, loading, error } = useVehicle(id)
-  const canMutate = canManageFleet(user)
+  const canMutate = canManageFleet(currentUser?.role)
 
   if (loading) {
     return <p className="text-sm text-gray-500">{t('common.loading')}</p>

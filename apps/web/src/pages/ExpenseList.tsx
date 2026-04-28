@@ -5,9 +5,9 @@ import { ExpenseType } from '@fleet-manager/shared'
 import { useExpenses } from '@/hooks/useExpenses'
 import { useVehicles } from '@/hooks/useVehicles'
 import { useToken } from '@/hooks/useToken'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
-import { useAuth0 } from '@auth0/auth0-react'
 
 function formatMoney(value: string) {
   return Number(value).toLocaleString('pt-BR', {
@@ -18,15 +18,15 @@ function formatMoney(value: string) {
 
 export function ExpenseList() {
   const { t } = useTranslation()
-  const { user } = useAuth0()
   const getToken = useToken()
+  const { currentUser } = useCurrentUser()
   const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<ExpenseType | ''>('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  const canDelete = canManageFleet(user)
+  const canDelete = canManageFleet(currentUser?.role)
 
   const { expenses, loading, error, reload } = useExpenses({
     vehicleId: vehicleId || undefined,

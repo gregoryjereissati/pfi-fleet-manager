@@ -8,7 +8,10 @@ vi.mock('jose', () => ({
 
 vi.mock('../../config/database', () => ({
   prisma: {
-    user: { findUnique: vi.fn() },
+    user: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
   },
 }));
 
@@ -71,16 +74,72 @@ describe('authenticate', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
   });
 
-  it('retorna 401 quando usuário não está cadastrado', async () => {
+  it('cadastra automaticamente um novo usuário como OPERATOR no primeiro acesso', async () => {
+    const createdUser = {
+      ...mockUser,
+      id: 'user-2',
+      auth0Id: 'auth0|unknown',
+      name: 'New User',
+      email: 'new-user@test.com',
+      role: 'OPERATOR' as const,
+    };
+
+    vi.mocked(jwtVerify).mockResolvedValue({
+      payload: {
+        sub: 'auth0|unknown',
+        name: 'New User',
+        email: 'new-user@test.com',
+      },
+    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.user.create).mockResolvedValue(createdUser);
+    const req = makeReq('Bearer valid-token') as Request & { user?: typeof createdUser };
+    const res = makeRes();
+    const nextFn = vi.fn();
+
+    await authenticate(req, res, nextFn);
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: {
+        auth0Id: 'auth0|unknown',
+        name: 'New User',
+        email: 'new-user@test.com',
+        role: 'OPERATOR',
+      },
+    });
+    expect(req.user).toEqual(createdUser);
+    expect(nextFn).toHaveBeenCalledOnce();
+  });
+
+  it('usa valores de fallback quando o token não traz nome e email', async () => {
+    const createdUser = {
+      ...mockUser,
+      id: 'user-3',
+      auth0Id: 'auth0|unknown',
+      name: 'auth0 unknown',
+      email: 'auth0.unknown@auth0.local',
+      role: 'OPERATOR' as const,
+    };
+
     vi.mocked(jwtVerify).mockResolvedValue({ payload: { sub: 'auth0|unknown' } } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
-    const req = makeReq('Bearer valid-token');
+    vi.mocked(prisma.user.create).mockResolvedValue(createdUser);
+    const req = makeReq('Bearer valid-token') as Request & { user?: typeof createdUser };
     const res = makeRes();
+    const nextFn = vi.fn();
 
-    await authenticate(req, res, next);
+    await authenticate(req, res, nextFn);
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'User not registered' });
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: {
+        auth0Id: 'auth0|unknown',
+        name: 'auth0 unknown',
+        email: 'auth0.unknown@auth0.local',
+        role: 'OPERATOR',
+      },
+    });
+    expect(req.user).toEqual(createdUser);
+    expect(nextFn).toHaveBeenCalledOnce();
   });
 
   it('chama next e define req.user quando token é válido', async () => {

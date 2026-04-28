@@ -14,22 +14,26 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAlertCount } from '@/hooks/useAlertCount'
-
-const navItems = [
-  { to: '/dashboard',    icon: LayoutDashboard, labelKey: 'nav.dashboard',    enabled: true  },
-  { to: '/vehicles',     icon: Car,             labelKey: 'nav.vehicles',     enabled: true  },
-  { to: '/drivers',      icon: Users,           labelKey: 'nav.drivers',      enabled: true  },
-  { to: '/expenses',     icon: Receipt,         labelKey: 'nav.expenses',     enabled: true  },
-  { to: '/maintenances', icon: Wrench,          labelKey: 'nav.maintenances', enabled: true  },
-  { to: '/documents',    icon: FileText,        labelKey: 'nav.documents',    enabled: true  },
-  { to: '/alerts',       icon: Bell,            labelKey: 'nav.alerts',       enabled: true  },
-  { to: '/users',        icon: UserCog,         labelKey: 'nav.users',        enabled: false },
-]
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { isAdminRole } from '@/lib/roles'
 
 export function Sidebar() {
   const { t } = useTranslation()
   const { user, logout } = useAuth0()
   const { count: alertCount } = useAlertCount()
+  const { currentUser } = useCurrentUser()
+  const isAdmin = isAdminRole(currentUser?.role)
+
+  const navItems = [
+    { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', enabled: true },
+    { to: '/vehicles', icon: Car, labelKey: 'nav.vehicles', enabled: true },
+    { to: '/drivers', icon: Users, labelKey: 'nav.drivers', enabled: true },
+    { to: '/expenses', icon: Receipt, labelKey: 'nav.expenses', enabled: true },
+    { to: '/maintenances', icon: Wrench, labelKey: 'nav.maintenances', enabled: true },
+    { to: '/documents', icon: FileText, labelKey: 'nav.documents', enabled: true },
+    { to: '/alerts', icon: Bell, labelKey: 'nav.alerts', enabled: true },
+    { to: '/users', icon: UserCog, labelKey: 'nav.users', enabled: isAdmin },
+  ]
 
   return (
     <aside className="w-60 bg-white border-r border-gray-200 flex flex-col shrink-0">
@@ -53,7 +57,7 @@ export function Sidebar() {
                   'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    : 'text-gray-700 hover:bg-gray-100',
                 )
               }
             >
@@ -74,7 +78,7 @@ export function Sidebar() {
               <Icon size={17} />
               {t(labelKey)}
             </div>
-          )
+          ),
         )}
       </nav>
 

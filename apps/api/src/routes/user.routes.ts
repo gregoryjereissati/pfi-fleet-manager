@@ -7,5 +7,6 @@ import { UserRole } from '@fleet-manager/shared';
 export const userRouter = Router();
 
 userRouter.use(authenticate);
+userRouter.get('/me', userController.getCurrentUser);
 userRouter.get('/', authorize(UserRole.ADMIN), userController.listUsers);
 userRouter.patch('/:id/role', authorize(UserRole.ADMIN), userController.updateRole);

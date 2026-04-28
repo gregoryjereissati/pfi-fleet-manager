@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { UserRole } from '@prisma/client';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { env } from '../config/env';
 import { prisma } from '../config/database';
@@ -6,6 +7,19 @@ import { prisma } from '../config/database';
 const JWKS = createRemoteJWKSet(
   new URL(`https://${env.AUTH0_DOMAIN}/.well-known/jwks.json`),
 );
+
+function getStringClaim(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function buildFallbackName(auth0Id: string) {
+  return auth0Id.replace(/[|._-]+/g, ' ').trim() || 'User';
+}
+
+function buildFallbackEmail(auth0Id: string) {
+  const normalized = auth0Id.replace(/[^a-zA-Z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
+  return `${normalized || 'user'}@auth0.local`.toLowerCase();
+}
 
 export async function authenticate(
   req: Request,
@@ -32,11 +46,23 @@ export async function authenticate(
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { auth0Id: payload.sub } });
+    let user = await prisma.user.findUnique({ where: { auth0Id: payload.sub } });
 
     if (!user) {
-      res.status(401).json({ error: 'User not registered' });
-      return;
+      const name =
+        getStringClaim(payload.name) ??
+        getStringClaim(payload.nickname) ??
+        buildFallbackName(payload.sub);
+      const email = getStringClaim(payload.email) ?? buildFallbackEmail(payload.sub);
+
+      user = await prisma.user.create({
+        data: {
+          auth0Id: payload.sub,
+          name,
+          email,
+          role: UserRole.OPERATOR,
+        },
+      });
     }
 
     req.user = user;

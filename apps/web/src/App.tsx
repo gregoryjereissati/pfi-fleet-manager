@@ -15,6 +15,7 @@ import { MaintenanceForm } from '@/pages/MaintenanceForm'
 import { DocumentList } from '@/pages/DocumentList'
 import { DocumentForm } from '@/pages/DocumentForm'
 import { AlertCenter } from '@/pages/AlertCenter'
+import { UserList } from '@/pages/UserList'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/documents/new" element={<DocumentForm />} />
         <Route path="/documents/:id/edit" element={<DocumentForm />} />
         <Route path="/alerts" element={<AlertCenter />} />
+        <Route path="/users" element={<UserList />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -18,6 +18,10 @@
   "dashboard.drivers": "Active drivers",
   "dashboard.expenses": "Expenses this month",
   "dashboard.maintenances": "Pending maintenances",
+  "dashboard.expiringDocuments": "Expiring documents",
+  "dashboard.expensesByMonth": "Expenses by month (last 6 months)",
+  "dashboard.expensesByType": "Expenses by type (current month)",
+  "dashboard.noData": "No data to display",
   "lang.switch": "PT",
   "common.loading": "Loading...",
   "common.notFound": "Record not found.",
@@ -165,5 +169,15 @@
   "alerts.empty": "No active alerts.",
   "alerts.viewAll": "View all documents",
   "alerts.daysOverdue": "{{count}} day(s) overdue",
-  "alerts.daysRemaining": "Due in {{count}} day(s)"
+  "alerts.daysRemaining": "Due in {{count}} day(s)",
+  "users.title": "Users",
+  "users.subtitle": "User and permission management.",
+  "users.empty": "No users found.",
+  "users.columns.name": "Name",
+  "users.columns.email": "Email",
+  "users.columns.role": "Role",
+  "users.columns.createdAt": "Created at",
+  "users.roles.ADMIN": "Administrator",
+  "users.roles.MANAGER": "Manager",
+  "users.roles.OPERATOR": "Operator"
 }

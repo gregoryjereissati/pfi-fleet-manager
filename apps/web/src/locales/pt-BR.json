@@ -18,6 +18,10 @@
   "dashboard.drivers": "Motoristas ativos",
   "dashboard.expenses": "Despesas este mes",
   "dashboard.maintenances": "Manutencoes pendentes",
+  "dashboard.expiringDocuments": "Documentos vencendo",
+  "dashboard.expensesByMonth": "Despesas por mes (ultimos 6 meses)",
+  "dashboard.expensesByType": "Despesas por tipo (mes atual)",
+  "dashboard.noData": "Sem dados para exibir",
   "lang.switch": "EN",
   "common.loading": "Carregando...",
   "common.notFound": "Registro nao encontrado.",
@@ -165,5 +169,15 @@
   "alerts.empty": "Nenhum alerta ativo.",
   "alerts.viewAll": "Ver todos os documentos",
   "alerts.daysOverdue": "{{count}} dia(s) vencido(s)",
-  "alerts.daysRemaining": "Vence em {{count}} dia(s)"
+  "alerts.daysRemaining": "Vence em {{count}} dia(s)",
+  "users.title": "Usuarios",
+  "users.subtitle": "Gerenciamento de usuarios e permissoes.",
+  "users.empty": "Nenhum usuario encontrado.",
+  "users.columns.name": "Nome",
+  "users.columns.email": "E-mail",
+  "users.columns.role": "Funcao",
+  "users.columns.createdAt": "Cadastrado em",
+  "users.roles.ADMIN": "Administrador",
+  "users.roles.MANAGER": "Gerente",
+  "users.roles.OPERATOR": "Operador"
 }

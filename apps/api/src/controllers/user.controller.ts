@@ -8,6 +8,22 @@ const updateRoleSchema = z.object({
 });
 
 export const userController = {
+  async getCurrentUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const auth0Id = req.user?.auth0Id;
+
+      if (!auth0Id) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+      }
+
+      const user = await userService.getCurrentUser(auth0Id);
+      res.json(user);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async listUsers(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const users = await userService.listUsers();

@@ -7,6 +7,12 @@ export const userService = {
     return userRepository.findAll();
   },
 
+  async getCurrentUser(auth0Id: string) {
+    const user = await userRepository.findByAuth0Id(auth0Id);
+    if (!user) throw new AppError(404, 'User not found');
+    return user;
+  },
+
   async updateRole(id: string, role: UserRole) {
     const user = await userRepository.findById(id);
     if (!user) throw new AppError(404, 'User not found');
