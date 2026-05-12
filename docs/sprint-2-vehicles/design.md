@@ -106,7 +106,7 @@ Cada service terá testes unitários mockando o repository (padrão de `user.ser
 
 ## Frontend
 
-Reutiliza `AppLayout`, `Sidebar`, `Header` existentes. Integração via `fetch` + JWT do Auth0 (`getAccessTokenSilently`). Estado local com `useState` + `useEffect` — sem biblioteca global de estado.
+Reutiliza `AppLayout`, `Sidebar`, `Header` existentes. Integração via `fetch` autenticado com token JWT do aplicativo. Estado local com `useState` + `useEffect` — sem biblioteca global de estado.
 
 ### Novas Rotas (`App.tsx`)
 

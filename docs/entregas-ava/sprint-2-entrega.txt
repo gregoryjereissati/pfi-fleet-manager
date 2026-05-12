@@ -1,0 +1,192 @@
+FLEET MANAGER — SPRINT 2: VEÍCULOS E MOTORISTAS
+================================================
+Projeto Final Integrador I — Ciência da Computação — UNIFOR 2026
+Responsáveis: Gregory Jereissati, André Cavalcante e Luiz Eduardo Pacheco
+
+---
+
+OBJETIVO DA SPRINT
+------------------
+Implementar o CRUD completo de Veículos e Motoristas com vinculação entre eles,
+cobrindo backend REST e frontend React.
+
+---
+
+O QUE FOI IMPLEMENTADO
+-----------------------
+
+1. BACKEND — API REST DE VEÍCULOS (Issue #1)
+
+   Endpoints implementados:
+   - GET    /vehicles              — listagem com filtros (placa, marca, modelo,
+                                    status, ano mínimo/máximo) e ordenação
+   - GET    /vehicles/:id          — detalhes do veículo com motoristas vinculados,
+                                    últimas 5 despesas e últimas 5 manutenções
+   - POST   /vehicles              — cadastro de novo veículo
+   - PUT    /vehicles/:id          — edição de veículo existente
+   - DELETE /vehicles/:id          — desativação lógica (status → INACTIVE)
+
+   Controle de acesso (RBAC):
+   - Leitura: qualquer usuário autenticado
+   - Mutações (POST, PUT, DELETE): apenas ADMIN e MANAGER
+
+   Validações com Zod:
+   - Placa obrigatória
+   - Ano numérico entre 1900 e 2030
+   - Status deve ser ACTIVE ou INACTIVE
+   - Placa duplicada retorna erro 409
+
+   Arquitetura seguida (Layered Architecture):
+   - apps/api/src/repositories/vehicle.repository.ts  — acesso ao banco via Prisma
+   - apps/api/src/services/vehicle.service.ts         — regras de negócio
+   - apps/api/src/services/__tests__/vehicle.service.test.ts — testes unitários
+   - apps/api/src/controllers/vehicle.controller.ts   — entrada HTTP
+   - apps/api/src/routes/vehicle.routes.ts            — registro de rotas
+
+2. BACKEND — API REST DE MOTORISTAS (Issue #1)
+
+   Endpoints implementados:
+   - GET    /drivers               — listagem com filtros (nome, CPF, status)
+   - GET    /drivers/:id           — detalhes com veículos vinculados
+   - POST   /drivers               — cadastro de motorista
+   - PUT    /drivers/:id           — edição
+   - DELETE /drivers/:id           — desativação lógica (status → INACTIVE)
+
+   Controle de acesso: mesmo padrão de veículos.
+
+   Validações com Zod:
+   - CPF com 11 dígitos
+   - CNH obrigatória
+   - Data de vencimento da CNH obrigatória
+   - CPF duplicado retorna erro 409
+
+   Arquitetura:
+   - apps/api/src/repositories/driver.repository.ts
+   - apps/api/src/services/driver.service.ts
+   - apps/api/src/services/__tests__/driver.service.test.ts
+   - apps/api/src/controllers/driver.controller.ts
+   - apps/api/src/routes/driver.routes.ts
+
+3. BACKEND — VINCULAÇÃO MOTORISTA ↔ VEÍCULO (Issue #29)
+
+   Endpoints implementados:
+   - POST   /vehicles/:id/drivers              — vincula um ou mais motoristas
+                                               ao veículo (body: { driverIds })
+   - DELETE /vehicles/:vehicleId/drivers/:driverId — remove vínculo específico
+
+   Comportamento:
+   - Motorista já vinculado ao veículo é ignorado (operação idempotente)
+   - Vínculo utiliza tabela implícita _VehicleDrivers do Prisma
+
+4. TESTES UNITÁRIOS DO BACKEND
+
+   25 novos testes de service foram escritos (TDD com Vitest):
+   - vehicle.service.test.ts: findAll com filtros, findById com relações,
+     create, update, desativação lógica, vincular e desvincular motoristas
+   - driver.service.test.ts: findAll com filtros, findById, create,
+     update e desativação lógica
+
+   Total acumulado após a sprint: 39 testes passando.
+
+5. FRONTEND — TELAS DE VEÍCULOS
+
+   Tela: Listagem de Veículos (#24)
+   - Tabela com colunas: Placa, Marca, Modelo, Ano, Cor, Status, Ações
+   - Filtros: campo de texto livre, select de status, intervalo de ano
+   - Ordenação por clique no cabeçalho
+   - Botão "Novo Veículo" visível apenas para ADMIN/MANAGER
+   - Ações por linha: Ver detalhes, Editar, Gerenciar motoristas, Desativar
+
+   Tela: Formulário de Veículo (#25)
+   - Campos: Placa, Marca, Modelo, Ano, Cor, Status
+   - Modo criação: POST /vehicles
+   - Modo edição: pré-preenchimento via GET /vehicles/:id + PUT /vehicles/:id
+   - Validação com feedback inline
+
+   Tela: Detalhes do Veículo (#26)
+   - Dados do veículo em destaque
+   - Seção de motoristas vinculados
+   - Seção das últimas 5 despesas
+   - Seção das últimas 5 manutenções
+   - Botão de edição (ADMIN/MANAGER)
+
+   Tela: Vinculação Motorista ↔ Veículo (#29)
+   - Lista de motoristas já vinculados com opção de remoção
+   - Campo de busca para localizar motoristas disponíveis (ACTIVE, não vinculados)
+   - Botão "Vincular" por resultado de busca
+
+6. FRONTEND — TELAS DE MOTORISTAS
+
+   Tela: Listagem de Motoristas (#27)
+   - Tabela com colunas: Nome, CPF (mascarado), CNH, Vencimento da CNH
+     (badge vermelho se vencido ou próximo do vencimento), Status, Ações
+   - Filtros: busca por nome/CPF, select de status
+   - Botão "Novo Motorista" (ADMIN/MANAGER)
+
+   Tela: Formulário de Motorista (#28)
+   - Campos: Nome, CPF, CNH, Vencimento CNH, Telefone, Status
+   - Modos criação e edição (mesmo padrão do formulário de veículo)
+
+7. HELPER DE API E HOOKS
+
+   Arquivo apps/web/src/lib/api.ts foi criado para centralizar as chamadas
+   HTTP com autenticação:
+     apiFetch(path, token, options?)
+
+   Hooks criados:
+   - useVehicles.ts   — GET /vehicles
+   - useVehicle.ts    — GET /vehicles/:id
+   - useDrivers.ts    — GET /drivers
+   - useDriver.ts     — GET /drivers/:id
+
+---
+
+ROTAS ADICIONADAS NO FRONTEND
+------------------------------
+/vehicles              → VehicleList
+/vehicles/new          → VehicleForm (criação)
+/vehicles/:id          → VehicleDetail
+/vehicles/:id/edit     → VehicleForm (edição)
+/vehicles/:id/drivers  → VehicleDrivers
+/drivers               → DriverList
+/drivers/new           → DriverForm (criação)
+/drivers/:id/edit      → DriverForm (edição)
+
+Todas protegidas por ProtectedRoute.
+
+---
+
+DECISÕES TÉCNICAS
+-----------------
+- Backend implementado antes do frontend para evitar troca de contexto
+  entre camadas.
+- Exclusão lógica (status → INACTIVE) no lugar de delete físico, para
+  preservar histórico de despesas e manutenções associadas.
+- Vinculação motorista ↔ veículo é N:M (um motorista pode operar mais
+  de um veículo e vice-versa).
+
+---
+
+TESTES E VERIFICAÇÃO
+--------------------
+- Compilação TypeScript sem erros: npx tsc --noEmit (api e web)
+- Testes: npm run test:api (39 testes passando)
+- Build de produção: npm run build (apps/web)
+- Sprint validada manualmente no browser: veículos e motoristas
+  funcionando end-to-end com o banco de dados Supabase.
+
+---
+
+ISSUES RELACIONADAS
+-------------------
+#1  — API REST de veículos e motoristas (backend)
+#24 — Tela de listagem de veículos com filtros
+#25 — Formulário de cadastro e edição de veículos
+#26 — Tela de detalhes do veículo
+#27 — Tela de listagem de motoristas
+#28 — Formulário de cadastro e edição de motoristas
+#29 — Vinculação motorista ↔ veículo
+
+---
+
+STATUS FINAL: CONCLUÍDA E VALIDADA

@@ -17,11 +17,27 @@ export async function apiFetch<T>(
   })
 
   const text = await response.text()
-  const payload = text ? (JSON.parse(text) as { error?: string }) : {}
+  const contentType = response.headers.get('content-type') ?? ''
 
-  if (!response.ok) {
-    throw new Error(payload.error ?? `HTTP ${response.status}`)
+  if (!text) {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    return {} as T
   }
 
-  return payload as T
+  let payload: { error?: string } | null = null
+
+  if (contentType.includes('application/json')) {
+    payload = JSON.parse(text) as { error?: string }
+  } else if (text.trimStart().startsWith('<!DOCTYPE') || text.trimStart().startsWith('<html')) {
+    throw new Error('A API retornou HTML em vez de JSON. Reinicie o backend e tente novamente.')
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error ?? text ?? `HTTP ${response.status}`)
+  }
+
+  return (payload ?? ({ raw: text } as T)) as T
 }

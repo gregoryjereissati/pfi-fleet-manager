@@ -1285,7 +1285,7 @@ import { useDrivers } from '@/hooks/useDrivers'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import type { DocumentStatus } from '@fleet-manager/shared'
 
 function getStatusClasses(status: DocumentStatus) {
@@ -1296,7 +1296,7 @@ function getStatusClasses(status: DocumentStatus) {
 
 export function DocumentList() {
   const { t } = useTranslation()
-  const { user } = useAuth0()
+  const { user } = useCurrentUser()
   const getToken = useToken()
   const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
   const { drivers } = useDrivers()

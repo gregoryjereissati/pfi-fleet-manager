@@ -1,16 +1,28 @@
-import { PrismaClient, UserRole, VehicleStatus, DriverStatus } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, VehicleStatus, DriverStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  const passwordHash = await bcrypt.hash('admin123', 10);
+
   const admin = await prisma.user.upsert({
     where: { email: 'admin@fleet-manager.com' },
     update: {},
     create: {
       name: 'Administrador',
       email: 'admin@fleet-manager.com',
+      cpf: '000.000.000-00',
+      phone: '(85) 99999-0000',
+      passwordHash,
       role: UserRole.ADMIN,
-      auth0Id: 'auth0|seed-admin-000',
+      status: UserStatus.ACTIVE,
+      addressStreet: 'Av. Washington Soares',
+      addressNumber: '1321',
+      addressDistrict: 'Edson Queiroz',
+      addressCity: 'Fortaleza',
+      addressState: 'CE',
+      addressZip: '60811-341',
     },
   });
 
@@ -40,7 +52,7 @@ async function main() {
     },
   });
 
-  console.log('Seed concluído:', { admin, vehicle, driver });
+  console.log('Seed concluído:', { admin: admin.email, vehicle: vehicle.plate, driver: driver.name });
 }
 
 main()

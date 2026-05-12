@@ -9,3 +9,5 @@ coverage/
 .worktrees/
 .claude/
 *.log
+.agents/
+skills-lock.json

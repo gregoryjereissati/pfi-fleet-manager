@@ -1,0 +1,130 @@
+FLEET MANAGER — SPRINT 1: ACESSO DO FRONTEND, INTERNACIONALIZAÇÃO E DASHBOARD
+=============================================================================
+Projeto Final Integrador I — Ciência da Computação — UNIFOR 2026
+Responsáveis: Gregory Jereissati, André Cavalcante e Luiz Eduardo Pacheco
+
+---
+
+OBJETIVO DA SPRINT
+------------------
+Construir a base do frontend autenticado: telas de acesso, proteção de rotas
+privadas, suporte a dois idiomas e o primeiro Dashboard funcional integrado
+ao backend.
+
+---
+
+O QUE FOI IMPLEMENTADO
+-----------------------
+
+1. AUTENTICAÇÃO POR E-MAIL E SENHA (JWT PRÓPRIO)
+
+   O frontend foi conectado ao backend por meio de um fluxo de autenticação
+   completamente próprio, sem dependência de serviços externos.
+
+   Fluxo implementado:
+   a) Usuário acessa a tela de login (/login) e informa e-mail e senha.
+   b) Frontend envia as credenciais para o endpoint POST /auth/login.
+   c) Backend valida a senha com bcryptjs e retorna um token JWT assinado.
+   d) Frontend armazena o token no localStorage com a chave "fm_token".
+   e) Todas as requisições autenticadas incluem o cabeçalho:
+      Authorization: Bearer <token>
+   f) Logout remove o token local e redireciona para a tela pública.
+
+   Arquivos principais criados:
+   - apps/web/src/pages/Login.tsx       — tela de login
+   - apps/web/src/pages/Register.tsx    — tela de solicitação de acesso
+   - apps/web/src/hooks/useToken.ts     — gerencia o token no localStorage
+   - apps/web/src/hooks/useCurrentUser.ts — busca o usuário autenticado no backend
+   - apps/web/src/lib/api.ts            — helper centralizado de chamadas HTTP
+   - apps/web/src/components/ProtectedRoute.tsx — bloqueio de rotas privadas
+
+2. CONTROLE DE STATUS DO USUÁRIO (ACCESS GATE)
+
+   Um componente AccessGate foi criado para tratar usuários com status
+   PENDING_APPROVAL (aguardando aprovação do administrador) ou BLOCKED
+   (sem acesso ao sistema). Quando o token existe mas o usuário não tem
+   permissão de acesso, o sistema exibe uma tela informativa em vez de
+   redirecionar para o login.
+
+   Arquivo criado:
+   - apps/web/src/components/AccessGate.tsx
+
+3. INTERNACIONALIZAÇÃO (i18n) — PT-BR E EN-US
+
+   O sistema foi configurado para suportar dois idiomas com alternância
+   manual disponível no cabeçalho da aplicação.
+
+   Tecnologias utilizadas:
+   - react-i18next + i18next
+
+   Comportamento:
+   - Idioma padrão: Português do Brasil (pt-BR)
+   - Alternância para Inglês (en-US) via botão no Header
+   - Preferência de idioma persistida no localStorage
+
+   Arquivos de tradução:
+   - apps/web/src/locales/pt-BR.json
+   - apps/web/src/locales/en-US.json
+
+4. LAYOUT AUTENTICADO — SIDEBAR E HEADER
+
+   Estrutura de layout criada para todas as telas protegidas:
+   - Header: exibe nome do usuário, idioma e botão de logout
+   - Sidebar: exibe links de navegação de acordo com o perfil (role) do usuário
+     * Menus exclusivos para ADMIN ficam ocultos para MANAGER e OPERATOR
+   - O role exibido na interface é sempre o salvo no banco de dados (não apenas
+     o contido no token), garantindo consistência após alterações de permissão
+
+   Arquivos:
+   - apps/web/src/components/Header.tsx
+   - apps/web/src/components/Sidebar.tsx
+
+5. DASHBOARD CONECTADO AO BACKEND
+
+   A tela de Dashboard foi implementada com dados reais vindos do endpoint
+   GET /dashboard/indicators, exibindo indicadores financeiros e operacionais
+   da frota. Utiliza gráficos de barras (por mês) e de pizza (por tipo de
+   despesa) construídos com a biblioteca Recharts.
+
+   Arquivo:
+   - apps/web/src/pages/Dashboard.tsx (dados reais via hook useDashboard)
+
+6. LANDING PAGE
+
+   Página inicial pública redesenhada com links de navegação para as telas
+   de Login e Cadastro.
+
+   Arquivo:
+   - apps/web/src/pages/Landing.tsx
+
+---
+
+DECISÕES TÉCNICAS
+-----------------
+- Token armazenado em localStorage para simplicidade no contexto acadêmico.
+- Sem biblioteca de gerenciamento de estado global (Redux/Zustand):
+  estado local com useState + useEffect foi suficiente para este escopo.
+- apiFetch centraliza o envio do cabeçalho Authorization em todas as
+  chamadas, evitando repetição de código.
+
+---
+
+TESTES E VERIFICAÇÃO
+--------------------
+- Compilação TypeScript sem erros: npx tsc --noEmit (apps/web)
+- Build de produção: npm run build (apps/web)
+- Testes da API: npm run test:api (39 testes passando após a sprint)
+- Fluxo validado manualmente no browser: login, logout, proteção de rotas,
+  alternância de idioma e exibição do Dashboard.
+
+---
+
+ISSUES RELACIONADAS
+-------------------
+#21 — Integrar autenticação do frontend
+#22 — Implementar i18n pt-BR / en-US
+#23 — Implementar tela de Dashboard
+
+---
+
+STATUS FINAL: CONCLUÍDA E VALIDADA

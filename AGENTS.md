@@ -13,6 +13,7 @@ All project context lives in **CLAUDE.md**: architecture decisions, data model, 
 - Never re-derive architecture from scratch — read the spec first.
 - Never implement something already marked `[x]` in CLAUDE.md.
 - Always update CLAUDE.md checkboxes immediately when a subtask completes.
+- Current baseline: auth próprio com JWT e banco PostgreSQL hospedado no Supabase.
 
 ---
 
@@ -74,7 +75,8 @@ These mirror CLAUDE.md decisions. Violations must be reverted.
 |---|---|
 | Layered architecture | controllers → services → repositories. No DB calls in controllers. No HTTP in services. |
 | No raw SQL | Always use Prisma. |
-| Auth | Every protected route must use `authenticate` middleware. RBAC via `authorize(role)`. |
+| Auth | Fluxo público via `/auth/register` e `/auth/login`. Toda rota protegida deve usar `authenticate`. RBAC via `authorize(role)`. |
+| Database | PostgreSQL no Supabase acessado via Prisma. Não reintroduzir suposições da arquitetura anterior como padrão atual. |
 | Validation | Zod schemas in route files via `validate(schema)` middleware. |
 | Error handling | Throw `AppError(status, message)` from services. Let the error handler catch it. |
 | Types | Import enums and DTOs from `packages/shared` before defining local types. |

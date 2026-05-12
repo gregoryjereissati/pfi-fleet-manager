@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/layouts/AppLayout'
 import { Landing } from '@/pages/Landing'
+import { Login } from '@/pages/Login'
+import { Register } from '@/pages/Register'
 import { Dashboard } from '@/pages/Dashboard'
 import { VehicleList } from '@/pages/VehicleList'
 import { VehicleForm } from '@/pages/VehicleForm'
@@ -16,16 +18,22 @@ import { DocumentList } from '@/pages/DocumentList'
 import { DocumentForm } from '@/pages/DocumentForm'
 import { AlertCenter } from '@/pages/AlertCenter'
 import { UserList } from '@/pages/UserList'
+import { Profile } from '@/pages/Profile'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AccessGate } from '@/components/AccessGate'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route
         element={
           <ProtectedRoute>
-            <AppLayout />
+            <AccessGate>
+              <AppLayout />
+            </AccessGate>
           </ProtectedRoute>
         }
       >
@@ -46,6 +54,7 @@ export default function App() {
         <Route path="/documents/new" element={<DocumentForm />} />
         <Route path="/documents/:id/edit" element={<DocumentForm />} />
         <Route path="/alerts" element={<AlertCenter />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/users" element={<UserList />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

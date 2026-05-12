@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authRouter } from './auth.routes';
 import { userRouter } from './user.routes';
 import { vehicleRouter } from './vehicle.routes';
 import { driverRouter } from './driver.routes';
@@ -9,6 +10,7 @@ import { dashboardRouter } from './dashboard.routes';
 
 export const router = Router();
 
+router.use('/auth', authRouter);
 router.use('/users', userRouter);
 router.use('/vehicles', vehicleRouter);
 router.use('/drivers', driverRouter);

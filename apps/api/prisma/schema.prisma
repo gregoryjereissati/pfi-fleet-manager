@@ -3,14 +3,21 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
   ADMIN
   MANAGER
   OPERATOR
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  BLOCKED
 }
 
 enum VehicleStatus {
@@ -53,13 +60,22 @@ enum DocumentType {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  role      UserRole @default(OPERATOR)
-  auth0Id   String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String     @id @default(cuid())
+  name            String
+  email           String     @unique
+  cpf             String     @unique
+  phone           String
+  passwordHash    String
+  role            UserRole   @default(OPERATOR)
+  status          UserStatus @default(PENDING)
+  addressStreet   String
+  addressNumber   String
+  addressDistrict String
+  addressCity     String
+  addressState    String
+  addressZip      String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 }
 
 model Vehicle {

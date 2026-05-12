@@ -11,6 +11,7 @@ const pageTitleMatchers: Array<{ pattern: RegExp; key: string }> = [
   { pattern: /^\/maintenances(?:\/.*)?$/, key: 'maintenances.title' },
   { pattern: /^\/documents(?:\/.*)?$/, key: 'documents.title' },
   { pattern: /^\/alerts$/, key: 'alerts.title' },
+  { pattern: /^\/profile$/, key: 'profile.title' },
 ]
 
 export function Header() {

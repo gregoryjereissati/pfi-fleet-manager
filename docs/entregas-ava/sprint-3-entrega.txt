@@ -1,0 +1,382 @@
+FLEET MANAGER — SPRINT 3: BACKEND COMPLETO, DESPESAS, MANUTENÇÕES,
+                           DOCUMENTOS, ALERTAS, DASHBOARD REAL E USUÁRIOS
+=======================================================================
+Projeto Final Integrador I — Ciência da Computação — UNIFOR 2026
+Responsáveis: Gregory Jereissati, André Cavalcante e Luiz Eduardo Pacheco
+
+---
+
+OBJETIVO DA SPRINT
+------------------
+Implementar toda a infraestrutura do backend (banco de dados, autenticação,
+middlewares), os módulos de despesas, manutenções, documentos e alertas de
+vencimento, o Dashboard com dados reais e a tela de gerenciamento de usuários.
+
+---
+
+O QUE FOI IMPLEMENTADO
+-----------------------
+
+
+PARTE 1 — INFRAESTRUTURA DO BACKEND                        
+
+1. BANCO DE DADOS — PRISMA + SUPABASE (POSTGRESQL)
+
+   O banco de dados foi modelado com Prisma ORM e hospedado no Supabase
+   (PostgreSQL gerenciado na nuvem, região São Paulo — aws-sa-east-1).
+
+   Entidades do schema (apps/api/prisma/schema.prisma):
+   - User:        id, name, email, cpf, phone, passwordHash, role, status
+   - Vehicle:     id, plate, brand, model, year, color, status
+   - Driver:      id, name, cpf, cnh, cnhExpiry, phone, status
+   - Expense:     id, vehicleId, type, amount, date, description
+   - Maintenance: id, vehicleId, type, status, scheduledDate, completedDate
+   - Document:    id, vehicleId?, driverId?, type, expiryDate, alertSent
+
+   Relacionamentos:
+   - Vehicle 1:N Expense
+   - Vehicle 1:N Maintenance
+   - Vehicle 1:N Document
+   - Driver 1:N Document
+   - Vehicle N:M Driver (tabela _VehicleDrivers)
+
+   Seed inicial (apps/api/prisma/seed.ts):
+   - Cria o usuário administrador padrão com senha hasheada
+   - Cria um veículo e um motorista de exemplo para testes
+
+   Migrations aplicadas:
+   - init:                    criação de todas as tabelas
+   - add_user_status:         adição do campo status ao usuário
+   - remove_auth0_add_custom_auth: substituição de campos Auth0 por
+                              passwordHash e status de aprovação
+
+2. AUTENTICAÇÃO PRÓPRIA — JWT + BCRYPT + SUPABASE
+
+   O sistema de autenticação foi desenvolvido inteiramente do zero,
+   sem dependência de serviços de identidade externos.
+
+   Tecnologias:
+   - bcryptjs: hash e verificação de senhas
+   - jose:     assinatura e validação de tokens JWT com JWT_SECRET
+
+   Endpoints de autenticação:
+   - POST /auth/register  — solicita acesso ao sistema (status: PENDING_APPROVAL)
+   - POST /auth/login     — valida credenciais e retorna token JWT
+
+   Fluxo completo:
+   a) Novo usuário se registra → status PENDING_APPROVAL
+   b) Administrador aprova o usuário → status ACTIVE
+   c) Usuário faz login → backend valida senha com bcrypt e assina JWT
+   d) Token é enviado em todas as requisições: Authorization: Bearer <token>
+   e) Middleware extrai userId do token e busca o User no banco
+   f) Middleware RBAC verifica o role antes de liberar cada rota
+
+   Arquivos:
+   - apps/api/src/services/auth.service.ts
+   - apps/api/src/controllers/auth.controller.ts
+   - apps/api/src/routes/auth.routes.ts
+   - apps/api/src/lib/verify-token.ts
+
+3. MIDDLEWARES DO BACKEND
+
+   authenticate.ts
+   - Valida o token JWT em cada requisição protegida
+   - Extrai o userId e busca o User no banco
+   - Rejeita tokens inválidos ou usuários bloqueados (401/403)
+
+   authorize.ts
+   - Controle de acesso baseado em perfil (RBAC)
+   - Roles: ADMIN, MANAGER, OPERATOR
+   - Bloqueia requisições de roles sem permissão (403)
+
+   validate.ts
+   - Valida o body das requisições com schemas Zod
+   - Remove campos extras não declarados no schema
+   - Retorna erros de validação formatados (400)
+
+   error-handler.ts
+   - Captura todos os erros da aplicação
+   - Formata respostas de erro consistentes (AppError)
+
+4. MÓDULO DE USUÁRIOS — BACKEND
+
+   Endpoints:
+   - GET  /users      — lista todos os usuários (ADMIN)
+   - GET  /users/me   — retorna dados do usuário autenticado
+   - PUT  /users/:id/role    — altera o role de um usuário (ADMIN)
+   - PUT  /users/:id/status  — aprova ou bloqueia um usuário (ADMIN)
+
+   Regra de proteção:
+   - A conta administradora principal não pode ter seu role ou status
+     alterados, evitando bloqueio acidental do sistema.
+
+   Arquivos:
+   - apps/api/src/repositories/user.repository.ts
+   - apps/api/src/services/user.service.ts
+   - apps/api/src/controllers/user.controller.ts
+   - apps/api/src/routes/user.routes.ts
+
+
+  PARTE 2 — MÓDULOS DE NEGÓCIO                               
+
+5. BACKEND — API REST DE DESPESAS
+
+   Registra gastos operacionais associados a veículos.
+
+   Endpoints:
+   - GET    /expenses        — listagem com filtros por veículo, tipo e período
+   - GET    /expenses/:id    — detalhes de uma despesa
+   - POST   /expenses        — registro de nova despesa
+   - PUT    /expenses/:id    — edição
+   - DELETE /expenses/:id    — exclusão (ADMIN e MANAGER)
+
+   Tipos de despesa: FUEL | MAINTENANCE | FINE | IPVA | INSURANCE | OTHER
+
+   Testes unitários: 9 testes (Vitest, TDD)
+   Arquivos:
+   - apps/api/src/repositories/expense.repository.ts
+   - apps/api/src/services/expense.service.ts
+   - apps/api/src/controllers/expense.controller.ts
+   - apps/api/src/routes/expense.routes.ts
+
+6. BACKEND — API REST DE MANUTENÇÕES
+
+   Registra revisões e reparos dos veículos.
+
+   Endpoints:
+   - GET    /maintenances        — listagem com filtros por veículo, tipo, status
+   - GET    /maintenances/:id    — detalhes
+   - POST   /maintenances        — registro
+   - PUT    /maintenances/:id    — edição / atualização de status
+   - DELETE /maintenances/:id    — exclusão (ADMIN e MANAGER)
+
+   Tipos: PREVENTIVE | CORRECTIVE
+   Status: SCHEDULED | DONE | OVERDUE
+
+   Regra de negócio: ao marcar uma manutenção como DONE, o campo
+   completedDate é preenchido automaticamente com a data atual.
+
+   Testes unitários: 10 testes (Vitest, TDD)
+   Arquivos:
+   - apps/api/src/repositories/maintenance.repository.ts
+   - apps/api/src/services/maintenance.service.ts
+   - apps/api/src/controllers/maintenance.controller.ts
+   - apps/api/src/routes/maintenance.routes.ts
+
+7. BACKEND — API REST DE DOCUMENTOS
+
+   Controla documentos obrigatórios de veículos e motoristas
+   (CRLV, CNH, seguro, etc.) com cálculo automático de status de vencimento.
+
+   Endpoints:
+   - GET    /documents              — listagem com status computado
+                                     (VALID / EXPIRING_SOON / EXPIRED)
+   - GET    /documents/:id          — detalhes
+   - POST   /documents              — cadastro de documento
+   - PUT    /documents/:id          — edição
+   - DELETE /documents/:id          — exclusão (ADMIN e MANAGER)
+   - GET    /documents/alerts/count — contagem de documentos vencidos/próximos
+
+   Regra de negócio:
+   - Documentos com vencimento nos próximos 30 dias → status EXPIRING_SOON
+   - Documentos com vencimento passado → status EXPIRED
+   - Status VALID para os demais
+
+   Testes unitários: 15 testes (Vitest, TDD)
+   Arquivos:
+   - apps/api/src/repositories/document.repository.ts
+   - apps/api/src/services/document.service.ts
+   - apps/api/src/controllers/document.controller.ts
+   - apps/api/src/routes/document.routes.ts
+
+8. BACKEND — JOB DE ALERTAS DE VENCIMENTO (CRON)
+
+   Um job agendado verifica diariamente os documentos próximos do
+   vencimento e marca o campo alertSent para evitar alertas duplicados.
+
+   Tecnologia: node-cron
+   Execução: diariamente à meia-noite
+   Comportamento: idempotente — documentos já marcados com alertSent=true
+   não são reprocessados.
+
+   Arquivo: apps/api/src/alertCron.ts
+
+9. BACKEND — DASHBOARD DE INDICADORES FINANCEIROS
+
+   Endpoint que agrega dados reais do banco para o painel gerencial.
+
+   - GET /dashboard/indicators — retorna:
+     * Total de despesas do mês atual
+     * Total de despesas do mês anterior
+     * Despesas agrupadas por mês (últimos 6 meses)
+     * Despesas agrupadas por tipo
+
+   Testes unitários: 2 testes (Vitest, TDD)
+   Arquivos:
+   - apps/api/src/repositories/dashboard.repository.ts
+   - apps/api/src/services/dashboard.service.ts
+   - apps/api/src/controllers/dashboard.controller.ts
+
+PARTE 3 — FRONTEND: NOVOS MÓDULOS                         
+
+
+10. TELAS DE DESPESAS
+
+    Listagem (/expenses):
+    - Tabela: Veículo, Tipo, Valor (R$), Data, Ações
+    - Filtros: veículo, tipo, intervalo de datas
+    - Exclusão visível apenas para ADMIN/MANAGER
+
+    Formulário (/expenses/new e /expenses/:id/edit):
+    - Campos: Veículo, Tipo, Valor, Data, Descrição
+    - Modos criação e edição
+
+    Arquivos: ExpenseList.tsx, ExpenseForm.tsx, hooks/useExpenses.ts
+
+11. TELAS DE MANUTENÇÕES
+
+    Listagem (/maintenances):
+    - Tabela: Veículo, Tipo, Status (badge colorido), Data Agendada, Conclusão
+    - Badge: SCHEDULED (azul), DONE (verde), OVERDUE (vermelho)
+
+    Formulário (/maintenances/new e /maintenances/:id/edit):
+    - Campos: Veículo, Tipo, Status, Data Agendada, Data de Conclusão, Descrição
+    - Suporta manutenções preventivas e corretivas
+
+    Arquivos: MaintenanceList.tsx, MaintenanceForm.tsx, hooks/useMaintenances.ts
+
+12. TELAS DE DOCUMENTOS
+
+    Listagem (/documents):
+    - Tabela: Entidade, Tipo, Vencimento, Status (badge colorido), Ações
+    - Badge: VALID (verde), EXPIRING_SOON (amarelo), EXPIRED (vermelho)
+
+    Formulário (/documents/new e /documents/:id/edit):
+    - Campos: Veículo ou Motorista, Tipo, Data de Vencimento
+
+    Arquivo: DocumentList.tsx, DocumentForm.tsx, hooks/useDocuments.ts
+
+13. CENTRAL DE ALERTAS
+
+    Tela /alerts:
+    - Lista documentos vencidos ou próximos do vencimento
+    - Agrupados por entidade (veículo ou motorista)
+
+    Badge no Sidebar e sino no Header:
+    - Exibe contagem de alertas ativos via GET /documents/alerts/count
+    - Atualizado em tempo real ao navegar pelo sistema
+
+    Arquivo: AlertCenter.tsx, hooks/useAlertCount.ts
+
+14. DASHBOARD COM DADOS REAIS (RECHARTS)
+
+    A tela de Dashboard foi conectada ao backend com visualizações reais:
+    - 4 cards de indicadores: total do mês, mês anterior, veículos ativos,
+      manutenções pendentes
+    - Gráfico de barras: despesas por mês (últimos 6 meses) — Recharts BarChart
+    - Gráfico de pizza: despesas por tipo — Recharts PieChart
+
+    Arquivo: Dashboard.tsx (atualizado), hooks/useDashboard.ts
+
+15. GERENCIAMENTO DE USUÁRIOS (ADMIN)
+
+    Tela /users (visível apenas para ADMIN):
+    - Tabela: Nome, E-mail, CPF, Role, Status, Ações
+    - Ações: alterar role (ADMIN/MANAGER/OPERATOR) e aprovar/bloquear usuário
+    - Aprovação de usuários com status PENDING_APPROVAL
+
+    Arquivo: UserList.tsx, hooks/useUsers.ts
+
+---
+
+RESUMO DE TESTES UNITÁRIOS
+---------------------------
+Módulo                        Testes
+---------                     ------
+authenticate middleware           4
+authorize middleware              4
+validate middleware               3
+user service                      3
+auth service                      4
+vehicle service                  ~13
+driver service                   ~12
+expense service                   9
+maintenance service              10
+document service                 15
+dashboard service                 2
+---------                     ------
+TOTAL                          ~79 testes passando
+
+---
+
+ROTAS DO FRONTEND ADICIONADAS NESTA SPRINT
+-------------------------------------------
+/expenses              → ExpenseList
+/expenses/new          → ExpenseForm (criação)
+/expenses/:id/edit     → ExpenseForm (edição)
+/maintenances          → MaintenanceList
+/maintenances/new      → MaintenanceForm (criação)
+/maintenances/:id/edit → MaintenanceForm (edição)
+/documents             → DocumentList
+/documents/new         → DocumentForm (criação)
+/documents/:id/edit    → DocumentForm (edição)
+/alerts                → AlertCenter
+/users                 → UserList (somente ADMIN)
+
+---
+
+INTERNACIONALIZAÇÃO
+-------------------
+Todos os textos das novas telas foram adicionados nos arquivos:
+- apps/web/src/locales/pt-BR.json
+- apps/web/src/locales/en-US.json
+
+---
+
+DECISÕES TÉCNICAS
+-----------------
+- Autenticação própria (JWT + bcrypt) foi escolhida para independência
+  de serviços externos e controle total sobre o fluxo de aprovação.
+- O status PENDING_APPROVAL permite ao administrador revisar e aprovar
+  novos usuários antes que eles acessem o sistema.
+- O banco foi migrado para o Supabase (PostgreSQL gerenciado) para
+  garantir disponibilidade sem necessidade de infraestrutura local.
+- O Prisma é a única interface de acesso ao banco; nenhuma consulta SQL
+  manual é executada no código.
+- O cron job de alertas é idempotente: pode ser executado múltiplas vezes
+  sem gerar alertas duplicados.
+
+---
+
+TESTES E VERIFICAÇÃO
+--------------------
+- Compilação TypeScript sem erros: npx tsc --noEmit (api e web)
+- Testes: npm run test:api (~79 testes passando)
+- Build de produção: npm run build (apps/web)
+- Todas as telas validadas manualmente no browser com dados reais
+  do banco Supabase.
+
+---
+
+ISSUES RELACIONADAS
+-------------------
+#2  — API de despesas (backend)
+#3  — API de manutenções (backend)
+#5  — Job de alertas de vencimento com node-cron
+#6  — Endpoints de indicadores financeiros
+#20 — API de documentos obrigatórios (backend)
+#30 — Tela de listagem de despesas com filtros
+#31 — Formulário de registro de despesas
+#32 — Tela de listagem de manutenções
+#33 — Formulário de manutenções preventivas e corretivas
+#34 — Tela de listagem de documentos com status de vencimento
+#35 — Formulário de cadastro de documentos
+#36 — Central de alertas de vencimento
+#37 — Notificações visuais de alertas no sidebar/header
+#38 — Tela de gerenciamento de usuários (ADMIN)
+#39 — Testes unitários do backend
+#40 — Validação do MVP com dados reais
+
+---
+
+STATUS FINAL: CONCLUÍDA E VALIDADA

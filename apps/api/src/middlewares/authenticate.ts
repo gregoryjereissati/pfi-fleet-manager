@@ -1,25 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { UserRole } from '@prisma/client';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { env } from '../config/env';
+import { UserStatus } from '@prisma/client';
+import { verifyJwt } from '../lib/verify-token';
 import { prisma } from '../config/database';
-
-const JWKS = createRemoteJWKSet(
-  new URL(`https://${env.AUTH0_DOMAIN}/.well-known/jwks.json`),
-);
-
-function getStringClaim(value: unknown) {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
-}
-
-function buildFallbackName(auth0Id: string) {
-  return auth0Id.replace(/[|._-]+/g, ' ').trim() || 'User';
-}
-
-function buildFallbackEmail(auth0Id: string) {
-  const normalized = auth0Id.replace(/[^a-zA-Z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
-  return `${normalized || 'user'}@auth0.local`.toLowerCase();
-}
 
 export async function authenticate(
   req: Request,
@@ -36,33 +18,22 @@ export async function authenticate(
   const token = authHeader.split(' ')[1];
 
   try {
-    const { payload } = await jwtVerify(token, JWKS, {
-      audience: env.AUTH0_AUDIENCE,
-      issuer: `https://${env.AUTH0_DOMAIN}/`,
-    });
+    const userId = await verifyJwt(token);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    if (!payload.sub) {
-      res.status(401).json({ error: 'Invalid token payload' });
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    let user = await prisma.user.findUnique({ where: { auth0Id: payload.sub } });
+    if (user.status === UserStatus.PENDING) {
+      res.status(403).json({ error: 'PENDING_APPROVAL' });
+      return;
+    }
 
-    if (!user) {
-      const name =
-        getStringClaim(payload.name) ??
-        getStringClaim(payload.nickname) ??
-        buildFallbackName(payload.sub);
-      const email = getStringClaim(payload.email) ?? buildFallbackEmail(payload.sub);
-
-      user = await prisma.user.create({
-        data: {
-          auth0Id: payload.sub,
-          name,
-          email,
-          role: UserRole.OPERATOR,
-        },
-      });
+    if (user.status === UserStatus.BLOCKED) {
+      res.status(403).json({ error: 'BLOCKED' });
+      return;
     }
 
     req.user = user;

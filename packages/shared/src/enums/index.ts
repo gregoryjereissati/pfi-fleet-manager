@@ -4,6 +4,12 @@ export enum UserRole {
   OPERATOR = 'OPERATOR',
 }
 
+export enum UserStatus {
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  BLOCKED = 'BLOCKED',
+}
+
 export enum VehicleStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',

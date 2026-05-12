@@ -31,10 +31,10 @@ A solução adota **TypeScript full-stack** com a seguinte estrutura:
 |---|---|
 | Frontend | React.js (hospedado na Vercel) |
 | Backend | Node.js (API REST) |
-| Banco de Dados | PostgreSQL (AWS RDS) |
+| Banco de Dados | PostgreSQL (Supabase) |
 | Cache / Filas | Redis |
-| Autenticação | JWT + Auth0 |
-| Containers | Docker + AWS ECS |
+| Autenticação | JWT próprio + e-mail/senha |
+| Deploy Backend | AWS ECS |
 | Controle de Acesso | RBAC (Administrador, Gestor, Operador) |
 
 ---

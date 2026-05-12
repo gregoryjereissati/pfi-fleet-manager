@@ -5,8 +5,7 @@ const envSchema = z.object({
   PORT: z.string().default('3000').transform(Number),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string(),
-  AUTH0_DOMAIN: z.string(),
-  AUTH0_AUDIENCE: z.string(),
+  JWT_SECRET: z.string().min(32),
 });
 
 const result = envSchema.safeParse(process.env);

@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useAuth0 } from '@auth0/auth0-react'
 import {
   LayoutDashboard,
   Car,
@@ -19,7 +18,6 @@ import { isAdminRole } from '@/lib/roles'
 
 export function Sidebar() {
   const { t } = useTranslation()
-  const { user, logout } = useAuth0()
   const { count: alertCount } = useAlertCount()
   const { currentUser } = useCurrentUser()
   const isAdmin = isAdminRole(currentUser?.role)
@@ -34,6 +32,11 @@ export function Sidebar() {
     { to: '/alerts', icon: Bell, labelKey: 'nav.alerts', enabled: true },
     { to: '/users', icon: UserCog, labelKey: 'nav.users', enabled: isAdmin },
   ]
+
+  function handleLogout() {
+    localStorage.removeItem('fm_token')
+    window.location.replace('/')
+  }
 
   return (
     <aside className="w-60 bg-white border-r border-gray-200 flex flex-col shrink-0">
@@ -83,22 +86,29 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-gray-200 space-y-3">
-        <div className="flex items-center gap-2 min-w-0">
-          {user?.picture && (
-            <img
-              src={user.picture}
-              alt={user.name ?? ''}
-              className="w-7 h-7 rounded-full shrink-0"
-            />
-          )}
-          <span className="text-sm font-medium text-gray-700 truncate">
-            {user?.name}
-          </span>
-        </div>
-        <button
-          onClick={() =>
-            logout({ logoutParams: { returnTo: window.location.origin } })
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-2 min-w-0 rounded-md px-2 py-2 transition-colors',
+              isActive ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-100',
+            )
           }
+        >
+          <div className="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
+            <span className="text-gray-600 text-xs font-bold">
+              {currentUser?.name?.charAt(0).toUpperCase() ?? '?'}
+            </span>
+          </div>
+          <div className="min-w-0">
+            <span className="block text-sm font-medium text-gray-700 truncate">
+              {currentUser?.name}
+            </span>
+            <span className="block text-xs text-gray-400 truncate">{t('nav.profile')}</span>
+          </div>
+        </NavLink>
+        <button
+          onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
         >
           <LogOut size={15} />
