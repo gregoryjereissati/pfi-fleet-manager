@@ -15,11 +15,13 @@ export interface CreateDocumentData {
   driverId?: string;
   type: DocumentType;
   expiryDate: Date;
+  fileUrl?: string;
 }
 
 export interface UpdateDocumentData {
   type?: DocumentType;
   expiryDate?: Date;
+  fileUrl?: string;
 }
 
 const documentInclude = {
@@ -79,6 +81,7 @@ function mapDocument(document: {
   driver: { id: string; name: string } | null;
   type: string;
   expiryDate: Date;
+  fileUrl: string | null;
   alertSent: boolean;
   createdAt: Date;
 }) {
@@ -90,6 +93,7 @@ function mapDocument(document: {
     driverName: document.driver?.name ?? null,
     type: document.type as DocumentType,
     expiryDate: document.expiryDate.toISOString(),
+    fileUrl: document.fileUrl,
     alertSent: document.alertSent,
     status: computeStatus(document.expiryDate),
     createdAt: document.createdAt.toISOString(),

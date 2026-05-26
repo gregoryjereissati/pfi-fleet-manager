@@ -10,6 +10,7 @@ export interface DocumentDto {
   driverName: string | null;
   type: DocumentType;
   expiryDate: string;
+  fileUrl: string | null;
   alertSent: boolean;
   status: DocumentStatus;
   createdAt: string;
@@ -20,9 +21,11 @@ export interface CreateDocumentDto {
   driverId?: string;
   type: DocumentType;
   expiryDate: string;
+  fileUrl?: string;
 }
 
 export interface UpdateDocumentDto {
   type?: DocumentType;
   expiryDate?: string;
+  fileUrl?: string;
 }

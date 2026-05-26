@@ -70,6 +70,7 @@ const mockDocument = {
   driverName: null,
   type: DocumentType.CRLV,
   expiryDate: '2027-01-01T00:00:00.000Z',
+  fileUrl: null,
   alertSent: false,
   status: 'OK' as DocumentStatus,
   createdAt: '2026-04-17T00:00:00.000Z',

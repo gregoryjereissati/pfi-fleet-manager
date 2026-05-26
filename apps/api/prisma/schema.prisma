@@ -139,6 +139,7 @@ model Document {
   driver     Driver?      @relation(fields: [driverId], references: [id], onDelete: Cascade)
   type       DocumentType
   expiryDate DateTime
+  fileUrl    String?
   alertSent  Boolean      @default(false)
   createdAt  DateTime     @default(now())
 }
