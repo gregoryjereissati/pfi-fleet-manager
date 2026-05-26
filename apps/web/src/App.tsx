@@ -9,6 +9,7 @@ import { VehicleForm } from '@/pages/VehicleForm'
 import { VehicleDetail } from '@/pages/VehicleDetail'
 import { VehicleDrivers } from '@/pages/VehicleDrivers'
 import { DriverList } from '@/pages/DriverList'
+import { DriverDetail } from '@/pages/DriverDetail'
 import { DriverForm } from '@/pages/DriverForm'
 import { ExpenseList } from '@/pages/ExpenseList'
 import { ExpenseForm } from '@/pages/ExpenseForm'
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/drivers" element={<DriverList />} />
         <Route path="/drivers/new" element={<DriverForm />} />
         <Route path="/drivers/:id/edit" element={<DriverForm />} />
+        <Route path="/drivers/:id" element={<DriverDetail />} />
         <Route path="/expenses" element={<ExpenseList />} />
         <Route path="/expenses/new" element={<ExpenseForm />} />
         <Route path="/maintenances" element={<MaintenanceList />} />

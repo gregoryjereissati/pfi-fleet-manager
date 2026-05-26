@@ -56,6 +56,11 @@ vehicleRouter.delete(
   authorize(UserRole.ADMIN, UserRole.MANAGER),
   vehicleController.delete,
 );
+vehicleRouter.delete(
+  '/:id/permanent',
+  authorize(UserRole.ADMIN, UserRole.MANAGER),
+  vehicleController.permanentDelete,
+);
 vehicleRouter.post(
   '/:id/drivers',
   authorize(UserRole.ADMIN, UserRole.MANAGER),

@@ -8,6 +8,10 @@ import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { FilePreviewModal } from '@/components/FilePreviewModal'
+
+type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
 function getStatusClasses(status: DocumentStatus) {
   if (status === 'EXPIRED') {
@@ -33,6 +37,14 @@ export function DocumentList() {
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<DocumentType | ''>('')
   const [status, setStatus] = useState<DocumentStatus | ''>('')
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [dialog, setDialog] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    variant: ConfirmDialogVariant
+    onConfirm: () => void
+  } | null>(null)
 
   const canMutate = canManageFleet(currentUser?.role)
   const { documents, loading, error, reload } = useDocuments({
@@ -43,16 +55,27 @@ export function DocumentList() {
     order: 'asc',
   })
 
-  async function handleDelete(id: string) {
-    if (!window.confirm(t('documents.deleteConfirm'))) return
+  function closeDialog() {
+    setDialog(null)
+  }
 
-    try {
-      const token = await getToken()
-      await apiFetch(`/documents/${id}`, token, { method: 'DELETE' })
-      reload()
-    } catch (err) {
-      window.alert((err as Error).message)
-    }
+  function handleDelete(id: string) {
+    setDialog({
+      title: t('actions.delete'),
+      message: t('documents.deleteConfirm'),
+      confirmLabel: t('actions.delete'),
+      variant: 'danger',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/documents/${id}`, token, { method: 'DELETE' })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
   }
 
   return (
@@ -156,8 +179,18 @@ export function DocumentList() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {canMutate ? (
-                          <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          {document.fileUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewUrl(document.fileUrl)}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {t('documents.preview.viewFile')}
+                            </button>
+                          )}
+                          {canMutate && (
+                            <>
                             <Link
                               to={`/documents/${document.id}/edit`}
                               className="text-gray-700 hover:underline"
@@ -170,10 +203,12 @@ export function DocumentList() {
                             >
                               {t('actions.remove')}
                             </button>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                            </>
+                          )}
+                          {!canMutate && !document.fileUrl && (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -182,6 +217,27 @@ export function DocumentList() {
             </table>
           </div>
         </div>
+      )}
+
+      {dialog && (
+        <ConfirmDialog
+          isOpen
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          cancelLabel={t('actions.cancel')}
+          variant={dialog.variant}
+          onConfirm={dialog.onConfirm}
+          onCancel={closeDialog}
+        />
+      )}
+
+      {previewUrl && (
+        <FilePreviewModal
+          isOpen
+          fileUrl={previewUrl}
+          onClose={() => setPreviewUrl(null)}
+        />
       )}
     </div>
   )

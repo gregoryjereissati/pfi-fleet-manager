@@ -12,6 +12,7 @@ const createDocumentSchema = z
     driverId: z.string().trim().min(1).optional(),
     type: z.nativeEnum(DocumentType),
     expiryDate: z.coerce.date(),
+    fileUrl: z.string().trim().url().optional(),
   })
   .refine((data) => Boolean(data.vehicleId) !== Boolean(data.driverId), {
     message: 'Provide either vehicleId or driverId',
@@ -21,6 +22,7 @@ const updateDocumentSchema = z
   .object({
     type: z.nativeEnum(DocumentType).optional(),
     expiryDate: z.coerce.date().optional(),
+    fileUrl: z.string().trim().url().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field is required',

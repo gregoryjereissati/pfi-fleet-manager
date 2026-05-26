@@ -60,4 +60,13 @@ export const driverController = {
       next(err);
     }
   },
+
+  async permanentDelete(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await driverService.hardDeleteDriver(req.params.id);
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
 };

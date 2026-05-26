@@ -52,3 +52,8 @@ driverRouter.delete(
   authorize(UserRole.ADMIN, UserRole.MANAGER),
   driverController.delete,
 );
+driverRouter.delete(
+  '/:id/permanent',
+  authorize(UserRole.ADMIN, UserRole.MANAGER),
+  driverController.permanentDelete,
+);

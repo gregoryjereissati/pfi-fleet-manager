@@ -30,7 +30,7 @@ Essas decisÃµes foram tomadas e documentadas no spec. NÃ£o altere sem alinha
 | AutenticaÃ§Ã£o | JWT prÃ³prio + e-mail/senha | Hash com `bcryptjs`, token assinado e validado com `jose` + `JWT_SECRET` |
 | ValidaÃ§Ã£o | Zod | ValidaÃ§Ã£o de body nas rotas e de env vars na startup |
 | Controle de acesso | RBAC | Roles: ADMIN, MANAGER, OPERATOR |
-| Deploy | AWS ECS | Backend segue com alvo de deploy containerizado; banco gerenciado fica no Supabase |
+| Deploy Backend | Railway | Deploy do backend Node.js via GitHub — suporta processo persistente e cron jobs; free tier suficiente para apresentação |
 | Monorepo | npm workspaces | Sem Turborepo/Nx â€” simples e suficiente |
 | Framework HTTP | Express 4 | Mais documentado, ampla adoÃ§Ã£o acadÃªmica |
 | Testes | Vitest | RÃ¡pido, TypeScript nativo |
@@ -172,7 +172,7 @@ ObservaÃ§Ã£o: o `upsert` do seed usa `update: {}`. Isso significa que rodar 
 
 ## Estado Atual do Projeto
 
-> **Ãšltima atualizaÃ§Ã£o:** 2026-05-06 (arquitetura atual consolidada com autenticaÃ§Ã£o prÃ³pria + Supabase e documentaÃ§Ã£o do repositÃ³rio limpa de referÃªncias legadas)  
+> **Última atualização:** 2026-05-26 (upload de arquivos nos documentos, filtro de tipos por entidade, DriverDetail, seção de documentos em VehicleDetail e DriverDetail)
 > **Atualizar esta seÃ§Ã£o a cada task concluÃ­da antes de fazer push.**
 
 > ReferÃªncias antigas Ã  arquitetura anterior podem aparecer em seÃ§Ãµes histÃ³ricas de sprints jÃ¡ concluÃ­das. O estado atual do projeto Ã© o descrito nas seÃ§Ãµes de arquitetura, setup e fluxo acima.
@@ -212,6 +212,21 @@ ObservaÃ§Ã£o: o `upsert` do seed usa `update: {}`. Isso significa que rodar 
 - [x] **Implementar autenticaÃ§Ã£o prÃ³pria com e-mail/senha + JWT**
 - [x] **Migrar PostgreSQL para o Supabase**
 - [x] **Limpar documentaÃ§Ã£o legada da arquitetura anterior**
+
+#### Ajustes pos-MVP - COMPLETO
+- [x] **Hotfix: exclusao permanente, reativacao de veiculos e normalizacao uppercase**
+  - Endpoint `DELETE /vehicles/:id/permanent` com hard delete via Prisma e cascade existente
+  - Listagem exibe acoes separadas para desativar, reativar e excluir permanentemente
+  - Confirmacoes da listagem de veiculos usam modal proprio da aplicacao
+  - Formulario de veiculos normaliza placa, marca, modelo e cor para maiusculas
+- [x] **Feature: upload de arquivo + melhorias no módulo de documentos**
+  - Campo `fileUrl` adicionado ao model `Document` (migration aplicada)
+  - Upload direto para Supabase Storage via `@supabase/supabase-js`
+  - `DocumentForm` filtra tipos por entidade (veículo vs motorista) e aceita upload de imagem/PDF
+  - `DocumentList` exibe botão "Ver arquivo" com `FilePreviewModal`
+  - `VehicleDetail` ganhou seção de documentos com preview
+  - `DriverDetail` criado com seções de veículos vinculados e documentos
+  - `DriverList` ganhou link "Ver detalhes"
 
 ### ðŸ”„ Em Andamento
 
@@ -279,13 +294,27 @@ _Nenhum._
 
 #### Sprint 6 â€” Deploy e Entrega (issues: #41â€“#44)
 - [ ] [#41] Deploy do frontend na Vercel
-- [ ] [#42] Deploy do backend no AWS ECS
+- [ ] [#42] Deploy do backend no Railway
 - [ ] [#43] Configurar PostgreSQL do Supabase para produÃ§Ã£o
 - [ ] [#44] Entrega final e apresentaÃ§Ã£o
 
 ---
 
 ## Regras para Colaboradores
+
+### Acentuação obrigatória em português (REGRA INEGOCIÁVEL)
+
+**Todo texto em português no projeto DEVE usar acentuação correta.** Isso vale para Claude, Codex e qualquer colaborador.
+
+Aplica-se a: arquivos de i18n (pt-BR.json), mensagens de UI, labels, placeholders, erros, confirmações, comentários e documentação.
+
+Exemplos corretos:
+- Veículos (não Veiculos)
+- Manutenções (não Manutencoes)
+- Usuários (não Usuarios)
+- não, ação, gestão, está, já, veículo, período, descrição, conclusão, Combustível
+
+Ao criar qualquer texto novo em português, acentue sempre. Nunca omita acento por conveniência.
 
 ### Antes de comeÃ§ar a trabalhar
 
@@ -366,6 +395,8 @@ test(api): add integration tests for expenses
 | 2026-05-06 | Gregory | ConsolidaÃ§Ã£o da arquitetura atual | Login passa a usar e-mail/senha com JWT prÃ³prio. Banco PostgreSQL migrado para o Supabase. |
 | 2026-05-06 | Codex | Limpeza de documentaÃ§Ã£o base | `CLAUDE.md` e `AGENTS.md` alinhados ao estado atual do projeto, removendo instruÃ§Ãµes desatualizadas da arquitetura anterior. |
 | 2026-05-06 | Codex | Limpeza ampla da documentaÃ§Ã£o | `README.md`, exemplos de ambiente e documentos de sprint foram normalizados para a arquitetura atual, sem referÃªncias Ã  stack anterior. |
+| 2026-05-14 | Codex | Hotfix: veiculos delete permanente + reativacao + modal + uppercase | `DELETE /vehicles/:id/permanent` adicionado com cascade Prisma, listagem de veiculos ganhou acoes de exclusao permanente e reativacao via `PUT /vehicles/:id`, confirmacoes passaram para `ConfirmDialog` proprio e formulario passou a normalizar placa, marca, modelo e cor para maiusculas. `apps/api` passou em `npx tsc --noEmit` e `npm run test`; `apps/web` passou em `npx tsc --noEmit` e `npm run build`. |
+| 2026-05-26 | Codex | Feature: upload de arquivo e melhorias em documentos | `fileUrl` no schema, Supabase Storage client-side, `FilePreviewModal`, `DocumentForm` com filtro de tipos, `VehicleDetail` e `DriverDetail` com seção de documentos. |
 
 ---
 

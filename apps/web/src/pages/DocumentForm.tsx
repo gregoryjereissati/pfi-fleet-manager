@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { DocumentType } from '@fleet-manager/shared'
 import { useVehicles } from '@/hooks/useVehicles'
 import { useDrivers } from '@/hooks/useDrivers'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
+import { uploadDocumentFile } from '@/lib/supabase'
 import type { DocumentItem } from '@/hooks/useDocuments'
 
 type EntityType = 'vehicle' | 'driver'
@@ -18,28 +19,49 @@ interface DocumentFormState {
   expiryDate: string
 }
 
-const initialForm: DocumentFormState = {
-  entityType: 'vehicle',
-  vehicleId: '',
-  driverId: '',
-  type: DocumentType.CRLV,
-  expiryDate: '',
-}
+const VEHICLE_DOCUMENT_TYPES = [
+  DocumentType.CRLV,
+  DocumentType.IPVA,
+  DocumentType.SEGURO,
+  DocumentType.LICENCA,
+  DocumentType.OUTRO,
+]
+
+const DRIVER_DOCUMENT_TYPES = [
+  DocumentType.CNH,
+  DocumentType.LICENCA,
+  DocumentType.OUTRO,
+]
 
 export function DocumentForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const getToken = useToken()
   const isEditing = Boolean(id)
+
+  const prefilledVehicleId = searchParams.get('vehicleId') ?? ''
+  const prefilledDriverId = searchParams.get('driverId') ?? ''
 
   const { vehicles, loading: loadingVehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
   const { drivers, loading: loadingDrivers } = useDrivers()
 
-  const [form, setForm] = useState<DocumentFormState>(initialForm)
+  const [form, setForm] = useState<DocumentFormState>(() => ({
+    entityType: prefilledDriverId ? 'driver' : 'vehicle',
+    vehicleId: prefilledVehicleId,
+    driverId: prefilledDriverId,
+    type: prefilledDriverId ? DocumentType.CNH : DocumentType.CRLV,
+    expiryDate: '',
+  }))
+  const [file, setFile] = useState<File | null>(null)
+  const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [loadingDocument, setLoadingDocument] = useState(isEditing)
   const [error, setError] = useState<string | null>(null)
+
+  const availableTypes =
+    form.entityType === 'vehicle' ? VEHICLE_DOCUMENT_TYPES : DRIVER_DOCUMENT_TYPES
 
   useEffect(() => {
     if (!isEditing || !id) {
@@ -63,6 +85,7 @@ export function DocumentForm() {
           type: document.type,
           expiryDate: document.expiryDate.split('T')[0],
         })
+        setExistingFileUrl(document.fileUrl)
         setError(null)
       } catch (err) {
         if (!cancelled) setError((err as Error).message)
@@ -82,14 +105,27 @@ export function DocumentForm() {
     key: Key,
     value: DocumentFormState[Key],
   ) {
-    setForm((current) => ({ ...current, [key]: value }))
+    setForm((current) => {
+      const next = { ...current, [key]: value }
+
+      if (key === 'entityType') {
+        const entityType = value as EntityType
+        const types = entityType === 'vehicle' ? VEHICLE_DOCUMENT_TYPES : DRIVER_DOCUMENT_TYPES
+        next.type = types[0]
+        next.vehicleId = entityType === 'vehicle' ? next.vehicleId : ''
+        next.driverId = entityType === 'driver' ? next.driverId : ''
+      }
+
+      return next
+    })
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const entityId = form.entityType === 'vehicle' ? form.vehicleId : form.driverId
-    if (!isEditing && !entityId) {
+
+    if (!entityId) {
       setError(t('documents.validation.entity'))
       return
     }
@@ -103,6 +139,7 @@ export function DocumentForm() {
       setSubmitting(true)
       setError(null)
 
+      const fileUrl = file ? await uploadDocumentFile(file, entityId) : undefined
       const token = await getToken()
 
       if (isEditing && id) {
@@ -111,21 +148,14 @@ export function DocumentForm() {
           body: JSON.stringify({
             type: form.type,
             expiryDate: form.expiryDate,
+            ...(fileUrl && { fileUrl }),
           }),
         })
       } else {
         const body =
           form.entityType === 'vehicle'
-            ? {
-                vehicleId: form.vehicleId,
-                type: form.type,
-                expiryDate: form.expiryDate,
-              }
-            : {
-                driverId: form.driverId,
-                type: form.type,
-                expiryDate: form.expiryDate,
-              }
+            ? { vehicleId: form.vehicleId, type: form.type, expiryDate: form.expiryDate, fileUrl }
+            : { driverId: form.driverId, type: form.type, expiryDate: form.expiryDate, fileUrl }
 
         await apiFetch('/documents', token, {
           method: 'POST',
@@ -236,7 +266,7 @@ export function DocumentForm() {
               onChange={(event) => updateField('type', event.target.value as DocumentType)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {Object.values(DocumentType).map((documentType) => (
+              {availableTypes.map((documentType) => (
                 <option key={documentType} value={documentType}>
                   {t(`documents.types.${documentType}`)}
                 </option>
@@ -256,6 +286,36 @@ export function DocumentForm() {
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              {t('documents.upload.label')}
+            </label>
+            {existingFileUrl && !file && (
+              <p className="mb-1 text-xs text-gray-500">
+                {t('documents.upload.current')}:{' '}
+                <a
+                  href={existingFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  {t('documents.preview.viewFile')}
+                </a>
+              </p>
+            )}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {file ? (
+              <p className="mt-1 text-xs text-gray-500">{file.name}</p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">{t('documents.upload.placeholder')}</p>
+            )}
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -266,7 +326,7 @@ export function DocumentForm() {
             disabled={submitting}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {submitting ? t('actions.saving') : t('actions.save')}
+            {submitting ? t('documents.upload.uploading') : t('actions.save')}
           </button>
           <button
             type="button"

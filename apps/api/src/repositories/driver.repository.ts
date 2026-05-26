@@ -83,4 +83,8 @@ export const driverRepository = {
       data: { status: DriverStatus.INACTIVE },
     });
   },
+
+  hardDelete(id: string) {
+    return prisma.driver.delete({ where: { id } });
+  },
 };

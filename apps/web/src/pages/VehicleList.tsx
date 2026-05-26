@@ -7,8 +7,10 @@ import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 type VehicleSortField = 'createdAt' | 'plate' | 'brand' | 'model' | 'year'
+type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
 function getVehicleStatusLabel(status: VehicleStatus, t: (key: string) => string) {
   return status === VehicleStatus.ACTIVE ? t('status.active') : t('status.inactive')
@@ -24,6 +26,13 @@ export function VehicleList() {
   const [yearMax, setYearMax] = useState('')
   const [sortField, setSortField] = useState<VehicleSortField>('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [dialog, setDialog] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    variant: ConfirmDialogVariant
+    onConfirm: () => void
+  } | null>(null)
 
   const canMutate = canManageFleet(currentUser?.role)
 
@@ -38,16 +47,68 @@ export function VehicleList() {
 
   const { vehicles, loading, error, reload } = useVehicles(filters)
 
-  async function handleDeactivate(id: string) {
-    if (!window.confirm(t('vehicles.deactivateConfirm'))) return
+  function closeDialog() {
+    setDialog(null)
+  }
 
-    try {
-      const token = await getToken()
-      await apiFetch(`/vehicles/${id}`, token, { method: 'DELETE' })
-      reload()
-    } catch (err) {
-      window.alert((err as Error).message)
-    }
+  function handleDeactivate(id: string) {
+    setDialog({
+      title: t('actions.deactivate'),
+      message: t('vehicles.deactivateConfirm'),
+      confirmLabel: t('actions.deactivate'),
+      variant: 'warning',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/vehicles/${id}`, token, { method: 'DELETE' })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
+  }
+
+  function handlePermanentDelete(id: string) {
+    setDialog({
+      title: t('actions.delete'),
+      message: t('vehicles.deleteConfirm'),
+      confirmLabel: t('actions.delete'),
+      variant: 'danger',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/vehicles/${id}/permanent`, token, { method: 'DELETE' })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
+  }
+
+  function handleReactivate(id: string) {
+    setDialog({
+      title: t('actions.reactivate'),
+      message: t('vehicles.reactivateConfirm'),
+      confirmLabel: t('actions.reactivate'),
+      variant: 'default',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/vehicles/${id}`, token, {
+            method: 'PUT',
+            body: JSON.stringify({ status: VehicleStatus.ACTIVE }),
+          })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
   }
 
   function toggleSort(field: VehicleSortField) {
@@ -185,14 +246,27 @@ export function VehicleList() {
                               >
                                 {t('vehicles.manageDrivers')}
                               </Link>
-                              {vehicle.status === VehicleStatus.ACTIVE && (
+                              {vehicle.status === VehicleStatus.ACTIVE ? (
                                 <button
                                   onClick={() => handleDeactivate(vehicle.id)}
-                                  className="text-red-600 hover:underline"
+                                  className="text-orange-600 hover:underline"
                                 >
                                   {t('actions.deactivate')}
                                 </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleReactivate(vehicle.id)}
+                                  className="text-green-600 hover:underline"
+                                >
+                                  {t('actions.reactivate')}
+                                </button>
                               )}
+                              <button
+                                onClick={() => handlePermanentDelete(vehicle.id)}
+                                className="text-red-600 hover:underline"
+                              >
+                                {t('actions.delete')}
+                              </button>
                             </>
                           )}
                         </div>
@@ -204,6 +278,19 @@ export function VehicleList() {
             </table>
           </div>
         </div>
+      )}
+
+      {dialog && (
+        <ConfirmDialog
+          isOpen
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          cancelLabel={t('actions.cancel')}
+          variant={dialog.variant}
+          onConfirm={dialog.onConfirm}
+          onCancel={closeDialog}
+        />
       )}
     </div>
   )

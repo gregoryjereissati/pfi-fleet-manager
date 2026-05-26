@@ -49,4 +49,10 @@ export const driverService = {
     if (!driver) throw new AppError(404, 'Driver not found');
     return driverRepository.setInactive(id);
   },
+
+  async hardDeleteDriver(id: string) {
+    const driver = await driverRepository.findById(id);
+    if (!driver) throw new AppError(404, 'Driver not found');
+    return driverRepository.hardDelete(id);
+  },
 };

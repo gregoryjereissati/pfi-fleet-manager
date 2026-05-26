@@ -13,6 +13,7 @@ vi.mock('../../repositories/vehicle.repository', () => ({
     create: vi.fn(),
     update: vi.fn(),
     setInactive: vi.fn(),
+    hardDelete: vi.fn(),
     connectDrivers: vi.fn(),
     disconnectDriver: vi.fn(),
   },
@@ -158,6 +159,26 @@ describe('vehicleService', () => {
 
       expect(result).toEqual(inactiveVehicle);
       expect(vehicleRepository.setInactive).toHaveBeenCalledWith('vehicle-1');
+    });
+  });
+
+  describe('hardDeleteVehicle', () => {
+    it('throws AppError 404 when vehicle does not exist', async () => {
+      vi.mocked(vehicleRepository.findById).mockResolvedValue(null);
+
+      await expect(vehicleService.hardDeleteVehicle('missing')).rejects.toThrow(
+        new AppError(404, 'Vehicle not found'),
+      );
+    });
+
+    it('permanently deletes the vehicle', async () => {
+      vi.mocked(vehicleRepository.findById).mockResolvedValue(mockVehicle);
+      vi.mocked(vehicleRepository.hardDelete).mockResolvedValue(mockVehicle);
+
+      const result = await vehicleService.hardDeleteVehicle('vehicle-1');
+
+      expect(result).toEqual(mockVehicle);
+      expect(vehicleRepository.hardDelete).toHaveBeenCalledWith('vehicle-1');
     });
   });
 

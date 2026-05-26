@@ -66,6 +66,15 @@ export const vehicleController = {
     }
   },
 
+  async permanentDelete(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await vehicleService.hardDeleteVehicle(req.params.id);
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async linkDrivers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const vehicle = await vehicleService.linkDrivers(req.params.id, req.body.driverIds);

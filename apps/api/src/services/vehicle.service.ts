@@ -42,6 +42,12 @@ export const vehicleService = {
     return vehicleRepository.setInactive(id);
   },
 
+  async hardDeleteVehicle(id: string) {
+    const vehicle = await vehicleRepository.findById(id);
+    if (!vehicle) throw new AppError(404, 'Vehicle not found');
+    return vehicleRepository.hardDelete(id);
+  },
+
   async linkDrivers(vehicleId: string, driverIds: string[]) {
     const vehicle = await vehicleRepository.findById(vehicleId);
     if (!vehicle) throw new AppError(404, 'Vehicle not found');

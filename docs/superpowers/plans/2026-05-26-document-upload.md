@@ -1,41 +1,61 @@
-# Document Upload Implementation Plan
+﻿# Document Upload Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Adicionar upload de arquivo aos documentos, filtrar tipos por entidade, exibir documentos nas páginas de detalhe do veículo e do motorista, e criar a página DriverDetail.
+**Goal:** Adicionar upload de arquivo aos documentos, filtrar tipos por entidade, exibir documentos nas pÃ¡ginas de detalhe do veÃ­culo e do motorista, e criar a pÃ¡gina DriverDetail.
 
-**Architecture:** Upload feito direto do browser para o Supabase Storage (client-side); backend recebe e persiste apenas a URL resultante via campo `fileUrl` no model `Document`. DriverDetail segue o padrão visual de VehicleDetail.
+**Architecture:** Upload feito direto do browser para o Supabase Storage (client-side); backend recebe e persiste apenas a URL resultante via campo `fileUrl` no model `Document`. DriverDetail segue o padrÃ£o visual de VehicleDetail.
 
 **Tech Stack:** React, TypeScript, Prisma, Supabase Storage (`@supabase/supabase-js`), react-i18next, TailwindCSS
 
+**Status em 2026-05-26:** implementação concluída e verificações passando. Os passos de commit ficaram desmarcados porque o worktree já tinha alterações pendentes misturadas antes da continuação.
+
 ---
 
-## Pré-requisito manual (fazer antes de rodar qualquer task)
+## PrÃ©-requisito manual (fazer antes de rodar qualquer task)
 
 No painel do Supabase:
-1. Ir em **Storage** → **New bucket**
+1. Ir em **Storage** â†’ **New bucket**
 2. Nome: `documents`, marcar como **Public**
-3. Copiar `Project URL` e `anon public key` do painel **Project Settings → API**
+3. Copiar `Project URL` e `anon public key` do painel **Project Settings â†’ API**
+4. Ir em **SQL Editor** e aplicar a policy de upload:
+
+```sql
+alter table storage.objects enable row level security;
+
+drop policy if exists "Allow anon document uploads" on storage.objects;
+
+create policy "Allow anon document uploads"
+on storage.objects
+for insert
+to anon
+with check (
+  bucket_id = 'documents'
+  and storage.extension(name) in ('jpg', 'jpeg', 'png', 'webp', 'pdf')
+);
+```
+
+> Observação: como o app usa autenticação própria com JWT local, o Supabase Storage recebe uploads do browser com a role `anon`. Sem essa policy, o erro exibido é `new row violates row-level security policy`.
 
 ---
 
 ## Mapa de arquivos
 
-| Arquivo | Ação |
+| Arquivo | AÃ§Ã£o |
 |---|---|
 | `apps/api/prisma/schema.prisma` | Adicionar `fileUrl String?` ao model Document |
 | `apps/api/prisma/migrations/` | Nova migration gerada pelo prisma |
 | `packages/shared/src/dtos/document.dto.ts` | Adicionar `fileUrl` ao `DocumentDto`, `CreateDocumentDto`, `UpdateDocumentDto` |
-| `apps/api/src/repositories/document.repository.ts` | Adicionar `fileUrl` às interfaces e ao `mapDocument` |
+| `apps/api/src/repositories/document.repository.ts` | Adicionar `fileUrl` Ã s interfaces e ao `mapDocument` |
 | `apps/web/.env` e `.env.example` | Adicionar `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` |
-| `apps/web/src/lib/supabase.ts` | Criar — cliente Supabase + função `uploadDocumentFile` |
-| `apps/web/src/components/FilePreviewModal.tsx` | Criar — modal de preview de arquivo |
+| `apps/web/src/lib/supabase.ts` | Criar â€” cliente Supabase + funÃ§Ã£o `uploadDocumentFile` |
+| `apps/web/src/components/FilePreviewModal.tsx` | Criar â€” modal de preview de arquivo |
 | `apps/web/src/locales/pt-BR.json` | Adicionar chaves novas |
 | `apps/web/src/locales/en-US.json` | Adicionar chaves novas |
 | `apps/web/src/pages/DocumentForm.tsx` | Filtro de tipos + upload + query params |
-| `apps/web/src/pages/DocumentList.tsx` | Botão "Ver arquivo" + FilePreviewModal |
-| `apps/web/src/pages/VehicleDetail.tsx` | Seção de documentos |
-| `apps/web/src/pages/DriverDetail.tsx` | Criar — nova página |
+| `apps/web/src/pages/DocumentList.tsx` | BotÃ£o "Ver arquivo" + FilePreviewModal |
+| `apps/web/src/pages/VehicleDetail.tsx` | SeÃ§Ã£o de documentos |
+| `apps/web/src/pages/DriverDetail.tsx` | Criar â€” nova pÃ¡gina |
 | `apps/web/src/pages/DriverList.tsx` | Adicionar link "Ver detalhes" |
 | `apps/web/src/App.tsx` | Adicionar rota `/drivers/:id` |
 | `CLAUDE.md` | Atualizar estado do projeto |
@@ -49,9 +69,9 @@ No painel do Supabase:
 - Modify: `packages/shared/src/dtos/document.dto.ts`
 - Modify: `apps/api/src/repositories/document.repository.ts`
 
-- [ ] **Step 1: Adicionar `fileUrl` ao schema Prisma**
+- [x] **Step 1: Adicionar `fileUrl` ao schema Prisma**
 
-Em `apps/api/prisma/schema.prisma`, no model `Document`, adicionar o campo após `expiryDate`:
+Em `apps/api/prisma/schema.prisma`, no model `Document`, adicionar o campo apÃ³s `expiryDate`:
 
 ```prisma
 model Document {
@@ -68,18 +88,18 @@ model Document {
 }
 ```
 
-- [ ] **Step 2: Rodar migration**
+- [x] **Step 2: Rodar migration**
 
 ```bash
 cd apps/api
 npx prisma migrate dev --name add_file_url_to_document
 ```
 
-Saída esperada: `Your database is now in sync with your schema.`
+SaÃ­da esperada: `Your database is now in sync with your schema.`
 
-- [ ] **Step 3: Atualizar `DocumentDto` no shared**
+- [x] **Step 3: Atualizar `DocumentDto` no shared**
 
-Substituir o conteúdo de `packages/shared/src/dtos/document.dto.ts`:
+Substituir o conteÃºdo de `packages/shared/src/dtos/document.dto.ts`:
 
 ```typescript
 import { DocumentType } from '../enums';
@@ -115,7 +135,7 @@ export interface UpdateDocumentDto {
 }
 ```
 
-- [ ] **Step 4: Atualizar `document.repository.ts`**
+- [x] **Step 4: Atualizar `document.repository.ts`**
 
 No topo do arquivo, nas interfaces, adicionar `fileUrl`:
 
@@ -135,7 +155,7 @@ export interface UpdateDocumentData {
 }
 ```
 
-Na função `mapDocument`, atualizar o tipo do parâmetro e o retorno:
+Na funÃ§Ã£o `mapDocument`, atualizar o tipo do parÃ¢metro e o retorno:
 
 ```typescript
 function mapDocument(document: {
@@ -166,22 +186,22 @@ function mapDocument(document: {
 }
 ```
 
-- [ ] **Step 5: Verificar que os testes continuam passando**
+- [x] **Step 5: Verificar que os testes continuam passando**
 
 ```bash
 cd apps/api
 npm run test
 ```
 
-Saída esperada: todos os testes passam (nenhum teste depende da ausência de `fileUrl`).
+SaÃ­da esperada: todos os testes passam (nenhum teste depende da ausÃªncia de `fileUrl`).
 
-- [ ] **Step 6: Verificar typecheck**
+- [x] **Step 6: Verificar typecheck**
 
 ```bash
 cd apps/api && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 7: Commit**
 
@@ -199,14 +219,14 @@ git commit -m "feat(api): add fileUrl field to Document model and repository"
 - Modify: `apps/web/.env.example`
 - Create: `apps/web/src/lib/supabase.ts`
 
-- [ ] **Step 1: Instalar `@supabase/supabase-js`**
+- [x] **Step 1: Instalar `@supabase/supabase-js`**
 
 ```bash
 cd apps/web
 npm install @supabase/supabase-js
 ```
 
-- [ ] **Step 2: Adicionar variáveis de ambiente**
+- [x] **Step 2: Adicionar variÃ¡veis de ambiente**
 
 Em `apps/web/.env`, adicionar:
 
@@ -222,7 +242,7 @@ VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-public-key>
 ```
 
-- [ ] **Step 3: Criar `apps/web/src/lib/supabase.ts`**
+- [x] **Step 3: Criar `apps/web/src/lib/supabase.ts`**
 
 ```typescript
 import { createClient } from '@supabase/supabase-js'
@@ -247,13 +267,13 @@ export async function uploadDocumentFile(file: File, entityId: string): Promise<
 }
 ```
 
-- [ ] **Step 4: Verificar typecheck**
+- [x] **Step 4: Verificar typecheck**
 
 ```bash
 cd apps/web && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 5: Commit**
 
@@ -264,15 +284,15 @@ git commit -m "feat(web): add Supabase Storage client and upload utility"
 
 ---
 
-## Task 3: Traduções (i18n)
+## Task 3: TraduÃ§Ãµes (i18n)
 
 **Files:**
 - Modify: `apps/web/src/locales/pt-BR.json`
 - Modify: `apps/web/src/locales/en-US.json`
 
-- [ ] **Step 1: Adicionar chaves em `pt-BR.json`**
+- [x] **Step 1: Adicionar chaves em `pt-BR.json`**
 
-No bloco de `"documents"`, adicionar (manter ordenação alfabética dentro do bloco):
+No bloco de `"documents"`, adicionar (manter ordenaÃ§Ã£o alfabÃ©tica dentro do bloco):
 
 ```json
 "documents.preview.openInTab": "Abrir em nova aba",
@@ -289,25 +309,25 @@ No bloco de `"drivers"`, adicionar:
 ```json
 "drivers.detail.documents": "Documentos do motorista",
 "drivers.detail.noDocuments": "Nenhum documento cadastrado.",
-"drivers.detail.vehicles": "Veículos vinculados",
-"drivers.detail.noVehicles": "Nenhum veículo vinculado.",
+"drivers.detail.vehicles": "VeÃ­culos vinculados",
+"drivers.detail.noVehicles": "Nenhum veÃ­culo vinculado.",
 "drivers.viewDetail": "Ver detalhes",
 ```
 
 No bloco de `"vehicles"`, adicionar:
 
 ```json
-"vehicles.detail.documents": "Documentos do veículo",
+"vehicles.detail.documents": "Documentos do veÃ­culo",
 "vehicles.detail.noDocuments": "Nenhum documento cadastrado.",
 ```
 
-No bloco de `"actions"`, verificar se `"actions.close"` existe. Se não, adicionar:
+No bloco de `"actions"`, verificar se `"actions.close"` existe. Se nÃ£o, adicionar:
 
 ```json
 "actions.close": "Fechar",
 ```
 
-- [ ] **Step 2: Adicionar as mesmas chaves em `en-US.json`**
+- [x] **Step 2: Adicionar as mesmas chaves em `en-US.json`**
 
 ```json
 "documents.preview.openInTab": "Open in new tab",
@@ -327,7 +347,7 @@ No bloco de `"actions"`, verificar se `"actions.close"` existe. Se não, adicion
 "actions.close": "Close",
 ```
 
-(Adicionar `"actions.close"` apenas se não existir.)
+(Adicionar `"actions.close"` apenas se nÃ£o existir.)
 
 - [ ] **Step 3: Commit**
 
@@ -343,7 +363,7 @@ git commit -m "feat(web): add i18n keys for document upload, preview, and driver
 **Files:**
 - Create: `apps/web/src/components/FilePreviewModal.tsx`
 
-- [ ] **Step 1: Criar o componente**
+- [x] **Step 1: Criar o componente**
 
 Criar `apps/web/src/components/FilePreviewModal.tsx`:
 
@@ -408,13 +428,13 @@ export function FilePreviewModal({ isOpen, fileUrl, onClose }: FilePreviewModalP
 }
 ```
 
-- [ ] **Step 2: Verificar typecheck**
+- [x] **Step 2: Verificar typecheck**
 
 ```bash
 cd apps/web && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 3: Commit**
 
@@ -425,12 +445,12 @@ git commit -m "feat(web): add FilePreviewModal component for document file previ
 
 ---
 
-## Task 5: `DocumentForm` — filtro de tipos, query params e upload
+## Task 5: `DocumentForm` â€” filtro de tipos, query params e upload
 
 **Files:**
 - Modify: `apps/web/src/pages/DocumentForm.tsx`
 
-- [ ] **Step 1: Substituir o conteúdo completo de `DocumentForm.tsx`**
+- [x] **Step 1: Substituir o conteÃºdo completo de `DocumentForm.tsx`**
 
 ```tsx
 import { useEffect, useRef, useState } from 'react'
@@ -778,13 +798,13 @@ export function DocumentForm() {
 }
 ```
 
-- [ ] **Step 2: Verificar typecheck**
+- [x] **Step 2: Verificar typecheck**
 
 ```bash
 cd apps/web && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 3: Commit**
 
@@ -795,12 +815,12 @@ git commit -m "feat(web): filter document types by entity and add file upload to
 
 ---
 
-## Task 6: `DocumentList` — botão "Ver arquivo"
+## Task 6: `DocumentList` â€” botÃ£o "Ver arquivo"
 
 **Files:**
 - Modify: `apps/web/src/pages/DocumentList.tsx`
 
-- [ ] **Step 1: Adicionar import e state do modal**
+- [x] **Step 1: Adicionar import e state do modal**
 
 No topo de `DocumentList.tsx`, adicionar o import:
 
@@ -814,9 +834,9 @@ Dentro do componente `DocumentList`, adicionar o estado do modal de preview (jun
 const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 ```
 
-- [ ] **Step 2: Adicionar botão "Ver arquivo" na coluna de ações**
+- [x] **Step 2: Adicionar botÃ£o "Ver arquivo" na coluna de aÃ§Ãµes**
 
-Localizar o bloco de ações da linha da tabela:
+Localizar o bloco de aÃ§Ãµes da linha da tabela:
 
 ```tsx
 {canMutate ? (
@@ -873,9 +893,9 @@ Substituir por:
 </div>
 ```
 
-- [ ] **Step 3: Adicionar `FilePreviewModal` no final do JSX**
+- [x] **Step 3: Adicionar `FilePreviewModal` no final do JSX**
 
-Após o `ConfirmDialog` existente no return, adicionar:
+ApÃ³s o `ConfirmDialog` existente no return, adicionar:
 
 ```tsx
 {previewUrl && (
@@ -887,13 +907,13 @@ Após o `ConfirmDialog` existente no return, adicionar:
 )}
 ```
 
-- [ ] **Step 4: Verificar typecheck**
+- [x] **Step 4: Verificar typecheck**
 
 ```bash
 cd apps/web && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 5: Commit**
 
@@ -904,12 +924,12 @@ git commit -m "feat(web): add view file button and preview modal to DocumentList
 
 ---
 
-## Task 7: `VehicleDetail` — seção de documentos
+## Task 7: `VehicleDetail` â€” seÃ§Ã£o de documentos
 
 **Files:**
 - Modify: `apps/web/src/pages/VehicleDetail.tsx`
 
-- [ ] **Step 1: Adicionar imports**
+- [x] **Step 1: Adicionar imports**
 
 No topo de `VehicleDetail.tsx`, adicionar:
 
@@ -920,9 +940,9 @@ import { useDocuments } from '@/hooks/useDocuments'
 import { FilePreviewModal } from '@/components/FilePreviewModal'
 ```
 
-- [ ] **Step 2: Adicionar estado do modal e hook de documentos**
+- [x] **Step 2: Adicionar estado do modal e hook de documentos**
 
-Dentro do componente `VehicleDetail`, após as outras declarações de estado/hooks:
+Dentro do componente `VehicleDetail`, apÃ³s as outras declaraÃ§Ãµes de estado/hooks:
 
 ```tsx
 const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -933,9 +953,9 @@ const { documents, loading: loadingDocuments } = useDocuments({
 })
 ```
 
-- [ ] **Step 3: Adicionar função helper de status de documentos**
+- [x] **Step 3: Adicionar funÃ§Ã£o helper de status de documentos**
 
-Após os hooks, antes do `return`:
+ApÃ³s os hooks, antes do `return`:
 
 ```tsx
 function getDocStatusClasses(status: DocumentStatus) {
@@ -945,9 +965,9 @@ function getDocStatusClasses(status: DocumentStatus) {
 }
 ```
 
-- [ ] **Step 4: Adicionar seção de documentos no JSX**
+- [x] **Step 4: Adicionar seÃ§Ã£o de documentos no JSX**
 
-Adicionar após a seção `vehicles.latestMaintenances` (antes do `</div>` final do return):
+Adicionar apÃ³s a seÃ§Ã£o `vehicles.latestMaintenances` (antes do `</div>` final do return):
 
 ```tsx
 <section className="rounded-lg border border-gray-200 bg-white p-4">
@@ -1012,7 +1032,7 @@ Adicionar após a seção `vehicles.latestMaintenances` (antes do `</div>` final
 </section>
 ```
 
-- [ ] **Step 5: Adicionar `FilePreviewModal` no return**
+- [x] **Step 5: Adicionar `FilePreviewModal` no return**
 
 Antes do `</div>` final do return:
 
@@ -1026,13 +1046,13 @@ Antes do `</div>` final do return:
 )}
 ```
 
-- [ ] **Step 6: Verificar typecheck**
+- [x] **Step 6: Verificar typecheck**
 
 ```bash
 cd apps/web && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 7: Commit**
 
@@ -1048,7 +1068,7 @@ git commit -m "feat(web): add documents section to VehicleDetail"
 **Files:**
 - Create: `apps/web/src/pages/DriverDetail.tsx`
 
-- [ ] **Step 1: Criar o arquivo**
+- [x] **Step 1: Criar o arquivo**
 
 Criar `apps/web/src/pages/DriverDetail.tsx`:
 
@@ -1109,7 +1129,7 @@ export function DriverDetail() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{driver.name}</h1>
             <p className="text-gray-500">
-              CPF {formatCpf(driver.cpf)} • CNH {driver.cnh}
+              CPF {formatCpf(driver.cpf)} â€¢ CNH {driver.cnh}
             </p>
             {driver.phone && (
               <p className="text-sm text-gray-500">{driver.phone}</p>
@@ -1234,13 +1254,13 @@ export function DriverDetail() {
 }
 ```
 
-- [ ] **Step 2: Verificar typecheck**
+- [x] **Step 2: Verificar typecheck**
 
 ```bash
 cd apps/web && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 3: Commit**
 
@@ -1257,9 +1277,9 @@ git commit -m "feat(web): add DriverDetail page with vehicles and documents sect
 - Modify: `apps/web/src/pages/DriverList.tsx`
 - Modify: `apps/web/src/App.tsx`
 
-- [ ] **Step 1: Adicionar link "Ver detalhes" na `DriverList`**
+- [x] **Step 1: Adicionar link "Ver detalhes" na `DriverList`**
 
-Em `DriverList.tsx`, localizar o bloco de ações de cada linha. Atualmente existe:
+Em `DriverList.tsx`, localizar o bloco de aÃ§Ãµes de cada linha. Atualmente existe:
 
 ```tsx
 <div className="flex flex-wrap items-center gap-3">
@@ -1267,7 +1287,7 @@ Em `DriverList.tsx`, localizar o bloco de ações de cada linha. Atualmente exis
     to={`/drivers/${driver.id}/edit`}
 ```
 
-Adicionar o link "Ver detalhes" antes do link de edição:
+Adicionar o link "Ver detalhes" antes do link de ediÃ§Ã£o:
 
 ```tsx
 <div className="flex flex-wrap items-center gap-3">
@@ -1281,7 +1301,7 @@ Adicionar o link "Ver detalhes" antes do link de edição:
     to={`/drivers/${driver.id}/edit`}
 ```
 
-- [ ] **Step 2: Adicionar rota em `App.tsx`**
+- [x] **Step 2: Adicionar rota em `App.tsx`**
 
 Em `App.tsx`, adicionar o import:
 
@@ -1289,15 +1309,15 @@ Em `App.tsx`, adicionar o import:
 import { DriverDetail } from '@/pages/DriverDetail'
 ```
 
-Após a linha `<Route path="/drivers/:id/edit" element={<DriverForm />} />`, adicionar:
+ApÃ³s a linha `<Route path="/drivers/:id/edit" element={<DriverForm />} />`, adicionar:
 
 ```tsx
 <Route path="/drivers/:id" element={<DriverDetail />} />
 ```
 
-- [ ] **Step 3: Adicionar tradução `actions.backToDrivers`**
+- [x] **Step 3: Adicionar traduÃ§Ã£o `actions.backToDrivers`**
 
-Em `pt-BR.json`, adicionar (verificar se já existe):
+Em `pt-BR.json`, adicionar (verificar se jÃ¡ existe):
 
 ```json
 "actions.backToDrivers": "Voltar para motoristas",
@@ -1309,13 +1329,13 @@ Em `en-US.json`:
 "actions.backToDrivers": "Back to drivers",
 ```
 
-- [ ] **Step 4: Verificar typecheck**
+- [x] **Step 4: Verificar typecheck**
 
 ```bash
 cd apps/web && npx tsc --noEmit
 ```
 
-Saída esperada: sem erros.
+SaÃ­da esperada: sem erros.
 
 - [ ] **Step 5: Commit**
 
@@ -1331,39 +1351,39 @@ git commit -m "feat(web): add DriverDetail route and view-detail link in DriverL
 **Files:**
 - Modify: `CLAUDE.md`
 
-- [ ] **Step 1: Atualizar data de "Última atualização"**
+- [x] **Step 1: Atualizar data de "Ãšltima atualizaÃ§Ã£o"**
 
 Alterar a linha:
 
 ```
-> **Última atualização:** 2026-05-14 ...
+> **Ãšltima atualizaÃ§Ã£o:** 2026-05-14 ...
 ```
 
 Para:
 
 ```
-> **Última atualização:** 2026-05-26 (upload de arquivos nos documentos, filtro de tipos por entidade, DriverDetail, seção de documentos em VehicleDetail e DriverDetail)
+> **Ãšltima atualizaÃ§Ã£o:** 2026-05-26 (upload de arquivos nos documentos, filtro de tipos por entidade, DriverDetail, seÃ§Ã£o de documentos em VehicleDetail e DriverDetail)
 ```
 
-- [ ] **Step 2: Marcar os itens como concluídos e adicionar registro no histórico**
+- [x] **Step 2: Marcar os itens como concluÃ­dos e adicionar registro no histÃ³rico**
 
-Na seção "Ajustes pos-MVP", adicionar:
+Na seÃ§Ã£o "Ajustes pos-MVP", adicionar:
 
 ```markdown
-- [x] **Feature: upload de arquivo + melhorias no módulo de documentos**
+- [x] **Feature: upload de arquivo + melhorias no mÃ³dulo de documentos**
   - Campo `fileUrl` adicionado ao model `Document` (migration aplicada)
   - Upload direto para Supabase Storage via `@supabase/supabase-js`
-  - `DocumentForm` filtra tipos por entidade (veículo vs motorista) e aceita upload de imagem/PDF
-  - `DocumentList` exibe botão "Ver arquivo" com `FilePreviewModal`
-  - `VehicleDetail` ganhou seção de documentos com preview
-  - `DriverDetail` criado com seções de veículos vinculados e documentos
+  - `DocumentForm` filtra tipos por entidade (veÃ­culo vs motorista) e aceita upload de imagem/PDF
+  - `DocumentList` exibe botÃ£o "Ver arquivo" com `FilePreviewModal`
+  - `VehicleDetail` ganhou seÃ§Ã£o de documentos com preview
+  - `DriverDetail` criado com seÃ§Ãµes de veÃ­culos vinculados e documentos
   - `DriverList` ganhou link "Ver detalhes"
 ```
 
-No histórico de implementação, adicionar linha:
+No histÃ³rico de implementaÃ§Ã£o, adicionar linha:
 
 ```
-| 2026-05-26 | Claude | Feature: upload de arquivo e melhorias em documentos | fileUrl no schema, Supabase Storage client-side, FilePreviewModal, DocumentForm com filtro de tipos, VehicleDetail e DriverDetail com seção de documentos |
+| 2026-05-26 | Claude | Feature: upload de arquivo e melhorias em documentos | fileUrl no schema, Supabase Storage client-side, FilePreviewModal, DocumentForm com filtro de tipos, VehicleDetail e DriverDetail com seÃ§Ã£o de documentos |
 ```
 
 - [ ] **Step 3: Commit**

@@ -6,7 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export async function uploadDocumentFile(file: File, entityId: string): Promise<string> {
-  const ext = file.name.split('.').pop() ?? 'bin'
+  const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase()
   const path = `documents/${entityId}/${crypto.randomUUID()}.${ext}`
 
   const { error } = await supabase.storage.from('documents').upload(path, file)

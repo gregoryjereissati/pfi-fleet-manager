@@ -8,6 +8,9 @@ import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+
+type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
 function formatMoney(value: string) {
   return Number(value).toLocaleString('pt-BR', {
@@ -25,6 +28,13 @@ export function ExpenseList() {
   const [type, setType] = useState<ExpenseType | ''>('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [dialog, setDialog] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    variant: ConfirmDialogVariant
+    onConfirm: () => void
+  } | null>(null)
 
   const canDelete = canManageFleet(currentUser?.role)
 
@@ -35,16 +45,27 @@ export function ExpenseList() {
     endDate: endDate || undefined,
   })
 
-  async function handleDelete(id: string) {
-    if (!window.confirm(t('expenses.deleteConfirm'))) return
+  function closeDialog() {
+    setDialog(null)
+  }
 
-    try {
-      const token = await getToken()
-      await apiFetch(`/expenses/${id}`, token, { method: 'DELETE' })
-      reload()
-    } catch (err) {
-      window.alert((err as Error).message)
-    }
+  function handleDelete(id: string) {
+    setDialog({
+      title: t('actions.delete'),
+      message: t('expenses.deleteConfirm'),
+      confirmLabel: t('actions.delete'),
+      variant: 'danger',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/expenses/${id}`, token, { method: 'DELETE' })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
   }
 
   return (
@@ -160,6 +181,19 @@ export function ExpenseList() {
             </table>
           </div>
         </div>
+      )}
+
+      {dialog && (
+        <ConfirmDialog
+          isOpen
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          cancelLabel={t('actions.cancel')}
+          variant={dialog.variant}
+          onConfirm={dialog.onConfirm}
+          onCancel={closeDialog}
+        />
       )}
     </div>
   )

@@ -7,6 +7,9 @@ import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+
+type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
 function formatCpf(cpf: string) {
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
@@ -25,6 +28,13 @@ export function DriverList() {
   const { currentUser } = useCurrentUser()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [dialog, setDialog] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    variant: ConfirmDialogVariant
+    onConfirm: () => void
+  } | null>(null)
 
   const canMutate = canManageFleet(currentUser?.role)
   const { drivers, loading, error, reload } = useDrivers({
@@ -32,16 +42,46 @@ export function DriverList() {
     status: status || undefined,
   })
 
-  async function handleDeactivate(id: string) {
-    if (!window.confirm(t('drivers.deactivateConfirm'))) return
+  function closeDialog() {
+    setDialog(null)
+  }
 
-    try {
-      const token = await getToken()
-      await apiFetch(`/drivers/${id}`, token, { method: 'DELETE' })
-      reload()
-    } catch (err) {
-      window.alert((err as Error).message)
-    }
+  function handleDeactivate(id: string) {
+    setDialog({
+      title: t('actions.deactivate'),
+      message: t('drivers.deactivateConfirm'),
+      confirmLabel: t('actions.deactivate'),
+      variant: 'warning',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/drivers/${id}`, token, { method: 'DELETE' })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
+  }
+
+  function handlePermanentDelete(id: string) {
+    setDialog({
+      title: t('actions.delete'),
+      message: t('drivers.deleteConfirm'),
+      confirmLabel: t('actions.delete'),
+      variant: 'danger',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/drivers/${id}/permanent`, token, { method: 'DELETE' })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
   }
 
   return (
@@ -133,8 +173,15 @@ export function DriverList() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          {canMutate && (
-                            <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <Link
+                              to={`/drivers/${driver.id}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {t('drivers.viewDetail')}
+                            </Link>
+                            {canMutate && (
+                              <>
                               <Link
                                 to={`/drivers/${driver.id}/edit`}
                                 className="text-gray-700 hover:underline"
@@ -144,13 +191,20 @@ export function DriverList() {
                               {driver.status === DriverStatus.ACTIVE && (
                                 <button
                                   onClick={() => handleDeactivate(driver.id)}
-                                  className="text-red-600 hover:underline"
+                                  className="text-orange-600 hover:underline"
                                 >
                                   {t('actions.deactivate')}
                                 </button>
                               )}
-                            </div>
-                          )}
+                              <button
+                                onClick={() => handlePermanentDelete(driver.id)}
+                                className="text-red-600 hover:underline"
+                              >
+                                {t('actions.delete')}
+                              </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     )
@@ -160,6 +214,19 @@ export function DriverList() {
             </table>
           </div>
         </div>
+      )}
+
+      {dialog && (
+        <ConfirmDialog
+          isOpen
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          cancelLabel={t('actions.cancel')}
+          variant={dialog.variant}
+          onConfirm={dialog.onConfirm}
+          onCancel={closeDialog}
+        />
       )}
     </div>
   )

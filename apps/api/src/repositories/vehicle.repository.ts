@@ -105,6 +105,10 @@ export const vehicleRepository = {
     });
   },
 
+  hardDelete(id: string) {
+    return prisma.vehicle.delete({ where: { id } });
+  },
+
   connectDrivers(vehicleId: string, driverIds: string[]) {
     return prisma.vehicle.update({
       where: { id: vehicleId },

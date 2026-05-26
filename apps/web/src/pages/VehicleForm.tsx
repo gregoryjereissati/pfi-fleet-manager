@@ -21,6 +21,12 @@ const initialForm: VehicleFormState = {
   color: '',
 }
 
+const uppercaseFields: (keyof VehicleFormState)[] = ['plate', 'brand', 'model', 'color']
+
+function normalizeVehicleText(value: string) {
+  return value.toUpperCase()
+}
+
 export function VehicleForm() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
@@ -49,11 +55,11 @@ export function VehicleForm() {
         if (cancelled) return
 
         setForm({
-          plate: vehicle.plate,
-          brand: vehicle.brand,
-          model: vehicle.model,
+          plate: normalizeVehicleText(vehicle.plate),
+          brand: normalizeVehicleText(vehicle.brand),
+          model: normalizeVehicleText(vehicle.model),
           year: String(vehicle.year),
-          color: vehicle.color,
+          color: normalizeVehicleText(vehicle.color),
         })
       } catch (err) {
         if (!cancelled) setError((err as Error).message)
@@ -70,7 +76,8 @@ export function VehicleForm() {
   }, [getToken, id, isEdit])
 
   function updateField<Key extends keyof VehicleFormState>(key: Key, value: VehicleFormState[Key]) {
-    setForm((current) => ({ ...current, [key]: value }))
+    const normalized = uppercaseFields.includes(key) ? normalizeVehicleText(value) : value
+    setForm((current) => ({ ...current, [key]: normalized }))
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -88,11 +95,11 @@ export function VehicleForm() {
 
       const token = await getToken()
       const payload = {
-        plate: form.plate.trim(),
-        brand: form.brand.trim(),
-        model: form.model.trim(),
+        plate: normalizeVehicleText(form.plate.trim()),
+        brand: normalizeVehicleText(form.brand.trim()),
+        model: normalizeVehicleText(form.model.trim()),
         year,
-        color: form.color.trim(),
+        color: normalizeVehicleText(form.color.trim()),
       }
 
       if (isEdit && id) {

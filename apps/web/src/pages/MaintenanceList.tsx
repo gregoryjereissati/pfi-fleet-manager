@@ -8,6 +8,9 @@ import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+
+type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
 function getStatusClasses(status: MaintenanceStatus) {
   if (status === MaintenanceStatus.DONE) return 'bg-green-100 text-green-700'
@@ -23,6 +26,13 @@ export function MaintenanceList() {
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<MaintenanceType | ''>('')
   const [status, setStatus] = useState<MaintenanceStatus | ''>('')
+  const [dialog, setDialog] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    variant: ConfirmDialogVariant
+    onConfirm: () => void
+  } | null>(null)
 
   const canDelete = canManageFleet(currentUser?.role)
 
@@ -32,16 +42,27 @@ export function MaintenanceList() {
     status,
   })
 
-  async function handleDelete(id: string) {
-    if (!window.confirm(t('maintenances.deleteConfirm'))) return
+  function closeDialog() {
+    setDialog(null)
+  }
 
-    try {
-      const token = await getToken()
-      await apiFetch(`/maintenances/${id}`, token, { method: 'DELETE' })
-      reload()
-    } catch (err) {
-      window.alert((err as Error).message)
-    }
+  function handleDelete(id: string) {
+    setDialog({
+      title: t('actions.delete'),
+      message: t('maintenances.deleteConfirm'),
+      confirmLabel: t('actions.delete'),
+      variant: 'danger',
+      onConfirm: async () => {
+        closeDialog()
+        try {
+          const token = await getToken()
+          await apiFetch(`/maintenances/${id}`, token, { method: 'DELETE' })
+          reload()
+        } catch (err) {
+          window.alert((err as Error).message)
+        }
+      },
+    })
   }
 
   async function handleStatusChange(id: string, nextStatus: MaintenanceStatus) {
@@ -200,6 +221,19 @@ export function MaintenanceList() {
             </table>
           </div>
         </div>
+      )}
+
+      {dialog && (
+        <ConfirmDialog
+          isOpen
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          cancelLabel={t('actions.cancel')}
+          variant={dialog.variant}
+          onConfirm={dialog.onConfirm}
+          onCancel={closeDialog}
+        />
       )}
     </div>
   )
