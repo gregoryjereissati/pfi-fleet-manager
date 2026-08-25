@@ -1,68 +1,269 @@
-# Fleet Manager – Sistema de Gestão Inteligente de Frotas
+<div align="center">
 
-> **Projeto Final Integrador I (PFI) — 2026**
-> Universidade de Fortaleza – UNIFOR | Centro de Ciências Tecnológicas | Curso de Ciência da Computação
-> Código do Projeto: `FM-PFI-2026`
+# Fleet Manager
 
----
+**Sistema de Gestão Inteligente de Frotas**
 
-## 📋 Sobre o Projeto
+Projeto Final Integrador I (PFI I) · Universidade de Fortaleza — UNIFOR
+Centro de Ciências Tecnológicas · Curso de Ciência da Computação · 2026
 
-O **Fleet Manager** é um sistema web para gestão inteligente de frotas, desenvolvido como Trabalho de Conclusão de Curso (TCC). O sistema centraliza o controle operacional, financeiro e documental de veículos, proporcionando maior previsibilidade de custos, redução de riscos legais e apoio à tomada de decisão estratégica.
+`FM-PFI-2026`
 
----
-
-## 🎯 Objetivos
-
-- Cadastro de veículos, motoristas e usuários
-- Registro de despesas vinculadas aos veículos (combustível, manutenção, multas, IPVA, seguros)
-- Controle de manutenções preventivas e corretivas
-- Monitoramento de vencimento de documentos com alertas automáticos
-- Dashboard com indicadores financeiros (custo por veículo, evolução mensal de despesas)
-- Controle de acesso por perfil de usuário (RBAC)
+</div>
 
 ---
 
-## 🏗️ Arquitetura
+## Sobre o projeto
 
-A solução adota **TypeScript full-stack** com a seguinte estrutura:
+O Fleet Manager é uma aplicação web que centraliza o controle **operacional, financeiro e documental** de frotas de veículos. O sistema reúne, em uma base de dados única, informações que normalmente ficam dispersas entre planilhas e registros paralelos, organizando-as em torno da entidade que efetivamente as conecta: o veículo.
+
+📄 **Documento principal da entrega:** [`docs/01-descricao-do-problema-e-escopo.md`](docs/01-descricao-do-problema-e-escopo.md)
+
+---
+
+## Problema
+
+Organizações que operam frotas de pequeno e médio porte — tipicamente de 5 a 50 veículos — administram o controle de custos, manutenções e documentação de forma descentralizada, distribuída entre planilhas isoladas e controles manuais.
+
+Como consequência, a organização não dispõe de uma visão consolidada do custo, da condição operacional e da regularidade documental de cada veículo, e passa a agir de forma reativa diante de eventos previsíveis: multas por documentação vencida, manutenções preventivas esquecidas e custo operacional que nunca é apurado por veículo.
+
+O problema não está na ausência de informação, mas na sua **fragmentação** e na **ausência de acompanhamento ativo de prazos**.
+
+---
+
+## Solução proposta
+
+O Fleet Manager ataca o problema por quatro mecanismos:
+
+1. **Centralização em torno do veículo** — toda despesa, manutenção e documento é obrigatoriamente vinculado a um veículo, garantido por integridade referencial no banco.
+2. **Acompanhamento ativo de prazos** — o sistema classifica automaticamente a situação de vencimento de documentos e manutenções e os consolida em uma central de alertas.
+3. **Consolidação analítica** — um painel apura custo total, custo médio, custo por veículo, evolução mensal e distribuição por categoria, com filtros.
+4. **Controle de acesso por perfil** — três perfis distintos separam o registro operacional da decisão gerencial.
+
+---
+
+## Funcionalidades
+
+| Módulo | Situação |
+|---|---|
+| Autenticação por e-mail e senha com JWT | ✅ Implementado |
+| Controle de acesso por perfil (ADMIN, MANAGER, OPERATOR) | ✅ Implementado |
+| Aprovação e bloqueio de contas de usuário | ✅ Implementado |
+| Cadastro de veículos, com desativação e exclusão permanente | ✅ Implementado |
+| Cadastro de motoristas e vínculo com veículos | ✅ Implementado |
+| Registro de despesas em 6 categorias, com filtros | ✅ Implementado |
+| Manutenções preventivas e corretivas | ✅ Implementado |
+| Documentos com vencimento e anexo de arquivo | ✅ Implementado |
+| Central de alertas de vencimento | ✅ Implementado |
+| Painel de indicadores com filtros e gráficos | ✅ Implementado |
+| Gestão de usuários e perfil próprio | ✅ Implementado |
+| Interface em português e inglês | ✅ Implementado |
+| **Publicação em produção** | ⏳ Pendente |
+
+O detalhamento por funcionalidade, com evidência no código, está em [`docs/06-status-de-desenvolvimento.md`](docs/06-status-de-desenvolvimento.md).
+
+---
+
+## Stack
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | React.js (hospedado na Vercel) |
-| Backend | Node.js (API REST) |
-| Banco de Dados | PostgreSQL (Supabase) |
-| Cache / Filas | Redis |
-| Autenticação | JWT próprio + e-mail/senha |
-| Deploy Backend | AWS ECS |
-| Controle de Acesso | RBAC (Administrador, Gestor, Operador) |
+| Linguagem | TypeScript |
+| Frontend | React 18 · Vite · React Router · TailwindCSS · Recharts · i18next |
+| Backend | Node.js · Express 4 |
+| ORM | Prisma 6 |
+| Banco de dados | PostgreSQL (Supabase) |
+| Armazenamento de arquivos | Supabase Storage |
+| Autenticação | JWT próprio (`jose`) · `bcryptjs` |
+| Validação | Zod |
+| Agendamento | node-cron |
+| Testes | Vitest |
+| Monorepo | npm workspaces |
 
 ---
 
-## 📁 Documentação
+## Arquitetura
 
-| Arquivo | Descrição | Data |
+Arquitetura **cliente-servidor**, com backend em **camadas** e dependência unidirecional:
+
+```text
+routes → middlewares → controllers → services → repositories → PostgreSQL
+```
+
+A camada de serviços não conhece Express, e apenas a camada de repositórios importa o Prisma. Esse isolamento é o que viabiliza os testes unitários das regras de negócio.
+
+```mermaid
+flowchart LR
+    W["SPA React<br/>apps/web"] -->|"HTTP/JSON + Bearer JWT"| A["API REST Express<br/>apps/api"]
+    W -->|"upload de arquivo"| ST["Supabase Storage"]
+    A -->|"Prisma"| DB[("PostgreSQL<br/>Supabase")]
+```
+
+Detalhamento em [`docs/04-arquitetura.md`](docs/04-arquitetura.md).
+
+---
+
+## Estrutura do projeto
+
+```text
+fleet-manager/
+├── apps/
+│   ├── api/                 Backend — Node.js, Express, Prisma
+│   │   ├── prisma/          Schema, migrations e seed
+│   │   └── src/             config · routes · middlewares · controllers
+│   │                        services · repositories · jobs · lib
+│   └── web/                 Frontend — React, Vite
+│       └── src/             pages · components · hooks · lib · locales
+├── packages/
+│   └── shared/              Enumerações e DTOs compartilhados
+├── docs/                    Documentação do projeto
+├── supabase/                Scripts SQL — schema completo e Storage
+└── package.json             Definição dos workspaces
+```
+
+---
+
+## Pré-requisitos
+
+- **Node.js 20+**
+- Conta no **Supabase** (camada gratuita é suficiente)
+
+---
+
+## Instalação
+
+```bash
+git clone https://github.com/gregoryjereissati/pfi-fleet-manager.git
+cd pfi-fleet-manager
+npm install
+```
+
+---
+
+## Configuração
+
+### Variáveis de ambiente
+
+**`apps/api/.env`** — modelo em [`.env.example`](.env.example)
+
+```env
+PORT=3000
+NODE_ENV=development
+DATABASE_URL="postgresql://postgres.<ref>:<SENHA>@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.<ref>:<SENHA>@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
+JWT_SECRET=<segredo-com-pelo-menos-32-caracteres>
+```
+
+**`apps/web/.env`** — modelo em [`apps/web/.env.example`](apps/web/.env.example)
+
+```env
+VITE_API_URL=http://localhost:3000
+VITE_SUPABASE_URL=https://<ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<chave-publica>
+```
+
+> O Vite só expõe variáveis com o prefixo `VITE_`. Outros prefixos são ignorados silenciosamente.
+
+Nenhum arquivo `.env` é versionado — o `.gitignore` os exclui.
+
+---
+
+## Banco de dados
+
+```bash
+cd apps/api
+npx prisma migrate deploy   # cria toda a estrutura
+npx prisma generate         # gera o cliente tipado
+npx prisma db seed          # popula com dados de demonstração
+```
+
+**Alternativa sem configurar a connection string:** colar [`supabase/schema-completo.sql`](supabase/schema-completo.sql) no **SQL Editor** do Supabase. O script cria toda a estrutura e registra as migrations como aplicadas.
+
+Para o anexo de arquivos, executar também [`supabase/storage-setup.sql`](supabase/storage-setup.sql) no SQL Editor.
+
+### Credenciais de demonstração
+
+| Perfil | E-mail | Senha |
 |---|---|---|
-| `Descrição do problema e escopo do projeto (24-02).docx` | Documento de abertura do projeto, objetivos, escopo e justificativa | 24/02/2026 |
-| `Levantamento de Requisitos (03-03).docx` | Requisitos funcionais e não funcionais do sistema | 03/03/2026 |
-| `Modelagem e Arquitetura (17-03).docx` | Documento de arquitetura de software (modelo 4+1) | 17/03/2026 |
-| `Documento Técnico (17-03).docx` | Documento técnico completo no formato UNIFOR/ABNT | 17/03/2026 |
+| Administrador | `admin@fleet-manager.com` | `admin123` |
+| Gestor | `gerente@fleet-manager.com` | `admin123` |
+| Operador | `operador@fleet-manager.com` | `admin123` |
+
+> Uso exclusivo em ambiente de desenvolvimento e demonstração acadêmica.
+
+O modelo de dados completo está em [`docs/05-banco-de-dados.md`](docs/05-banco-de-dados.md).
 
 ---
 
-## 🚫 Fora do Escopo
+## Execução
 
-- Rastreamento GPS em tempo real
-- Telemetria avançada
-- Planejamento e otimização de rotas
-- Integração automática com sistemas governamentais (DETRAN)
-- Aplicativo mobile nativo
+```bash
+npm run dev:api    # API em http://localhost:3000
+npm run dev:web    # Interface em http://localhost:5173
+```
+
+Verificação: `curl http://localhost:3000/health`
+
+### Demais scripts
+
+| Comando | Ação |
+|---|---|
+| `npm run test:api` | Executa os testes da API |
+| `npm run lint` | Análise estática |
+| `npm run build:api` | Compila a API |
+| `npm run format` | Formata o código |
 
 ---
 
-## 👨‍🎓 Informações Acadêmicas
+## Status
 
-- **Instituição:** Universidade de Fortaleza – UNIFOR
-- **Curso:** Ciência da Computação
-- **Orientador:** Prof. Me. Ronaldo Gonçalves Junior
-- **Ano:** 2026
+Produto mínimo viável **funcionalmente completo em ambiente de desenvolvimento**.
+
+| Verificação | Resultado |
+|---|---|
+| TypeScript (backend e frontend) | ✅ Sem erros |
+| ESLint | ✅ Sem erros |
+| Testes automatizados | ✅ 99 aprovados / 13 arquivos |
+| Build de produção do frontend | ✅ Gerado |
+| Publicação em produção | ⏳ Pendente |
+
+**Pendências declaradas:** o sistema ainda não foi publicado em produção e não foi aplicado em uma organização real — a validação usou base de dados fictícia. O acompanhamento de vencimentos ocorre dentro da aplicação; a notificação por canais externos está fora do escopo por decisão de projeto.
+
+---
+
+## Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [01 — Descrição do problema e escopo](docs/01-descricao-do-problema-e-escopo.md) | **Documento principal da entrega** |
+| [02 — Visão geral do projeto](docs/02-visao-geral-do-projeto.md) | Módulos e organização |
+| [03 — Requisitos](docs/03-requisitos.md) | RF, RNF, regras de negócio e matriz RBAC |
+| [04 — Arquitetura](docs/04-arquitetura.md) | Arquitetura e fluxo de dados |
+| [05 — Banco de dados](docs/05-banco-de-dados.md) | Modelo de dados e dicionário |
+| [06 — Status de desenvolvimento](docs/06-status-de-desenvolvimento.md) | Matriz de status por funcionalidade |
+| [07 — Configuração e execução](docs/07-configuracao-e-execucao.md) | Instalação detalhada |
+| [08 — Próximas etapas](docs/08-proximas-etapas.md) | Trabalho restante |
+
+**Documentos acadêmicos:** `docs/academico/`
+**Registro histórico do desenvolvimento:** `docs/historico-desenvolvimento/`
+
+---
+
+## Equipe
+
+| Integrante |
+|---|
+| Gregory Jereissati |
+| Luiz Eduardo Pacheco |
+| André Luiz Cavalcante |
+
+**Orientador:** Prof. Me. Ronaldo Gonçalves Junior
+**Instituição:** Universidade de Fortaleza — UNIFOR
+
+---
+
+## Fora do escopo
+
+Rastreamento por GPS em tempo real · Telemetria avançada · Planejamento e otimização de rotas · Integração automática com o DETRAN · Aplicativo móvel nativo · Emissão de documentos fiscais · Notificação de vencimentos por e-mail, SMS ou mensagem · Recuperação autônoma de senha
+
+Justificativa de cada exclusão em [`docs/01-descricao-do-problema-e-escopo.md`](docs/01-descricao-do-problema-e-escopo.md#10-fora-do-escopo).
