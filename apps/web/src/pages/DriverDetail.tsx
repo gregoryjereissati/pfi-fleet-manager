@@ -13,10 +13,14 @@ function formatCpf(cpf: string) {
 }
 
 function getDocStatusClasses(status: DocumentStatus) {
-  if (status === 'EXPIRED') return 'bg-red-100 text-red-700'
-  if (status === 'EXPIRING_SOON') return 'bg-amber-100 text-amber-700'
-  return 'bg-green-100 text-green-700'
+  if (status === 'EXPIRED') return 'bg-red-500/10 text-red-400'
+  if (status === 'EXPIRING_SOON') return 'bg-amber-500/10 text-amber-400'
+  return 'bg-green-500/10 text-green-400'
 }
+
+const sectionClass = 'rounded-lg border border-white/[0.07] bg-fleet-card p-4'
+const thClass = 'pb-2 pr-4 text-white/40'
+const tdClass = 'py-2 pr-4 text-white/70'
 
 export function DriverDetail() {
   const { id } = useParams<{ id: string }>()
@@ -32,36 +36,36 @@ export function DriverDetail() {
   })
 
   if (loading) {
-    return <p className="text-sm text-gray-500">{t('common.loading')}</p>
+    return <p className="text-sm text-white/40">{t('common.loading')}</p>
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return <p className="text-sm text-red-400">{error}</p>
   }
 
   if (!driver) {
-    return <p className="text-sm text-gray-500">{t('common.notFound')}</p>
+    return <p className="text-sm text-white/40">{t('common.notFound')}</p>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
-          <Link to="/drivers" className="text-sm text-blue-600 hover:underline">
+          <Link to="/drivers" className="text-sm text-gold hover:underline">
             {t('actions.backToDrivers')}
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{driver.name}</h1>
-            <p className="text-gray-500">
-              CPF {formatCpf(driver.cpf)} - CNH {driver.cnh}
+            <h1 className="text-2xl font-bold text-white">{driver.name}</h1>
+            <p className="text-white/45">
+              CPF {formatCpf(driver.cpf)} • CNH {driver.cnh}
             </p>
-            {driver.phone && <p className="text-sm text-gray-500">{driver.phone}</p>}
+            {driver.phone && <p className="text-sm text-white/40">{driver.phone}</p>}
           </div>
           <span
             className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
               driver.status === DriverStatus.ACTIVE
-                ? 'bg-green-100 text-green-700'
-                : 'bg-gray-100 text-gray-600'
+                ? 'bg-green-500/10 text-green-400'
+                : 'bg-white/5 text-white/40'
             }`}
           >
             {driver.status === DriverStatus.ACTIVE ? t('status.active') : t('status.inactive')}
@@ -71,30 +75,30 @@ export function DriverDetail() {
         {canMutate && (
           <Link
             to={`/drivers/${driver.id}/edit`}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
           >
             {t('actions.edit')}
           </Link>
         )}
       </div>
 
-      <section className="rounded-lg border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">
+      <section className={sectionClass}>
+        <h2 className="mb-3 text-sm font-semibold text-white/50">
           {t('drivers.detail.vehicles')} ({driver.vehicles.length})
         </h2>
         {driver.vehicles.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('drivers.detail.noVehicles')}</p>
+          <p className="text-sm text-white/30">{t('drivers.detail.noVehicles')}</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-white/[0.05]">
             {driver.vehicles.map((vehicle) => (
               <li key={vehicle.id} className="flex items-center justify-between gap-3 py-3 text-sm">
                 <Link
                   to={`/vehicles/${vehicle.id}`}
-                  className="font-medium text-blue-600 hover:underline"
+                  className="font-medium text-gold hover:underline"
                 >
                   {vehicle.plate}
                 </Link>
-                <span className="text-right text-gray-500">
+                <span className="text-right text-white/40">
                   {vehicle.brand} {vehicle.model}
                 </span>
               </li>
@@ -103,40 +107,40 @@ export function DriverDetail() {
         )}
       </section>
 
-      <section className="rounded-lg border border-gray-200 bg-white p-4">
+      <section className={sectionClass}>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">
+          <h2 className="text-sm font-semibold text-white/50">
             {t('drivers.detail.documents')}
           </h2>
           {canMutate && (
             <Link
               to={`/documents/new?driverId=${driver.id}`}
-              className="text-xs text-blue-600 hover:underline"
+              className="text-xs text-gold hover:underline"
             >
               + {t('documents.new')}
             </Link>
           )}
         </div>
         {loadingDocuments ? (
-          <p className="text-sm text-gray-400">{t('common.loading')}</p>
+          <p className="text-sm text-white/30">{t('common.loading')}</p>
         ) : documents.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('drivers.detail.noDocuments')}</p>
+          <p className="text-sm text-white/30">{t('drivers.detail.noDocuments')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="pb-2 pr-4">{t('documents.columns.type')}</th>
-                  <th className="pb-2 pr-4">{t('documents.columns.expiryDate')}</th>
-                  <th className="pb-2 pr-4">{t('documents.columns.status')}</th>
-                  <th className="pb-2">{t('common.actions')}</th>
+                <tr className="border-b border-white/[0.07] text-left">
+                  <th className={thClass}>{t('documents.columns.type')}</th>
+                  <th className={thClass}>{t('documents.columns.expiryDate')}</th>
+                  <th className={thClass}>{t('documents.columns.status')}</th>
+                  <th className={thClass}>{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/[0.05]">
                 {documents.map((doc) => (
                   <tr key={doc.id}>
-                    <td className="py-2 pr-4">{t(`documents.types.${doc.type}`)}</td>
-                    <td className="py-2 pr-4">
+                    <td className={tdClass}>{t(`documents.types.${doc.type}`)}</td>
+                    <td className={tdClass}>
                       {new Date(doc.expiryDate).toLocaleDateString('pt-BR')}
                     </td>
                     <td className="py-2 pr-4">
@@ -151,12 +155,12 @@ export function DriverDetail() {
                         <button
                           type="button"
                           onClick={() => setPreviewUrl(doc.fileUrl)}
-                          className="text-blue-600 hover:underline"
+                          className="text-gold hover:underline"
                         >
                           {t('documents.preview.viewFile')}
                         </button>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-white/25">-</span>
                       )}
                     </td>
                   </tr>

@@ -39,13 +39,11 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-60 bg-white border-r border-gray-200 flex flex-col shrink-0">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
-            <span className="text-white text-xs font-bold">FM</span>
-          </div>
-          <span className="font-bold text-gray-900">{t('app.name')}</span>
+    <aside className="w-60 bg-fleet-darker border-r border-white/[0.06] flex flex-col shrink-0">
+      <div className="px-5 py-5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-3">
+          <img src="/logo.svg" width="30" height="30" alt="Fleet Manager" className="shrink-0" />
+          <span className="font-bold text-white tracking-wide">{t('app.name')}</span>
         </div>
       </div>
 
@@ -59,15 +57,15 @@ export function Sidebar() {
                 cn(
                   'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100',
+                    ? 'bg-gold/10 text-gold border-l-2 border-gold pl-[10px]'
+                    : 'text-white/50 hover:bg-white/[0.04] hover:text-white/80',
                 )
               }
             >
-              <Icon size={17} />
+              <Icon size={16} />
               <span className="flex-1">{t(labelKey)}</span>
               {(to === '/documents' || to === '/alerts') && alertCount > 0 && (
-                <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500/80 px-1.5 py-0.5 text-xs font-bold text-white">
                   {alertCount}
                 </span>
               )}
@@ -76,42 +74,44 @@ export function Sidebar() {
             <div
               key={to}
               title={t('nav.comingSoon')}
-              className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed select-none"
+              className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-white/20 cursor-not-allowed select-none"
             >
-              <Icon size={17} />
+              <Icon size={16} />
               {t(labelKey)}
             </div>
           ),
         )}
       </nav>
 
-      <div className="p-4 border-t border-gray-200 space-y-3">
+      <div className="p-4 border-t border-white/[0.06] space-y-3">
         <NavLink
           to="/profile"
           className={({ isActive }) =>
             cn(
               'flex items-center gap-2 min-w-0 rounded-md px-2 py-2 transition-colors',
-              isActive ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-100',
+              isActive
+                ? 'bg-gold/10 text-gold border-l-2 border-gold pl-[6px]'
+                : 'hover:bg-white/[0.04]',
             )
           }
         >
-          <div className="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-gray-600 text-xs font-bold">
+          <div className="w-7 h-7 bg-gold/20 rounded-full flex items-center justify-center shrink-0 border border-gold/30">
+            <span className="text-gold text-xs font-bold">
               {currentUser?.name?.charAt(0).toUpperCase() ?? '?'}
             </span>
           </div>
           <div className="min-w-0">
-            <span className="block text-sm font-medium text-gray-700 truncate">
+            <span className="block text-sm font-medium text-white/70 truncate">
               {currentUser?.name}
             </span>
-            <span className="block text-xs text-gray-400 truncate">{t('nav.profile')}</span>
+            <span className="block text-xs text-white/35 truncate">{t('nav.profile')}</span>
           </div>
         </NavLink>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          className="flex items-center gap-2 text-sm text-white/35 hover:text-white/60 transition-colors"
         >
-          <LogOut size={15} />
+          <LogOut size={14} />
           {t('nav.logout')}
         </button>
       </div>

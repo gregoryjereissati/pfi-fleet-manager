@@ -53,6 +53,11 @@ function mapUserToForm(user: CurrentUserDto): ProfileFormState {
   }
 }
 
+const inputClass =
+  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+
+const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+
 export function Profile() {
   const { t } = useTranslation()
   const getToken = useToken()
@@ -130,28 +135,25 @@ export function Profile() {
   }
 
   if (loading) {
-    return <p className="text-sm text-gray-500">{t('common.loading')}</p>
+    return <p className="text-sm text-white/40">{t('common.loading')}</p>
   }
 
   if (currentUserError || !currentUser) {
-    return <p className="text-sm text-red-600">{currentUserError ?? t('common.notFound')}</p>
+    return <p className="text-sm text-red-400">{currentUserError ?? t('common.notFound')}</p>
   }
-
-  const inputClass =
-    'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 
   return (
     <div className="max-w-4xl space-y-4">
-      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-6 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-6 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('profile.title')}</h1>
-          <p className="text-sm text-gray-500">{t('profile.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-white">{t('profile.title')}</h1>
+          <p className="text-sm text-white/40">{t('profile.subtitle')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+          <span className="rounded-full bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
             {t(`users.roles.${currentUser.role}`)}
           </span>
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+          <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-semibold text-white/50">
             {t(`users.statuses.${currentUser.status}`)}
           </span>
         </div>
@@ -159,18 +161,14 @@ export function Profile() {
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-6 rounded-lg border border-gray-200 bg-white p-6"
+        className="space-y-6 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
       >
         <section className="space-y-4">
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">{t('profile.personalInfo')}</h2>
-          </div>
+          <h2 className="text-base font-semibold text-white">{t('profile.personalInfo')}</h2>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.name')}
-              </label>
+              <label className={labelClass}>{t('register.name')}</label>
               <input
                 required
                 value={form.name}
@@ -179,9 +177,7 @@ export function Profile() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.cpf')}
-              </label>
+              <label className={labelClass}>{t('register.cpf')}</label>
               <input
                 required
                 value={form.cpf}
@@ -190,9 +186,7 @@ export function Profile() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.phone')}
-              </label>
+              <label className={labelClass}>{t('register.phone')}</label>
               <input
                 required
                 value={form.phone}
@@ -201,9 +195,7 @@ export function Profile() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.email')}
-              </label>
+              <label className={labelClass}>{t('register.email')}</label>
               <input
                 required
                 type="email"
@@ -216,15 +208,11 @@ export function Profile() {
         </section>
 
         <section className="space-y-4">
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">{t('profile.address')}</h2>
-          </div>
+          <h2 className="text-base font-semibold text-white">{t('profile.address')}</h2>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.addressStreet')}
-              </label>
+              <label className={labelClass}>{t('register.addressStreet')}</label>
               <input
                 required
                 value={form.addressStreet}
@@ -233,9 +221,7 @@ export function Profile() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.addressNumber')}
-              </label>
+              <label className={labelClass}>{t('register.addressNumber')}</label>
               <input
                 required
                 value={form.addressNumber}
@@ -244,9 +230,7 @@ export function Profile() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.addressDistrict')}
-              </label>
+              <label className={labelClass}>{t('register.addressDistrict')}</label>
               <input
                 required
                 value={form.addressDistrict}
@@ -255,9 +239,7 @@ export function Profile() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.addressCity')}
-              </label>
+              <label className={labelClass}>{t('register.addressCity')}</label>
               <input
                 required
                 value={form.addressCity}
@@ -266,9 +248,7 @@ export function Profile() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.addressState')}
-              </label>
+              <label className={labelClass}>{t('register.addressState')}</label>
               <input
                 required
                 maxLength={2}
@@ -278,9 +258,7 @@ export function Profile() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('register.addressZip')}
-              </label>
+              <label className={labelClass}>{t('register.addressZip')}</label>
               <input
                 required
                 value={form.addressZip}
@@ -293,15 +271,13 @@ export function Profile() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">{t('profile.security')}</h2>
-            <p className="text-sm text-gray-500">{t('profile.passwordHint')}</p>
+            <h2 className="text-base font-semibold text-white">{t('profile.security')}</h2>
+            <p className="text-sm text-white/40">{t('profile.passwordHint')}</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('profile.password')}
-              </label>
+              <label className={labelClass}>{t('profile.password')}</label>
               <input
                 type="password"
                 value={form.password}
@@ -310,9 +286,7 @@ export function Profile() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t('profile.confirmPassword')}
-              </label>
+              <label className={labelClass}>{t('profile.confirmPassword')}</label>
               <input
                 type="password"
                 value={form.confirmPassword}
@@ -323,14 +297,14 @@ export function Profile() {
           </div>
         </section>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">{success}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        {success && <p className="text-sm text-green-400">{success}</p>}
 
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
           >
             {submitting ? t('actions.saving') : t('actions.save')}
           </button>

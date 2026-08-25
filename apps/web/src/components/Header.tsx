@@ -30,24 +30,24 @@ export function Header() {
     pageTitleMatchers.find(({ pattern }) => pattern.test(pathname))?.key ?? 'app.name'
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-      <h2 className="text-sm font-semibold text-gray-800">{t(titleKey)}</h2>
+    <header className="h-14 bg-fleet-darker border-b border-white/[0.06] flex items-center justify-between px-6 shrink-0">
+      <h2 className="text-sm font-semibold text-white/80">{t(titleKey)}</h2>
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/alerts')}
-          className="relative text-gray-500 transition-colors hover:text-gray-800"
+          className="relative text-white/40 transition-colors hover:text-white/70"
           aria-label={t('alerts.title')}
         >
-          <Bell size={18} />
+          <Bell size={17} />
           {count > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold text-white">
+            <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-red-500/80 px-1 py-0.5 text-[10px] font-bold text-white">
               {count}
             </span>
           )}
         </button>
         <button
           onClick={toggleLanguage}
-          className="text-xs font-semibold text-gray-500 hover:text-gray-900 border border-gray-200 rounded px-2 py-1 transition-colors"
+          className="text-xs font-semibold text-white/40 hover:text-white/70 border border-white/[0.1] rounded px-2 py-1 transition-colors"
         >
           {t('lang.switch')}
         </button>

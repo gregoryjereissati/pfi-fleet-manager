@@ -21,6 +21,11 @@ const initialForm: DriverFormState = {
   phone: '',
 }
 
+const inputClass =
+  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+
+const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+
 export function DriverForm() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
@@ -96,99 +101,89 @@ export function DriverForm() {
   }
 
   if (loading) {
-    return <p className="text-sm text-gray-500">{t('common.loading')}</p>
+    return <p className="text-sm text-white/40">{t('common.loading')}</p>
   }
 
   if (loadError) {
-    return <p className="text-sm text-red-600">{loadError}</p>
+    return <p className="text-sm text-red-400">{loadError}</p>
   }
 
   return (
     <div className="max-w-2xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-white">
           {isEdit ? t('drivers.edit') : t('drivers.new')}
         </h1>
-        <p className="text-sm text-gray-500">{t('drivers.formSubtitle')}</p>
+        <p className="text-sm text-white/40">{t('drivers.formSubtitle')}</p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-gray-200 bg-white p-6"
+        className="space-y-4 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
       >
         <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('drivers.columns.name')}
-            </label>
+            <label className={labelClass}>{t('drivers.columns.name')}</label>
             <input
               required
               value={form.name}
               onChange={(event) => updateField('name', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('drivers.columns.cpf')}
-            </label>
+            <label className={labelClass}>{t('drivers.columns.cpf')}</label>
             <input
               required
               disabled={isEdit}
               value={form.cpf}
               onChange={(event) => updateField('cpf', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+              className={`${inputClass} disabled:opacity-40`}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('drivers.columns.cnh')}
-            </label>
+            <label className={labelClass}>{t('drivers.columns.cnh')}</label>
             <input
               required
               value={form.cnh}
               onChange={(event) => updateField('cnh', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('drivers.columns.cnhExpiry')}
-            </label>
+            <label className={labelClass}>{t('drivers.columns.cnhExpiry')}</label>
             <input
               required
               type="date"
               value={form.cnhExpiry}
               onChange={(event) => updateField('cnhExpiry', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('drivers.columns.phone')}
-            </label>
+            <label className={labelClass}>{t('drivers.columns.phone')}</label>
             <input
               value={form.phone}
               onChange={(event) => updateField('phone', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
           >
             {submitting ? t('actions.saving') : t('actions.save')}
           </button>
           <button
             type="button"
             onClick={() => navigate('/drivers')}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
           >
             {t('actions.cancel')}
           </button>

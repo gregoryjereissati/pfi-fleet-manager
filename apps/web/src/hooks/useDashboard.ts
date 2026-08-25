@@ -8,9 +8,13 @@ interface DashboardSummary {
   activeVehicles: number
   totalDrivers: number
   activeDrivers: number
-  expensesThisMonth: number
+  totalExpenses: number
+  averageExpense: number
+  expenseCount: number
   pendingMaintenances: number
+  overdueMaintenances: number
   expiringDocuments: number
+  expiredDocuments: number
 }
 
 interface MonthlyExpense {
@@ -23,17 +27,44 @@ interface TypeExpense {
   total: number
 }
 
+interface VehicleExpense {
+  vehicleId: string
+  plate: string
+  label: string
+  total: number
+}
+
+interface RecentExpense {
+  id: string
+  type: ExpenseType
+  amount: number
+  date: string
+  description: string | null
+  vehiclePlate: string
+  vehicleLabel: string
+}
+
+export interface DashboardFilters {
+  vehicleId?: string
+  type?: ExpenseType | ''
+  startDate?: string
+  endDate?: string
+}
+
 export interface DashboardData {
   summary: DashboardSummary
   expensesByMonth: MonthlyExpense[]
   expensesByType: TypeExpense[]
+  expensesByVehicle: VehicleExpense[]
+  recentExpenses: RecentExpense[]
 }
 
-export function useDashboard() {
+export function useDashboard(filters: DashboardFilters = {}) {
   const getToken = useToken()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const filterKey = JSON.stringify(filters)
 
   useEffect(() => {
     let cancelled = false
@@ -43,7 +74,18 @@ export function useDashboard() {
         setLoading(true)
 
         const token = await getToken()
-        const result = await apiFetch<DashboardData>('/dashboard/indicators', token)
+        const params = new URLSearchParams()
+        const queryFilters = JSON.parse(filterKey) as DashboardFilters
+
+        Object.entries(queryFilters).forEach(([key, value]) => {
+          if (value) params.set(key, value)
+        })
+
+        const queryString = params.toString()
+        const result = await apiFetch<DashboardData>(
+          `/dashboard/indicators${queryString ? `?${queryString}` : ''}`,
+          token,
+        )
 
         if (!cancelled) {
           setData(result)
@@ -61,7 +103,7 @@ export function useDashboard() {
     return () => {
       cancelled = true
     }
-  }, [getToken])
+  }, [filterKey, getToken])
 
   return { data, loading, error }
 }

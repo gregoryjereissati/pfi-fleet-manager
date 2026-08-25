@@ -11,6 +11,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
+const inputClass =
+  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+
 function formatCpf(cpf: string) {
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
 }
@@ -88,31 +91,31 @@ export function DriverList() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('drivers.title')}</h1>
-          <p className="text-sm text-gray-500">{t('drivers.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-white">{t('drivers.title')}</h1>
+          <p className="text-sm text-white/40">{t('drivers.subtitle')}</p>
         </div>
         {canMutate && (
           <Link
             to="/drivers/new"
-            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
           >
             {t('drivers.new')}
           </Link>
         )}
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-2">
+      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-2">
         <input
           type="text"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('drivers.searchPlaceholder')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         />
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         >
           <option value="">{t('filters.allStatuses')}</option>
           <option value={DriverStatus.ACTIVE}>{t('status.active')}</option>
@@ -121,15 +124,15 @@ export function DriverList() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">{t('common.loading')}</p>
+        <p className="text-sm text-white/40">{t('common.loading')}</p>
       ) : error ? (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-400">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="border-b border-gray-200 text-left text-gray-600">
+              <thead className="bg-fleet-darker">
+                <tr className="border-b border-white/[0.07] text-left text-white/40">
                   <th className="px-4 py-3 font-medium">{t('drivers.columns.name')}</th>
                   <th className="px-4 py-3 font-medium">{t('drivers.columns.cpf')}</th>
                   <th className="px-4 py-3 font-medium">{t('drivers.columns.cnh')}</th>
@@ -138,10 +141,10 @@ export function DriverList() {
                   <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/[0.05]">
                 {drivers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-white/30">
                       {t('drivers.empty')}
                     </td>
                   </tr>
@@ -150,12 +153,12 @@ export function DriverList() {
                     const expiring = isExpiringSoon(driver.cnhExpiry)
 
                     return (
-                      <tr key={driver.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{driver.name}</td>
-                        <td className="px-4 py-3 text-gray-600">{formatCpf(driver.cpf)}</td>
-                        <td className="px-4 py-3">{driver.cnh}</td>
+                      <tr key={driver.id} className="hover:bg-white/[0.025]">
+                        <td className="px-4 py-3 font-medium text-white">{driver.name}</td>
+                        <td className="px-4 py-3 text-white/70">{formatCpf(driver.cpf)}</td>
+                        <td className="px-4 py-3 text-white/70">{driver.cnh}</td>
                         <td className="px-4 py-3">
-                          <span className={expiring ? 'font-medium text-red-600' : ''}>
+                          <span className={expiring ? 'font-medium text-red-400' : 'text-white/70'}>
                             {new Date(driver.cnhExpiry).toLocaleDateString('pt-BR')}
                           </span>
                         </td>
@@ -163,8 +166,8 @@ export function DriverList() {
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                               driver.status === DriverStatus.ACTIVE
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'bg-green-500/10 text-green-400'
+                                : 'bg-white/5 text-white/40'
                             }`}
                           >
                             {driver.status === DriverStatus.ACTIVE
@@ -176,32 +179,32 @@ export function DriverList() {
                           <div className="flex flex-wrap items-center gap-3">
                             <Link
                               to={`/drivers/${driver.id}`}
-                              className="text-blue-600 hover:underline"
+                              className="text-gold hover:underline"
                             >
                               {t('drivers.viewDetail')}
                             </Link>
                             {canMutate && (
                               <>
-                              <Link
-                                to={`/drivers/${driver.id}/edit`}
-                                className="text-gray-700 hover:underline"
-                              >
-                                {t('actions.edit')}
-                              </Link>
-                              {driver.status === DriverStatus.ACTIVE && (
-                                <button
-                                  onClick={() => handleDeactivate(driver.id)}
-                                  className="text-orange-600 hover:underline"
+                                <Link
+                                  to={`/drivers/${driver.id}/edit`}
+                                  className="text-white/55 hover:underline"
                                 >
-                                  {t('actions.deactivate')}
+                                  {t('actions.edit')}
+                                </Link>
+                                {driver.status === DriverStatus.ACTIVE && (
+                                  <button
+                                    onClick={() => handleDeactivate(driver.id)}
+                                    className="text-amber-400 hover:underline"
+                                  >
+                                    {t('actions.deactivate')}
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handlePermanentDelete(driver.id)}
+                                  className="text-red-400 hover:underline"
+                                >
+                                  {t('actions.delete')}
                                 </button>
-                              )}
-                              <button
-                                onClick={() => handlePermanentDelete(driver.id)}
-                                className="text-red-600 hover:underline"
-                              >
-                                {t('actions.delete')}
-                              </button>
                               </>
                             )}
                           </div>

@@ -12,6 +12,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
+const inputClass =
+  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+
 function formatMoney(value: string) {
   return Number(value).toLocaleString('pt-BR', {
     style: 'currency',
@@ -72,22 +75,22 @@ export function ExpenseList() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('expenses.title')}</h1>
-          <p className="text-sm text-gray-500">{t('expenses.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-white">{t('expenses.title')}</h1>
+          <p className="text-sm text-white/40">{t('expenses.subtitle')}</p>
         </div>
         <Link
           to="/expenses/new"
-          className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
         >
           {t('expenses.new')}
         </Link>
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-4">
+      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-4">
         <select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         >
           <option value="">{t('expenses.filters.allVehicles')}</option>
           {vehicles.map((vehicle) => (
@@ -99,7 +102,7 @@ export function ExpenseList() {
         <select
           value={type}
           onChange={(event) => setType(event.target.value as ExpenseType | '')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         >
           <option value="">{t('expenses.filters.allTypes')}</option>
           {Object.values(ExpenseType).map((expenseType) => (
@@ -112,26 +115,26 @@ export function ExpenseList() {
           type="date"
           value={startDate}
           onChange={(event) => setStartDate(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         />
         <input
           type="date"
           value={endDate}
           onChange={(event) => setEndDate(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         />
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">{t('common.loading')}</p>
+        <p className="text-sm text-white/40">{t('common.loading')}</p>
       ) : error ? (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-400">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="border-b border-gray-200 text-left text-gray-600">
+              <thead className="bg-fleet-darker">
+                <tr className="border-b border-white/[0.07] text-left text-white/40">
                   <th className="px-4 py-3 font-medium">{t('expenses.columns.vehicle')}</th>
                   <th className="px-4 py-3 font-medium">{t('expenses.columns.type')}</th>
                   <th className="px-4 py-3 font-medium">{t('expenses.columns.amount')}</th>
@@ -140,38 +143,40 @@ export function ExpenseList() {
                   <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/[0.05]">
                 {expenses.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-white/30">
                       {t('expenses.empty')}
                     </td>
                   </tr>
                 ) : (
                   expenses.map((expense) => (
-                    <tr key={expense.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                    <tr key={expense.id} className="hover:bg-white/[0.025]">
+                      <td className="px-4 py-3 font-medium text-white">
                         {expense.vehicle.plate}
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-white/40">
                           {expense.vehicle.brand} {expense.vehicle.model}
                         </div>
                       </td>
-                      <td className="px-4 py-3">{t(`expenses.types.${expense.type}`)}</td>
-                      <td className="px-4 py-3">{formatMoney(expense.amount)}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-white/70">
+                        {t(`expenses.types.${expense.type}`)}
+                      </td>
+                      <td className="px-4 py-3 text-white/70">{formatMoney(expense.amount)}</td>
+                      <td className="px-4 py-3 text-white/70">
                         {new Date(expense.date).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{expense.description || '-'}</td>
+                      <td className="px-4 py-3 text-white/50">{expense.description || '-'}</td>
                       <td className="px-4 py-3">
                         {canDelete ? (
                           <button
                             onClick={() => handleDelete(expense.id)}
-                            className="text-red-600 hover:underline"
+                            className="text-red-400 hover:underline"
                           >
                             {t('actions.remove')}
                           </button>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-white/25">-</span>
                         )}
                       </td>
                     </tr>

@@ -25,21 +25,21 @@ export function ConfirmDialog({
 
   const confirmClass =
     variant === 'danger'
-      ? 'bg-red-600 text-white hover:bg-red-700'
+      ? 'bg-red-600/90 text-white hover:bg-red-600'
       : variant === 'warning'
-        ? 'bg-orange-500 text-white hover:bg-orange-600'
-        : 'bg-blue-600 text-white hover:bg-blue-700'
+        ? 'bg-amber-600/90 text-white hover:bg-amber-600'
+        : 'bg-gold text-fleet-black font-semibold hover:bg-gold-hover'
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      <div className="relative z-10 w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-        <p className="mt-2 text-sm text-gray-600">{message}</p>
+      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm rounded-lg bg-fleet-card border border-white/[0.08] p-6 shadow-2xl">
+        <h2 className="text-base font-semibold text-white">{title}</h2>
+        <p className="mt-2 text-sm text-white/55">{message}</p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
           >
             {cancelLabel}
           </button>

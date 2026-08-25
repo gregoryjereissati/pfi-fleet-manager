@@ -12,6 +12,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 type VehicleSortField = 'createdAt' | 'plate' | 'brand' | 'model' | 'year'
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
+const inputClass =
+  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+
 function getVehicleStatusLabel(status: VehicleStatus, t: (key: string) => string) {
   return status === VehicleStatus.ACTIVE ? t('status.active') : t('status.inactive')
 }
@@ -116,7 +119,6 @@ export function VehicleList() {
       setSortOrder((current) => (current === 'asc' ? 'desc' : 'asc'))
       return
     }
-
     setSortField(field)
     setSortOrder('asc')
   }
@@ -125,31 +127,31 @@ export function VehicleList() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('vehicles.title')}</h1>
-          <p className="text-sm text-gray-500">{t('vehicles.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-white">{t('vehicles.title')}</h1>
+          <p className="text-sm text-white/40">{t('vehicles.subtitle')}</p>
         </div>
         {canMutate && (
           <Link
             to="/vehicles/new"
-            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
           >
             {t('vehicles.new')}
           </Link>
         )}
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-4">
+      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-4">
         <input
           type="text"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('vehicles.searchPlaceholder')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         />
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         >
           <option value="">{t('filters.allStatuses')}</option>
           <option value={VehicleStatus.ACTIVE}>{t('status.active')}</option>
@@ -160,27 +162,27 @@ export function VehicleList() {
           value={yearMin}
           onChange={(event) => setYearMin(event.target.value)}
           placeholder={t('vehicles.yearMin')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         />
         <input
           type="number"
           value={yearMax}
           onChange={(event) => setYearMax(event.target.value)}
           placeholder={t('vehicles.yearMax')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         />
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">{t('common.loading')}</p>
+        <p className="text-sm text-white/40">{t('common.loading')}</p>
       ) : error ? (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-400">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="border-b border-gray-200 text-left text-gray-600">
+              <thead className="bg-fleet-darker">
+                <tr className="border-b border-white/[0.07] text-left text-white/40">
                   {[
                     ['plate', t('vehicles.columns.plate')],
                     ['brand', t('vehicles.columns.brand')],
@@ -201,27 +203,27 @@ export function VehicleList() {
                   <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/[0.05]">
                 {vehicles.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={7} className="px-4 py-8 text-center text-white/30">
                       {t('vehicles.empty')}
                     </td>
                   </tr>
                 ) : (
                   vehicles.map((vehicle) => (
-                    <tr key={vehicle.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{vehicle.plate}</td>
-                      <td className="px-4 py-3">{vehicle.brand}</td>
-                      <td className="px-4 py-3">{vehicle.model}</td>
-                      <td className="px-4 py-3">{vehicle.year}</td>
-                      <td className="px-4 py-3">{vehicle.color || '-'}</td>
+                    <tr key={vehicle.id} className="hover:bg-white/[0.025]">
+                      <td className="px-4 py-3 font-medium text-white">{vehicle.plate}</td>
+                      <td className="px-4 py-3 text-white/70">{vehicle.brand}</td>
+                      <td className="px-4 py-3 text-white/70">{vehicle.model}</td>
+                      <td className="px-4 py-3 text-white/70">{vehicle.year}</td>
+                      <td className="px-4 py-3 text-white/70">{vehicle.color || '-'}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                             vehicle.status === VehicleStatus.ACTIVE
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-600'
+                              ? 'bg-green-500/10 text-green-400'
+                              : 'bg-white/5 text-white/40'
                           }`}
                         >
                           {getVehicleStatusLabel(vehicle.status, t)}
@@ -229,41 +231,41 @@ export function VehicleList() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-3">
-                          <Link to={`/vehicles/${vehicle.id}`} className="text-blue-600 hover:underline">
+                          <Link to={`/vehicles/${vehicle.id}`} className="text-gold hover:underline">
                             {t('actions.view')}
                           </Link>
                           {canMutate && (
                             <>
                               <Link
                                 to={`/vehicles/${vehicle.id}/edit`}
-                                className="text-gray-700 hover:underline"
+                                className="text-white/55 hover:underline"
                               >
                                 {t('actions.edit')}
                               </Link>
                               <Link
                                 to={`/vehicles/${vehicle.id}/drivers`}
-                                className="text-gray-700 hover:underline"
+                                className="text-white/55 hover:underline"
                               >
                                 {t('vehicles.manageDrivers')}
                               </Link>
                               {vehicle.status === VehicleStatus.ACTIVE ? (
                                 <button
                                   onClick={() => handleDeactivate(vehicle.id)}
-                                  className="text-orange-600 hover:underline"
+                                  className="text-amber-400 hover:underline"
                                 >
                                   {t('actions.deactivate')}
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleReactivate(vehicle.id)}
-                                  className="text-green-600 hover:underline"
+                                  className="text-green-400 hover:underline"
                                 >
                                   {t('actions.reactivate')}
                                 </button>
                               )}
                               <button
                                 onClick={() => handlePermanentDelete(vehicle.id)}
-                                className="text-red-600 hover:underline"
+                                className="text-red-400 hover:underline"
                               >
                                 {t('actions.delete')}
                               </button>

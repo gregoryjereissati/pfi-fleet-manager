@@ -4,24 +4,84 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --ring: 222.2 84% 4.9%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 45%;
+    --border: 0 0% 100% / 0.07;
+    --input: 0 0% 14%;
+    --primary: 43 44% 56%;
+    --primary-foreground: 0 0% 5%;
+    --ring: 43 44% 56%;
     --radius: 0.5rem;
+
+    color-scheme: dark;
   }
 
   * {
-    border-color: hsl(var(--border));
+    border-color: rgba(255, 255, 255, 0.07);
   }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: #0C0C0C;
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+  }
+
+  select option {
+    background-color: #242424;
+    color: #ffffff;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    filter: invert(0.6);
+    cursor: pointer;
+  }
+
+  input[type="file"]::file-selector-button {
+    background-color: #2C2C2C;
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    margin-right: 8px;
+  }
+
+  input[type="file"]::file-selector-button:hover {
+    background-color: #333333;
+  }
+
+  input[type="radio"] {
+    accent-color: #C4A35A;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #141414;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(196, 163, 90, 0.4);
   }
 }

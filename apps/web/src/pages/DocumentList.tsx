@@ -13,16 +13,13 @@ import { FilePreviewModal } from '@/components/FilePreviewModal'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
+const inputClass =
+  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+
 function getStatusClasses(status: DocumentStatus) {
-  if (status === 'EXPIRED') {
-    return 'bg-red-100 text-red-700'
-  }
-
-  if (status === 'EXPIRING_SOON') {
-    return 'bg-amber-100 text-amber-700'
-  }
-
-  return 'bg-green-100 text-green-700'
+  if (status === 'EXPIRED') return 'bg-red-500/10 text-red-400'
+  if (status === 'EXPIRING_SOON') return 'bg-amber-500/10 text-amber-400'
+  return 'bg-green-500/10 text-green-400'
 }
 
 function getEntityLabel(vehiclePlate: string | null, driverName: string | null) {
@@ -82,24 +79,24 @@ export function DocumentList() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('documents.title')}</h1>
-          <p className="text-sm text-gray-500">{t('documents.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-white">{t('documents.title')}</h1>
+          <p className="text-sm text-white/40">{t('documents.subtitle')}</p>
         </div>
         {canMutate && (
           <Link
             to="/documents/new"
-            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
           >
             {t('documents.new')}
           </Link>
         )}
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-3">
+      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-3">
         <select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         >
           <option value="">{t('documents.filters.allVehicles')}</option>
           {vehicles.map((vehicle) => (
@@ -111,7 +108,7 @@ export function DocumentList() {
         <select
           value={type}
           onChange={(event) => setType(event.target.value as DocumentType | '')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         >
           <option value="">{t('documents.filters.allTypes')}</option>
           {Object.values(DocumentType).map((documentType) => (
@@ -123,7 +120,7 @@ export function DocumentList() {
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value as DocumentStatus | '')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         >
           <option value="">{t('documents.filters.allStatuses')}</option>
           <option value="OK">{t('documents.statuses.OK')}</option>
@@ -133,15 +130,15 @@ export function DocumentList() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">{t('common.loading')}</p>
+        <p className="text-sm text-white/40">{t('common.loading')}</p>
       ) : error ? (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-400">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="border-b border-gray-200 text-left text-gray-600">
+              <thead className="bg-fleet-darker">
+                <tr className="border-b border-white/[0.07] text-left text-white/40">
                   <th className="px-4 py-3 font-medium">{t('documents.columns.entity')}</th>
                   <th className="px-4 py-3 font-medium">{t('documents.columns.type')}</th>
                   <th className="px-4 py-3 font-medium">{t('documents.columns.expiryDate')}</th>
@@ -149,26 +146,28 @@ export function DocumentList() {
                   <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/[0.05]">
                 {documents.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={5} className="px-4 py-8 text-center text-white/30">
                       {t('documents.empty')}
                     </td>
                   </tr>
                 ) : (
                   documents.map((document) => (
-                    <tr key={document.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                    <tr key={document.id} className="hover:bg-white/[0.025]">
+                      <td className="px-4 py-3 font-medium text-white">
                         {getEntityLabel(document.vehiclePlate, document.driverName)}
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-white/40">
                           {document.vehiclePlate
                             ? t('documents.entity.vehicle')
                             : t('documents.entity.driver')}
                         </div>
                       </td>
-                      <td className="px-4 py-3">{t(`documents.types.${document.type}`)}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-white/70">
+                        {t(`documents.types.${document.type}`)}
+                      </td>
+                      <td className="px-4 py-3 text-white/70">
                         {new Date(document.expiryDate).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-4 py-3">
@@ -184,29 +183,29 @@ export function DocumentList() {
                             <button
                               type="button"
                               onClick={() => setPreviewUrl(document.fileUrl)}
-                              className="text-blue-600 hover:underline"
+                              className="text-gold hover:underline"
                             >
                               {t('documents.preview.viewFile')}
                             </button>
                           )}
                           {canMutate && (
                             <>
-                            <Link
-                              to={`/documents/${document.id}/edit`}
-                              className="text-gray-700 hover:underline"
-                            >
-                              {t('actions.edit')}
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(document.id)}
-                              className="text-red-600 hover:underline"
-                            >
-                              {t('actions.remove')}
-                            </button>
+                              <Link
+                                to={`/documents/${document.id}/edit`}
+                                className="text-white/55 hover:underline"
+                              >
+                                {t('actions.edit')}
+                              </Link>
+                              <button
+                                onClick={() => handleDelete(document.id)}
+                                className="text-red-400 hover:underline"
+                              >
+                                {t('actions.remove')}
+                              </button>
                             </>
                           )}
                           {!canMutate && !document.fileUrl && (
-                            <span className="text-gray-400">-</span>
+                            <span className="text-white/25">-</span>
                           )}
                         </div>
                       </td>

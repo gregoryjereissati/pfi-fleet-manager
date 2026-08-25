@@ -36,19 +36,21 @@ function DocumentAlertRow({
   return (
     <div
       className={`flex flex-col gap-3 rounded-md border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
-        isExpired ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'
+        isExpired
+          ? 'border-red-500/20 bg-red-500/[0.06]'
+          : 'border-amber-500/20 bg-amber-500/[0.06]'
       }`}
     >
       <div>
-        <p className="text-sm font-medium text-gray-900">
+        <p className="text-sm font-medium text-white">
           {entityLabel} - {t(`documents.types.${document.type}`)}
         </p>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-white/40">
           {new Date(document.expiryDate).toLocaleDateString('pt-BR')} -{' '}
           {getDaysLabel(document.expiryDate, document.status, t)}
         </p>
       </div>
-      <Link to="/documents" className="text-xs font-medium text-blue-600 hover:underline">
+      <Link to="/documents" className="text-xs font-medium text-gold hover:underline">
         {t('alerts.viewAll')}
       </Link>
     </div>
@@ -74,21 +76,21 @@ export function AlertCenter() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('alerts.title')}</h1>
-        <p className="text-sm text-gray-500">{t('alerts.subtitle')}</p>
+        <h1 className="text-2xl font-bold text-white">{t('alerts.title')}</h1>
+        <p className="text-sm text-white/40">{t('alerts.subtitle')}</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">{t('common.loading')}</p>
+        <p className="text-sm text-white/40">{t('common.loading')}</p>
       ) : !hasAlerts ? (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-6 py-8 text-center">
-          <p className="text-sm font-medium text-green-700">{t('alerts.empty')}</p>
+        <div className="rounded-lg border border-green-500/20 bg-green-500/[0.06] px-6 py-8 text-center">
+          <p className="text-sm font-medium text-green-400">{t('alerts.empty')}</p>
         </div>
       ) : (
         <div className="space-y-6">
           {expiredDocuments.length > 0 && (
             <section className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-red-700">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-red-400">
                 {t('alerts.expired')} ({expiredDocuments.length})
               </h2>
               {expiredDocuments.map((document) => (
@@ -99,7 +101,7 @@ export function AlertCenter() {
 
           {expiringSoonDocuments.length > 0 && (
             <section className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-700">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-400">
                 {t('alerts.expiringSoon')} ({expiringSoonDocuments.length})
               </h2>
               {expiringSoonDocuments.map((document) => (

@@ -27,6 +27,11 @@ function normalizeVehicleText(value: string) {
   return value.toUpperCase()
 }
 
+const inputClass =
+  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+
+const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+
 export function VehicleForm() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
@@ -123,94 +128,84 @@ export function VehicleForm() {
   }
 
   if (loading) {
-    return <p className="text-sm text-gray-500">{t('common.loading')}</p>
+    return <p className="text-sm text-white/40">{t('common.loading')}</p>
   }
 
   return (
     <div className="max-w-2xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-white">
           {isEdit ? t('vehicles.edit') : t('vehicles.new')}
         </h1>
-        <p className="text-sm text-gray-500">{t('vehicles.formSubtitle')}</p>
+        <p className="text-sm text-white/40">{t('vehicles.formSubtitle')}</p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-gray-200 bg-white p-6"
+        className="space-y-4 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
       >
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('vehicles.columns.plate')}
-            </label>
+            <label className={labelClass}>{t('vehicles.columns.plate')}</label>
             <input
               required
               value={form.plate}
               onChange={(event) => updateField('plate', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('vehicles.columns.brand')}
-            </label>
+            <label className={labelClass}>{t('vehicles.columns.brand')}</label>
             <input
               required
               value={form.brand}
               onChange={(event) => updateField('brand', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('vehicles.columns.model')}
-            </label>
+            <label className={labelClass}>{t('vehicles.columns.model')}</label>
             <input
               required
               value={form.model}
               onChange={(event) => updateField('model', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('vehicles.columns.year')}
-            </label>
+            <label className={labelClass}>{t('vehicles.columns.year')}</label>
             <input
               required
               type="number"
               value={form.year}
               onChange={(event) => updateField('year', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              {t('vehicles.columns.color')}
-            </label>
+            <label className={labelClass}>{t('vehicles.columns.color')}</label>
             <input
               value={form.color}
               onChange={(event) => updateField('color', event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
           >
             {submitting ? t('actions.saving') : t('actions.save')}
           </button>
           <button
             type="button"
             onClick={() => navigate('/vehicles')}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
           >
             {t('actions.cancel')}
           </button>
