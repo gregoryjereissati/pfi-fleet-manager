@@ -34,7 +34,21 @@ const envSchema = z.object({
 const result = envSchema.safeParse(process.env);
 
 if (!result.success) {
-  console.error('Variáveis de ambiente inválidas:', result.error.format());
+  const faltando = Object.entries(result.error.format())
+    .filter(([chave]) => chave !== '_errors')
+    .map(([chave, valor]) => `${chave}: ${(valor as { _errors: string[] })._errors.join(', ')}`)
+    .join(' | ');
+
+  const mensagem = `Variáveis de ambiente inválidas -> ${faltando}`;
+  console.error(mensagem);
+
+  // Em ambiente serverless não há processo a encerrar: `process.exit` produz
+  // uma falha genérica, sem indicar a causa. Lançar o erro faz a mensagem
+  // aparecer no log da plataforma.
+  if (process.env.VERCEL === '1') {
+    throw new Error(mensagem);
+  }
+
   process.exit(1);
 }
 

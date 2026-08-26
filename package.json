@@ -14,7 +14,8 @@
     "test:api": "npm run test --workspace=apps/api",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "vercel-build": "prisma generate --schema=apps/api/prisma/schema.prisma && npm run build --workspace=apps/web"
+    "vercel-build": "prisma generate --schema=apps/api/prisma/schema.prisma && npm run build --workspace=apps/web",
+    "postinstall": "prisma generate --schema=apps/api/prisma/schema.prisma"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",
