@@ -54,6 +54,18 @@ on conflict (id) do update set public = true;
 -- objeto antes de alterá-lo ou removê-lo. Desmarcar o SELECT depois de criar
 -- a política faz a remoção de arquivos falhar.
 --
+-- ATENÇÃO — a interface cria UMA POLÍTICA POR OPERAÇÃO marcada, acrescentando
+-- um sufixo ao nome informado (`_0`, `_1`, `_2`). Por isso, marque TODAS as
+-- operações da política 2 numa mesma submissão.
+--
+-- Criar UPDATE e depois DELETE em submissões separadas falha, porque cada
+-- submissão tenta gerar novamente a política de SELECT com o mesmo nome:
+--
+--     ERROR: 42710: policy "<nome>_0" for table "objects" already exists
+--
+-- Se isso ocorrer, apague as políticas já criadas para o bucket e recomece,
+-- marcando as três operações de uma vez.
+--
 -- ---------------------------------------------------------------------------
 -- POLÍTICA 1 — Envio de arquivos
 --   Nome              : Allow authenticated document uploads

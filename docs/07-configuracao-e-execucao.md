@@ -171,7 +171,17 @@ A interface permite marcar várias operações em uma mesma política, de modo q
 
 O envio fica isolado por ser a única política que carrega a restrição de extensões — regra que não faria sentido nas demais operações.
 
-> **Comportamento da interface.** Ao marcar UPDATE ou DELETE, o Supabase marca SELECT automaticamente, informando que *"UPDATE and DELETE require it"*. Está correto e deve ser mantido: ambas as operações precisam localizar o objeto antes de alterá-lo ou removê-lo. Desmarcar o SELECT após criar a política faz a remoção de arquivos falhar.
+> **Comportamento da interface — leia antes de criar.** A interface cria **uma política por operação marcada**, acrescentando um sufixo ao nome informado (`_0`, `_1`, `_2`).
+>
+> Por isso, as três operações da segunda política devem ser marcadas **na mesma submissão**. Criar UPDATE e depois DELETE separadamente falha, porque cada submissão tenta gerar novamente a política de SELECT com o mesmo nome:
+>
+> ```text
+> ERROR: 42710: policy "<nome>_0" for table "objects" already exists
+> ```
+>
+> Ocorrendo o erro, apagar as políticas já criadas para o bucket e recomeçar, marcando as três operações de uma vez.
+>
+> Ao marcar UPDATE ou DELETE, o Supabase marca SELECT automaticamente, informando que *"UPDATE and DELETE require it"*. Está correto e deve ser mantido: ambas as operações precisam localizar o objeto antes de alterá-lo ou removê-lo. Desmarcar o SELECT após criar a política faz a remoção de arquivos falhar.
 
 > **Leitura anônima não requer política.** O bucket é público, portanto os arquivos exibidos por `getPublicUrl` são servidos sem passar por RLS.
 
@@ -285,6 +295,7 @@ cd apps/web && npm run build              # build concluído
 | `new row violates row-level security policy` no upload | Políticas do Storage não aplicadas | Executar `supabase/storage-setup.sql` |
 | `42501: must be owner of table objects` ou `permission denied to set role` | Tentativa de configurar políticas de Storage por SQL | Criar as políticas pelo painel, conforme a seção 6.2 |
 | Bucket não aparece após executar o script | O SQL Editor executa em transação: um erro posterior desfaz o `insert` | Executar novamente o script já corrigido |
+| `42710: policy "<nome>_0" ... already exists` ao criar política de Storage | Operações marcadas em submissões separadas; cada uma recria a política de SELECT | Apagar as políticas do bucket e marcar SELECT, UPDATE e DELETE de uma só vez |
 | Logo não aparece na interface | Arquivo `apps/web/public/logo.svg` ausente | Confirmar que o arquivo foi obtido no clone |
 | Variáveis do frontend ignoradas | Prefixo incorreto | O Vite exige o prefixo `VITE_` |
 
