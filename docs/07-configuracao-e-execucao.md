@@ -160,14 +160,20 @@ No painel do Supabase, abrir **SQL Editor** → **New query**, colar o conteúdo
 
 ### 6.2. Criar as políticas (pelo painel)
 
-Acessar **Storage** → **Policies** → bucket `documents` → **New policy** → *For full customization*, e criar as quatro políticas:
+Acessar **Storage** → **Policies** → bucket `documents` → **New policy** → *For full customization*.
 
-| Política | Operação | Papéis | Expressão |
+A interface permite marcar várias operações em uma mesma política, de modo que **duas políticas** cobrem todo o uso do sistema:
+
+| Política | Operações | Papéis | Expressão |
 |---|---|---|---|
-| Envio | INSERT | `authenticated` | `bucket_id = 'documents' and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')` |
-| Substituição | UPDATE | `authenticated` | `bucket_id = 'documents'` |
-| Remoção | DELETE | `authenticated` | `bucket_id = 'documents'` |
-| Leitura | SELECT | `anon`, `authenticated` | `bucket_id = 'documents'` |
+| `Allow authenticated document uploads` | apenas INSERT | `authenticated` | **WITH CHECK:** `bucket_id = 'documents' and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')` |
+| `Allow authenticated document management` | SELECT, UPDATE, DELETE | `authenticated` | **USING** e **WITH CHECK:** `bucket_id = 'documents'` |
+
+O envio fica isolado por ser a única política que carrega a restrição de extensões — regra que não faria sentido nas demais operações.
+
+> **Comportamento da interface.** Ao marcar UPDATE ou DELETE, o Supabase marca SELECT automaticamente, informando que *"UPDATE and DELETE require it"*. Está correto e deve ser mantido: ambas as operações precisam localizar o objeto antes de alterá-lo ou removê-lo. Desmarcar o SELECT após criar a política faz a remoção de arquivos falhar.
+
+> **Leitura anônima não requer política.** O bucket é público, portanto os arquivos exibidos por `getPublicUrl` são servidos sem passar por RLS.
 
 > A restrição de extensões na política de envio é a **única validação de tipo de arquivo do sistema**, já que o upload não transita pela API (ver [04-arquitetura.md](04-arquitetura.md#6-armazenamento-de-arquivos)).
 

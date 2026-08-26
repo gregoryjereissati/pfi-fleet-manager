@@ -45,44 +45,43 @@ on conflict (id) do update set public = true;
 -- Caminho: Storage > Policies > bucket `documents` > New policy
 --          > "For full customization"
 --
--- Criar as quatro políticas abaixo. O campo "Policy name" é livre; os demais
--- devem seguir exatamente o indicado.
+-- A interface permite marcar várias operações em uma mesma política, de modo
+-- que duas políticas cobrem todo o uso do sistema.
+--
+-- Observação da interface: ao marcar UPDATE ou DELETE, o Supabase marca
+-- SELECT automaticamente e informa que "UPDATE and DELETE require it". Isso
+-- está correto e deve ser mantido — ambas as operações precisam localizar o
+-- objeto antes de alterá-lo ou removê-lo. Desmarcar o SELECT depois de criar
+-- a política faz a remoção de arquivos falhar.
 --
 -- ---------------------------------------------------------------------------
 -- POLÍTICA 1 — Envio de arquivos
 --   Nome              : Allow authenticated document uploads
---   Allowed operation : INSERT
+--   Allowed operation : INSERT   (apenas esta)
 --   Target roles      : authenticated
 --   WITH CHECK        :
 --
 --       bucket_id = 'documents'
 --       and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')
 --
---   A restrição de extensões é a ÚNICA validação de tipo de arquivo do
---   sistema, já que o upload não passa pela API. Se for omitida, o sistema
---   continua funcionando, porém aceitará qualquer tipo de arquivo.
+--   Fica isolada porque é a única que carrega a restrição de extensões, que
+--   não faria sentido nas demais operações.
+--
+--   Essa restrição é a ÚNICA validação de tipo de arquivo do sistema, já que
+--   o upload não passa pela API. Se for omitida, o sistema continua
+--   funcionando, porém aceitará qualquer tipo de arquivo.
 --
 -- ---------------------------------------------------------------------------
--- POLÍTICA 2 — Substituição de arquivos
---   Nome              : Allow authenticated document updates
---   Allowed operation : UPDATE
+-- POLÍTICA 2 — Leitura, substituição e remoção
+--   Nome              : Allow authenticated document management
+--   Allowed operation : SELECT, UPDATE, DELETE
 --   Target roles      : authenticated
 --   USING             : bucket_id = 'documents'
 --   WITH CHECK        : bucket_id = 'documents'
 --
 -- ---------------------------------------------------------------------------
--- POLÍTICA 3 — Remoção de arquivos
---   Nome              : Allow authenticated document deletes
---   Allowed operation : DELETE
---   Target roles      : authenticated
---   USING             : bucket_id = 'documents'
---
--- ---------------------------------------------------------------------------
--- POLÍTICA 4 — Leitura
---   Nome              : Allow public document reads
---   Allowed operation : SELECT
---   Target roles      : anon, authenticated
---   USING             : bucket_id = 'documents'
+-- Leitura anônima não requer política: o bucket é público, portanto os
+-- arquivos exibidos por getPublicUrl são servidos sem passar por RLS.
 --
 -- ===========================================================================
 -- SQL equivalente (referência — não executável pelo SQL Editor)
@@ -97,16 +96,8 @@ on conflict (id) do update set public = true;
 --     and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')
 --   );
 --
---   create policy "Allow authenticated document updates"
---   on storage.objects for update to authenticated
+--   create policy "Allow authenticated document management"
+--   on storage.objects for all to authenticated
 --   using (bucket_id = 'documents')
 --   with check (bucket_id = 'documents');
---
---   create policy "Allow authenticated document deletes"
---   on storage.objects for delete to authenticated
---   using (bucket_id = 'documents');
---
---   create policy "Allow public document reads"
---   on storage.objects for select to anon, authenticated
---   using (bucket_id = 'documents');
 -- ===========================================================================
