@@ -1,0 +1,12 @@
+{
+  "//": "Saída CommonJS — consumida pelo Node (API e função serverless).",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "dist/cjs",
+    "rootDir": "src",
+    "declaration": true,
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts"]
+}

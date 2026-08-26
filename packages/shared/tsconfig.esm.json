@@ -1,0 +1,13 @@
+{
+  "//": "Saída ESM — consumida pelo Vite/Rollup, que exige imports nomeados.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "outDir": "dist/esm",
+    "rootDir": "src",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts"]
+}
