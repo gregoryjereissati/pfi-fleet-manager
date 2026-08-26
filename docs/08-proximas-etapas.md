@@ -11,15 +11,7 @@ Este documento organiza o trabalho restante em ordem de prioridade. Cada item de
 
 > A notificação de vencimentos por canais externos **não figura entre as etapas abaixo**: foi excluída do escopo do projeto por decisão registrada em [01-descricao-do-problema-e-escopo.md](01-descricao-do-problema-e-escopo.md#10-fora-do-escopo).
 
-### 1.1. Tornar o CORS configurável
-
-**Situação.** A configuração em `apps/api/src/app.ts` aceita exclusivamente origens `http://localhost:<porta>`.
-
-**Encaminhamento.** Substituir a expressão fixa por uma lista de origens definida em variável de ambiente (`CORS_ORIGINS`), mantendo `localhost` como padrão de desenvolvimento.
-
-**Justificativa.** É pré-requisito técnico da publicação: sem essa alteração, o frontend publicado é bloqueado pelo navegador ao chamar a API.
-
-### 1.2. Publicar o sistema em ambiente de produção
+### 1.1. Publicar o sistema em ambiente de produção
 
 | Componente | Plataforma prevista |
 |---|---|
@@ -31,7 +23,7 @@ Este documento organiza o trabalho restante em ordem de prioridade. Cada item de
 
 **Justificativa.** Concluir a etapa final prevista no planejamento e permitir a demonstração do sistema sem depender de ambiente local.
 
-### 1.3. Avaliar a confirmação de e-mail no cadastro
+### 1.2. Avaliar a confirmação de e-mail no cadastro
 
 **Situação.** A confirmação de e-mail está desativada no projeto Supabase, pois não há serviço de envio configurado. A posse do endereço informado não é verificada no cadastro.
 
@@ -115,14 +107,14 @@ Itens fora do escopo desta versão, registrados como desdobramentos possíveis d
 
 ```mermaid
 flowchart TB
-    B["1.1 Tornar o CORS configurável"] --> C["1.2 Publicar backend e frontend"]
+    C["1.1 Publicar backend e frontend"]
     C --> F["2.1 Vincular motorista e usuário"]
     C --> G["2.2 Ciclo de vida dos arquivos"]
     F --> H["2.3 Autoria dos lançamentos"]
     C --> I["2.5 Ampliar testes"]
 ```
 
-A publicação em produção (1.2) é o item de maior valor imediato, pois viabiliza a demonstração do sistema e encerra a última etapa prevista no planejamento. Ela depende de uma correção de baixo custo (1.1), de poucas linhas.
+A publicação em produção (1.1) é o item de maior valor imediato, pois viabiliza a demonstração do sistema e encerra a última etapa prevista no planejamento.
 
 Concluída a publicação, o item de maior valor técnico é o vínculo entre motorista e conta de usuário (2.1), por eliminar a única divergência remanescente entre o modelo conceitual descrito na documentação e o modelo implementado.
 

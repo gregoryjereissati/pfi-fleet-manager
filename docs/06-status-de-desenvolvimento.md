@@ -169,7 +169,7 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 | Integração contínua (CI) | ⏳ | — | Configurar execução automática dos testes |
 | Publicação do frontend | ⏳ | — | Publicar na Vercel |
 | Publicação do backend | ⏳ | — | Publicar no Railway |
-| Configuração de CORS para produção | 🟡 | `app.ts` | Ver seção 4 |
+| Configuração de CORS para produção | ✅ | `app.ts`, `config/env.ts` | — |
 
 ---
 
@@ -214,12 +214,11 @@ Registradas de forma explícita para que o estado do projeto não seja superesti
 
 | # | Pendência | Impacto | Prioridade |
 |---|---|---|---|
-| 1 | CORS aceita apenas origens `localhost` | Impede o funcionamento após a publicação em produção | Alta |
-| 2 | A confirmação de e-mail precisa estar desativada no projeto Supabase | Com ela ativa, o cadastro não se completa, pois não há serviço de envio configurado | Média |
-| 3 | Arquivos permanecem no Storage após a exclusão do documento | Acúmulo de arquivos órfãos | Média |
-| 4 | Ausência de validação de arquivo no servidor de aplicação | A restrição depende exclusivamente da política do Storage | Média |
-| 5 | Bucket de arquivos é público | Quem possuir a URL acessa o arquivo sem autenticação | Média |
-| 6 | `User` e `Driver` sem vínculo no modelo de dados | O operador não pode ser associado ao seu cadastro de motorista | Média |
+| 1 | A confirmação de e-mail precisa estar desativada no projeto Supabase | Com ela ativa, o cadastro não se completa, pois não há serviço de envio configurado | Média |
+| 2 | Arquivos permanecem no Storage após a exclusão do documento | Acúmulo de arquivos órfãos | Média |
+| 3 | Ausência de validação de arquivo no servidor de aplicação | A restrição depende exclusivamente da política do Storage | Média |
+| 4 | Bucket de arquivos é público | Quem possuir a URL acessa o arquivo sem autenticação | Média |
+| 5 | `User` e `Driver` sem vínculo no modelo de dados | O operador não pode ser associado ao seu cadastro de motorista | Média |
 | 7 | Pacote JavaScript único, sem divisão por rota | Carregamento inicial mais lento | Baixa |
 | 8 | Ausência de testes automatizados de interface | Regressões visuais não são detectadas automaticamente | Baixa |
 | 9 | RNF04 (tempo de resposta) sem medição formal | Requisito declarado, porém não comprovado | Baixa |

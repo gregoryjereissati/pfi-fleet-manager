@@ -22,6 +22,13 @@ const envSchema = z.object({
     .string()
     .url()
     .transform((value) => value.replace(/\/$/, '')),
+
+  /**
+   * Origens autorizadas pelo CORS, separadas por vírgula.
+   * Em desenvolvimento, qualquer porta de localhost é aceita mesmo sem esta
+   * variável; em produção, o domínio do frontend precisa constar aqui.
+   */
+  CORS_ORIGINS: z.string().default(''),
 });
 
 const result = envSchema.safeParse(process.env);
@@ -32,3 +39,8 @@ if (!result.success) {
 }
 
 export const env = result.data;
+
+/** Origens explicitamente autorizadas pelo CORS, já normalizadas. */
+export const corsOrigins = env.CORS_ORIGINS.split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter((origin) => origin.length > 0);
