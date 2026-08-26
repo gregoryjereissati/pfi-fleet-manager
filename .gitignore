@@ -3,6 +3,8 @@ dist/
 .env
 .env.local
 *.env
+.env.*
+**/.env.*
 .DS_Store
 coverage/
 .superpowers/
