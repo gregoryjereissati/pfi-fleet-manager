@@ -156,7 +156,13 @@ O anexo de arquivos aos documentos requer um bucket e as respectivas políticas 
 
 No painel do Supabase, abrir **SQL Editor** → **New query**, colar o conteúdo de [`supabase/storage-setup.sql`](../supabase/storage-setup.sql) e executar.
 
-O script cria o bucket `documents` como público e aplica duas políticas: uma permitindo o envio de arquivos com extensão `jpg`, `jpeg`, `png`, `webp` ou `pdf`, e outra permitindo a leitura pública dos arquivos do bucket.
+O script cria o bucket `documents` como público e aplica quatro políticas sobre ele: envio, substituição e remoção por usuários autenticados, e leitura. O envio restringe as extensões a `jpg`, `jpeg`, `png`, `webp` e `pdf` — como o upload não passa pela API, essa é a única validação de tipo de arquivo existente.
+
+> **Sobre a propriedade da tabela.** A tabela `storage.objects` pertence ao papel `supabase_storage_admin`, e não ao `postgres` usado pelo SQL Editor. Como o PostgreSQL exige ser dono da tabela para criar políticas, o script assume esse papel com `SET ROLE` antes de criá-las.
+>
+> Pelo mesmo motivo, o script **não** executa `ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY`: além de exigir propriedade, o RLS já vem habilitado nessa tabela por padrão. Tentar executá-lo produz o erro `42501: must be owner of table objects`.
+>
+> Se o `SET ROLE` for rejeitado no seu projeto, execute apenas a criação do bucket e configure as políticas por **Storage → Policies**. As instruções estão no final do próprio arquivo SQL.
 
 ---
 
@@ -246,6 +252,7 @@ cd apps/web && npm run build              # build concluído
 | `A API retornou HTML em vez de JSON` | Backend fora do ar, ou `VITE_API_URL` incorreta | Iniciar a API e conferir a variável |
 | Erro de CORS no navegador | Origem não permitida | Em desenvolvimento, apenas `localhost` é aceito |
 | `new row violates row-level security policy` no upload | Políticas do Storage não aplicadas | Executar `supabase/storage-setup.sql` |
+| `42501: must be owner of table objects` no SQL Editor | Tentativa de alterar `storage.objects`, que pertence a `supabase_storage_admin` | Usar a versão atual do script, que assume o papel com `SET ROLE` |
 | Logo não aparece na interface | Arquivo `apps/web/public/logo.svg` ausente | Confirmar que o arquivo foi obtido no clone |
 | Variáveis do frontend ignoradas | Prefixo incorreto | O Vite exige o prefixo `VITE_` |
 
