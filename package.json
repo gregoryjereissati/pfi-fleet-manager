@@ -13,7 +13,8 @@
     "test": "npm run test --workspaces --if-present",
     "test:api": "npm run test --workspace=apps/api",
     "lint": "eslint . --ext .ts",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "vercel-build": "prisma generate --schema=apps/api/prisma/schema.prisma && npm run build --workspace=apps/web"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",

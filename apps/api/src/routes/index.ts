@@ -7,6 +7,7 @@ import { expenseRouter } from './expense.routes';
 import { maintenanceRouter } from './maintenance.routes';
 import { documentRouter } from './document.routes';
 import { dashboardRouter } from './dashboard.routes';
+import { jobRouter } from './job.routes';
 
 export const router = Router();
 
@@ -18,3 +19,4 @@ router.use('/expenses', expenseRouter);
 router.use('/maintenances', maintenanceRouter);
 router.use('/documents', documentRouter);
 router.use('/dashboard', dashboardRouter);
+router.use('/jobs', jobRouter);

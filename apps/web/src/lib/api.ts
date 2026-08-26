@@ -1,4 +1,11 @@
-const API_URL = (import.meta.env.VITE_API_URL as string).replace(/\/$/, '')
+/**
+ * URL base da API.
+ *
+ * Vazia quando frontend e API são servidos pelo mesmo domínio — caso da
+ * publicação em projeto único na Vercel —, situação em que as chamadas usam
+ * caminho relativo e não há requisição entre origens diferentes.
+ */
+const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
 
 export async function apiFetch<T>(
   path: string,

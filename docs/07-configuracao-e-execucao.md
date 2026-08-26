@@ -301,7 +301,65 @@ cd apps/web && npm run build              # build concluído
 
 ---
 
-## 11. Alternativa: PostgreSQL local
+## 11. Publicação em produção (Vercel)
+
+O projeto é publicado como **um único projeto na Vercel**, servindo o frontend estático e a API como função serverless no mesmo domínio.
+
+### 11.1. Por que projeto único
+
+| Consequência | Efeito |
+|---|---|
+| Mesma origem para interface e API | O CORS deixa de existir: as chamadas usam caminho relativo |
+| Uma única URL | Simplifica a entrega e a demonstração |
+| Plano gratuito | Não há custo de hospedagem para o frontend nem para a API |
+
+### 11.2. Arquivos que sustentam a publicação
+
+| Arquivo | Função |
+|---|---|
+| [`api/index.ts`](../api/index.ts) | Exporta a aplicação Express como função serverless. Uma aplicação Express é um handler `(req, res)`, portanto pode ser exportada diretamente. |
+| [`vercel.json`](../vercel.json) | Define build, diretório de saída, reescritas para a SPA e o agendamento diário. |
+| `tsconfig.json` (raiz) | Opções de compilação do entrypoint serverless. |
+| `package.json` → `vercel-build` | Gera o cliente Prisma e constrói o frontend. |
+
+### 11.3. Variáveis de ambiente na Vercel
+
+Configurar em *Project Settings → Environment Variables*:
+
+| Variável | Valor |
+|---|---|
+| `DATABASE_URL` | Connection string do pooler (porta 6543) |
+| `DIRECT_URL` | Connection string de sessão (porta 5432) |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `VITE_SUPABASE_URL` | mesmo valor acima |
+| `VITE_SUPABASE_ANON_KEY` | chave pública do projeto |
+| `CRON_SECRET` | segredo aleatório que protege a rotina agendada |
+
+> **`VITE_API_URL` não deve ser definida.** Sua ausência faz o cliente usar caminho relativo, que é o comportamento correto quando interface e API compartilham o domínio.
+
+### 11.4. Rotina agendada em ambiente serverless
+
+Não há processo persistente entre requisições, portanto o agendamento interno com `node-cron` não funciona na Vercel. A rotina passa a ser disparada pela plataforma:
+
+- `vercel.json` declara a execução diária de `/api/jobs/alerts`;
+- a rota exige o cabeçalho `Authorization: Bearer <CRON_SECRET>` e recusa a requisição se a variável não estiver configurada;
+- em ambiente local, o agendamento interno continua ativo — ele é desligado automaticamente quando `VERCEL=1` ou `DISABLE_INTERNAL_CRON=true`.
+
+O comportamento é equivalente ao do ambiente local: a rotina permanece idempotente e marca os documentos que vencem em até 30 dias.
+
+### 11.5. Publicando
+
+1. Enviar os commits para o GitHub.
+2. Em [vercel.com](https://vercel.com), *Add New → Project* e importar o repositório.
+3. Manter as configurações detectadas — `vercel.json` já define build e saída.
+4. Cadastrar as variáveis da seção 11.3 **antes** do primeiro build, pois as variáveis `VITE_*` são embutidas no pacote durante a construção.
+5. Concluir o deploy e verificar `https://<projeto>.vercel.app/health`.
+
+> Após alterar qualquer variável `VITE_*`, é necessário reconstruir o projeto: o valor é embutido no pacote JavaScript em tempo de build, e não lido em tempo de execução.
+
+---
+
+## 12. Alternativa: PostgreSQL local
 
 Caso se prefira não depender do Supabase para o banco de dados:
 

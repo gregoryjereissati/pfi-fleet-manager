@@ -1,0 +1,11 @@
+{
+  "//": "Usado pelo entrypoint serverless em api/. Cada workspace mantém o seu próprio tsconfig.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "types": ["node"]
+  },
+  "include": ["api/**/*.ts", "apps/api/src/types/**/*.d.ts"]
+}
