@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { UserRole } from '@fleet-manager/shared'
+import { UserRole, UserStatus } from '@fleet-manager/shared'
+import type { RegisterProfileResponseDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { getAccessToken, hasSession, signIn, signUp } from '@/lib/supabase'
 
@@ -80,12 +81,18 @@ export function Register() {
       const token = await getAccessToken()
       const { password: _password, confirmPassword: _confirmPassword, ...profile } = form
 
-      await apiFetch('/auth/register', token, {
+      const result = await apiFetch<RegisterProfileResponseDto>('/auth/register', token, {
         method: 'POST',
         body: JSON.stringify({ ...profile, cpf: cpfDigits }),
       })
 
-      navigate('/login?registered=true', { replace: true })
+      // Um perfil vinculado a cadastro preexistente já aprovado dispensa a
+      // espera; nesse caso a sessão criada acima já dá acesso ao sistema.
+      if (result.user?.status === UserStatus.ACTIVE) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        navigate('/login?registered=true', { replace: true })
+      }
     } catch (err) {
       const msg = (err as Error).message
       if (msg === 'Failed to fetch' || msg.toLowerCase().includes('network')) {

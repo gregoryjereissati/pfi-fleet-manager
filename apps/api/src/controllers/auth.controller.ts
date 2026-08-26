@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { UserRole } from '@fleet-manager/shared';
+import { UserRole, UserStatus } from '@fleet-manager/shared';
 import { authService } from '../services/auth.service';
 import { toCurrentUserDto } from '../lib/user-dto';
 
@@ -38,10 +38,14 @@ export const authController = {
 
       const user = await authService.registerProfile(req.authUser, parsed.data);
 
-      res.status(201).json({
-        message: 'Cadastro recebido. Aguarde a aprovação de um administrador.',
-        user: toCurrentUserDto(user),
-      });
+      // O perfil pode ter sido criado como PENDING ou vinculado a um perfil
+      // preexistente já aprovado. A mensagem reflete o caso ocorrido.
+      const message =
+        user.status === UserStatus.ACTIVE
+          ? 'Cadastro concluído. Seu acesso já está liberado.'
+          : 'Cadastro recebido. Aguarde a aprovação de um administrador.';
+
+      res.status(201).json({ message, user: toCurrentUserDto(user) });
     } catch (err) {
       next(err);
     }
