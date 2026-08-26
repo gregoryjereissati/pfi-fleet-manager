@@ -259,10 +259,14 @@ ON CONFLICT (id) DO NOTHING;
 --   2. Revogacao de privilegios: mesmo que uma policy seja criada por engano
 --      no futuro, os papeis publicos nao possuem permissao sobre as tabelas.
 --
+-- A tabela _prisma_migrations tambem entra na lista: ela e de controle
+-- interno do Prisma e nao deve ser exposta pela API REST.
+--
 -- O Storage tem tratamento proprio, em supabase/storage-setup.sql, porque la
 -- o navegador e de fato o agente da requisicao.
 -- ===========================================================================
 
+ALTER TABLE "_prisma_migrations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "User"            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Vehicle"         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Driver"          ENABLE ROW LEVEL SECURITY;
