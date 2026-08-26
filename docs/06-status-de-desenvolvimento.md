@@ -162,6 +162,7 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 | Migrations versionadas | ✅ | 5 migrations | — |
 | Rotina de povoamento do banco | ✅ | `prisma/seed.ts` | — |
 | Configuração do Storage versionada | ✅ | `supabase/storage-setup.sql` | — |
+| Bloqueio do acesso externo às tabelas (RLS + revoke) | ✅ | `supabase/schema-completo.sql` | — |
 | Testes automatizados de interface | ⏳ | — | Introduzir testes de componente |
 | Testes de integração da API | ⏳ | — | `supertest` já é dependência do projeto |
 | Integração contínua (CI) | ⏳ | — | Configurar execução automática dos testes |

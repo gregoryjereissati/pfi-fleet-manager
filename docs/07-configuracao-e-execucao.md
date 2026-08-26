@@ -128,7 +128,9 @@ Alternativa para quem prefere não configurar a connection string apenas para cr
 1. Painel do Supabase → **SQL Editor** → **New query**
 2. Colar o conteúdo de [`supabase/schema-completo.sql`](../supabase/schema-completo.sql) e executar
 
-O script cria os 8 tipos enumerados, as 7 tabelas, as 6 chaves estrangeiras e os índices de unicidade, e registra as migrations como aplicadas — de modo que um `prisma migrate deploy` posterior reconheça o banco como atualizado em vez de tentar recriá-lo.
+O script cria os 8 tipos enumerados, as 7 tabelas, as 6 chaves estrangeiras e os índices de unicidade, registra as migrations como aplicadas — de modo que um `prisma migrate deploy` posterior reconheça o banco como atualizado — e, ao final, bloqueia o acesso externo às tabelas.
+
+> **Aviso do SQL Editor.** Ao executar, o Supabase pode exibir a mensagem *"This query creates tables without enabling Row Level Security"*. Qualquer opção pode ser escolhida: a seção final do script habilita o RLS e revoga os privilégios dos papéis públicos de forma explícita. A justificativa está em [05-banco-de-dados.md](05-banco-de-dados.md#4-controle-de-acesso-ao-banco).
 
 > **O povoamento continua exigindo a connection string.** O seed é executado pela aplicação (`npx prisma db seed`), e não pelo SQL Editor. Da mesma forma, o backend só conecta ao banco com `DATABASE_URL` configurada — a senha do PostgreSQL é necessária na máquina que executa o sistema, ainda que o schema tenha sido criado pelo painel.
 

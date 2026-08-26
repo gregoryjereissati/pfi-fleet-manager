@@ -26,6 +26,16 @@
 --   guarda apenas o perfil da aplicação e referencia a conta de acesso pela
 --   coluna authUserId.
 --
+-- SEGURANÇA (Row Level Security)
+--   O Supabase expõe automaticamente o schema public pela API REST
+--   (PostgREST), acessível com a chave publica do projeto. Como essa chave
+--   fica embutida no frontend, as tabelas seriam legiveis por qualquer um.
+--   A ultima secao deste script bloqueia esse caminho. O acesso da aplicacao
+--   nao e afetado: o Prisma conecta com o papel dono das tabelas.
+--
+--   Se o SQL Editor perguntar sobre RLS ao executar, qualquer opcao serve —
+--   a secao final garante o resultado correto de todo modo.
+--
 -- IMPORTANTE
 --   Este script cria apenas a ESTRUTURA (tabelas, enums, chaves e índices).
 --   Os dados de demonstração são inseridos pelo seed, que precisa da
@@ -230,3 +240,40 @@ VALUES
     (gen_random_uuid()::text, '2e37ae300fef3353511a5d46556ec4042b657de1aae8b3883cbf5d28044c1055', now(), '20260526172511_add_file_url_to_document', now(), 1),
     (gen_random_uuid()::text, 'e7400b9b5bd075a23ffe440299744c32cf57529b649c7c1b799d03008b54c3c8', now(), '20260826000000_supabase_auth', now(), 1)
 ON CONFLICT (id) DO NOTHING;
+
+-- ===========================================================================
+-- Bloqueio do acesso externo às tabelas da aplicação
+-- ===========================================================================
+-- O Fleet Manager acessa o banco exclusivamente pelo backend, via Prisma,
+-- usando a connection string do PostgreSQL. A API REST gerada pelo Supabase
+-- (PostgREST) NAO e utilizada por nenhuma parte do sistema.
+--
+-- Sem as instrucoes abaixo, essas tabelas ficariam acessiveis por qualquer
+-- pessoa de posse da chave publica do projeto, que e distribuida junto com o
+-- frontend.
+--
+-- Duas camadas complementares:
+--   1. RLS habilitado sem nenhuma policy: nega todo acesso pelos papeis
+--      anon e authenticated. O papel dono das tabelas nao e afetado, entao o
+--      Prisma continua operando normalmente.
+--   2. Revogacao de privilegios: mesmo que uma policy seja criada por engano
+--      no futuro, os papeis publicos nao possuem permissao sobre as tabelas.
+--
+-- O Storage tem tratamento proprio, em supabase/storage-setup.sql, porque la
+-- o navegador e de fato o agente da requisicao.
+-- ===========================================================================
+
+ALTER TABLE "User"            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Vehicle"         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Driver"          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Expense"         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Maintenance"     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Document"        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "_VehicleDrivers" ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON ALL TABLES    IN SCHEMA public FROM anon, authenticated;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
+
+-- Impede que tabelas criadas futuramente herdem os privilegios padrao.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES    FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated;

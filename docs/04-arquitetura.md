@@ -214,11 +214,22 @@ Se a conta estiver autenticada mas ainda não possuir perfil, a API responde `40
 
 > **Condição de configuração.** A confirmação de e-mail deve estar **desativada** no projeto Supabase. Como a notificação por e-mail está fora do escopo (seção 10 do documento de escopo), não há serviço de envio configurado; com a confirmação ativa, o cadastro não se completa. A consequência é registrada de forma explícita: com a confirmação desativada, a posse do endereço de e-mail não é verificada no momento do cadastro. O controle de acesso efetivo permanece na aprovação manual pelo administrador, exigida antes de qualquer acesso ao sistema.
 
-### Ausência de Row Level Security nas tabelas da aplicação
+### Row Level Security nas tabelas da aplicação
 
-O banco **não utiliza RLS** nas tabelas do Fleet Manager. Trata-se de decisão arquitetural consciente: o PostgreSQL é acessado exclusivamente pelo backend, por meio de uma única credencial de serviço, e o navegador nunca se conecta diretamente ao banco. A autorização é integralmente aplicada na camada de aplicação, pelo middleware `authorize`.
+A autorização do Fleet Manager é aplicada na **camada de aplicação**, pelo middleware `authorize`: o PostgreSQL é acessado exclusivamente pelo backend, via Prisma, e o navegador nunca consulta o banco diretamente. Nesse desenho, o RLS não participa das regras de permissão — elas não seriam expressáveis em nível de linha, pois dependem da rota chamada e não apenas do usuário.
 
-O RLS seria indispensável no modelo em que o cliente consulta o banco diretamente — cenário que esta arquitetura não adota. Há, contudo, política de RLS aplicada ao **Storage**, onde o navegador é de fato o agente da requisição (seção 6).
+Isso **não significa que o RLS seja dispensável**. O Supabase expõe automaticamente o schema `public` por uma API REST gerada (PostgREST), acessível com a chave pública do projeto — chave que, por natureza, é distribuída junto com o frontend. Sem proteção, as tabelas seriam legíveis e graváveis por qualquer pessoa que a obtivesse, contornando integralmente a API e o controle de acesso por perfil.
+
+O projeto adota, portanto, duas camadas de proteção, aplicadas por [`supabase/schema-completo.sql`](../supabase/schema-completo.sql):
+
+| Camada | Efeito |
+|---|---|
+| **RLS habilitado sem nenhuma policy** | Nega todo acesso pelos papéis `anon` e `authenticated`. O papel proprietário das tabelas não é submetido a RLS, portanto o Prisma opera normalmente. |
+| **Revogação de privilégios** sobre o schema `public` | Garante que os papéis públicos não tenham permissão sobre as tabelas, mesmo que uma policy seja criada por engano. Vale também para tabelas futuras, por `ALTER DEFAULT PRIVILEGES`. |
+
+A ausência de policies é intencional: elas só fariam sentido se o cliente consultasse o banco diretamente, o que esta arquitetura não faz. O objetivo aqui é **fechar um caminho de acesso que a plataforma abre por padrão**, e não replicar a autorização no banco.
+
+O **Storage** recebe tratamento distinto (seção 6): ali o navegador é de fato o agente da requisição, e as policies são permissivas por necessidade.
 
 ## 5. Fluxo de uma requisição típica
 

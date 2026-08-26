@@ -248,7 +248,24 @@ As mesmas enumerações são declaradas em `packages/shared/src/enums/index.ts` 
 
 ---
 
-## 4. Integridade referencial
+## 4. Controle de acesso ao banco
+
+O acesso às tabelas ocorre exclusivamente pelo backend, via Prisma, com a credencial de serviço do PostgreSQL. A API REST gerada automaticamente pelo Supabase (PostgREST) **não é utilizada** por nenhuma parte do sistema.
+
+Como essa API é exposta por padrão e responde à chave pública do projeto — distribuída junto com o frontend —, o script de criação do banco fecha esse caminho:
+
+```sql
+ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;   -- e demais tabelas
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+```
+
+Com RLS habilitado e **nenhuma policy criada**, os papéis públicos não acessam linha alguma. O papel proprietário das tabelas não é submetido a RLS, de modo que o Prisma não é afetado.
+
+A autorização por perfil (RBAC) permanece na camada de aplicação, conforme [04-arquitetura.md](04-arquitetura.md).
+
+---
+
+## 5. Integridade referencial
 
 | Relacionamento | Comportamento na exclusão | Efeito |
 |---|---|---|
@@ -262,7 +279,7 @@ A exclusão em cascata sustenta a funcionalidade de **exclusão permanente**, di
 
 ---
 
-## 5. Migrations e reprodutibilidade
+## 6. Migrations e reprodutibilidade
 
 O histórico de evolução do schema está versionado em `apps/api/prisma/migrations/`:
 
@@ -289,7 +306,7 @@ O bucket e as políticas do Storage são recriados separadamente, executando [`s
 
 ---
 
-## 6. Limitações reconhecidas do modelo
+## 7. Limitações reconhecidas do modelo
 
 | Limitação | Consequência | Encaminhamento |
 |---|---|---|
@@ -301,7 +318,7 @@ O bucket e as políticas do Storage são recriados separadamente, executando [`s
 
 ---
 
-## 7. Dados de demonstração
+## 8. Dados de demonstração
 
 A rotina [`apps/api/prisma/seed.ts`](../apps/api/prisma/seed.ts) popula o banco com uma frota fictícia consistente, empregada na validação do sistema:
 
