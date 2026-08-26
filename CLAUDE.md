@@ -26,7 +26,7 @@ Essas decisões foram tomadas e documentadas no spec. Não altere sem alinhar co
 | Backend | Node.js + Express + TypeScript | API REST, Layered Architecture |
 | ORM | Prisma | Melhor type-safety com TypeScript + PostgreSQL |
 | Banco de dados | PostgreSQL (Supabase) | Banco gerenciado no Supabase, acessado via Prisma |
-| Autenticação | JWT próprio + e-mail/senha | Hash com `bcryptjs`, token assinado e validado com `jose` + `JWT_SECRET` |
+| Autenticação | Supabase Auth (e-mail/senha) | Credenciais no Supabase; a API verifica o token ES256 pelo JWKS do projeto, sem segredo compartilhado. Papel e situação seguem na tabela `User` |
 | Validação | Zod | Validação de body nas rotas e de env vars na startup |
 | Controle de acesso | RBAC | Roles: ADMIN, MANAGER, OPERATOR |
 | Deploy Backend | Railway | Deploy do backend Node.js via GitHub — suporta processo persistente e cron jobs; free tier suficiente para apresentação |
@@ -64,12 +64,19 @@ apps/api/src/
 ### Fluxo de Autenticação
 
 ```
-1. Frontend envia e-mail e senha para POST /auth/login
-2. Backend valida a senha com bcrypt e assina um JWT próprio
-3. Frontend salva o token e envia: Authorization: Bearer <token>
-4. Backend valida o JWT com JWT_SECRET local
-5. Middleware extrai userId do token e busca User no banco
+1. Frontend autentica no Supabase Auth (supabase.auth.signInWithPassword)
+2. Supabase devolve access_token (JWT ES256) e renova a sessão automaticamente
+3. Frontend envia: Authorization: Bearer <access_token>
+4. Backend verifica assinatura, emissor e público usando o JWKS do projeto
+5. Middleware busca o User pelo authUserId e rejeita PENDING/BLOCKED
 6. Middleware RBAC verifica role antes de liberar a rota
+
+Cadastro (duas etapas):
+1. Frontend cria a conta no Supabase Auth (signUp)
+2. Com o token, chama POST /auth/register enviando os dados cadastrais
+3. A API cria o perfil com status PENDING vinculado ao authUserId
+4. Se ja existir perfil com o mesmo e-mail e sem conta vinculada, ela vincula
+   o perfil existente, preservando role e status
 ```
 
 ### Matriz de Acesso RBAC
@@ -92,7 +99,7 @@ Todas as entidades estão definidas em `apps/api/prisma/schema.prisma`. Resumo:
 
 | Entidade | Campos principais |
 |---|---|
-| User | id, name, email, cpf, phone, passwordHash, role (ADMIN/MANAGER/OPERATOR), status (PENDING/ACTIVE/BLOCKED), endereço completo |
+| User | id, name, email, cpf, phone, authUserId (Supabase Auth), role (ADMIN/MANAGER/OPERATOR), status (PENDING/ACTIVE/BLOCKED), endereço completo |
 | Vehicle | id, plate, brand, model, year, color, status (ACTIVE/INACTIVE) |
 | Driver | id, name, cpf, cnh, cnhExpiry, phone, status |
 | Expense | id, vehicleId, type (FUEL/MAINTENANCE/FINE/IPVA/INSURANCE/OTHER), amount, date |
@@ -141,7 +148,11 @@ Todas as entidades estão definidas em `apps/api/prisma/schema.prisma`. Resumo:
 npm install
 
 # 2. Configurar variáveis de ambiente
-# Criar/editar apps/api/.env com DATABASE_URL, DIRECT_URL e JWT_SECRET
+# Criar/editar apps/api/.env com DATABASE_URL, DIRECT_URL e SUPABASE_URL
+# Criar/editar apps/web/.env com VITE_API_URL, VITE_SUPABASE_URL e
+# VITE_SUPABASE_ANON_KEY
+# No painel do Supabase, DESATIVAR "Confirm email" em Authentication >
+# Sign In / Providers > Email — sem isso o cadastro nao se completa
 
 # 3. Rodar migrations e seed no banco do Supabase
 cd apps/api && npx prisma migrate dev && npx prisma db seed
@@ -160,21 +171,21 @@ npm run test:api          # rodar testes da API
 curl localhost:3000/health # verificar servidor
 ```
 
-### Atenção: usuário admin do seed
+### Atenção: perfis de demonstração do seed
 
-O seed cria um usuário admin com:
+O seed cria três perfis já aprovados (`ACTIVE`) e **sem conta de acesso vinculada**:
 
-- e-mail: `admin@fleet-manager.com`
-- senha inicial: `admin123`
-- status: `ACTIVE`
+- `admin@fleet-manager.com` — ADMIN
+- `gerente@fleet-manager.com` — MANAGER
+- `operador@fleet-manager.com` — OPERATOR
 
-Observação: o `upsert` do seed usa `update: {}`. Isso significa que rodar o seed novamente não altera a senha de um admin já existente.
+O seed **não cria contas no Supabase Auth**. Para acessar com qualquer um deles, cadastre o mesmo e-mail pela tela de cadastro da aplicação escolhendo a senha: a API vincula o perfil existente à conta nova, preservando role e status `ACTIVE`.
 
 ---
 
 ## Estado Atual do Projeto
 
-> **Última atualização:** 2026-08-24 (auditoria completa, documentação oficial em `docs/01`–`docs/08`, novo projeto Supabase e scripts SQL versionados)
+> **Última atualização:** 2026-08-26 (migração da autenticação para o Supabase Auth)
 > **Atualizar esta seção a cada task concluída antes de fazer push.**
 
 > Referências antigas à arquitetura anterior podem aparecer em seções históricas de sprints já concluídas. O estado atual do projeto é o descrito nas seções de arquitetura, setup e fluxo acima.
@@ -238,6 +249,19 @@ Observação: o `upsert` do seed usa `update: {}`. Isso significa que rodar o se
   - Indicadores financeiros usam o mesmo recorte dos gráficos e da listagem de despesas
   - Dashboard exibe total, quantidade, média, despesas por mês, por tipo, por veículo e últimas despesas
   - Alertas de manutenção e documentos foram separados em pendentes, atrasados, vencidos e vencendo
+
+- [x] **Migração da autenticação para o Supabase Auth**
+  - Credenciais deixam de ser armazenadas pela aplicação; `passwordHash` removido
+  - `User` ganhou `authUserId` (único, opcional) vinculando ao `auth.users.id`
+  - Migration `20260826000000_supabase_auth` criada
+  - `verify-token.ts` passou a verificar JWT ES256 via JWKS, conferindo emissor e público
+  - Novo middleware `requireSupabaseSession` para o cadastro (token válido, perfil ainda inexistente)
+  - `authenticate` busca por `authUserId` e responde 404 `PROFILE_NOT_FOUND` quando não há perfil
+  - Cadastro em duas etapas; perfis do seed sem conta são vinculados por e-mail
+  - Frontend usa `supabase.auth` para login, cadastro, logout e troca de senha
+  - `bcryptjs` removido das dependências; `JWT_SECRET` deixou de existir
+  - 100 testes passando; `tsc` e build verificados
+  - Requer "Confirm email" desativado no painel do Supabase
 
 - [x] **Auditoria completa, documentação oficial e novo ambiente Supabase**
   - Auditoria integral do repositório: código, documentação, Git, banco e dependências
@@ -422,6 +446,7 @@ test(api): add integration tests for expenses
 | 2026-05-14 | Codex | Hotfix: veiculos delete permanente + reativacao + modal + uppercase | `DELETE /vehicles/:id/permanent` adicionado com cascade Prisma, listagem de veiculos ganhou acoes de exclusao permanente e reativacao via `PUT /vehicles/:id`, confirmacoes passaram para `ConfirmDialog` proprio e formulario passou a normalizar placa, marca, modelo e cor para maiusculas. `apps/api` passou em `npx tsc --noEmit` e `npm run test`; `apps/web` passou em `npx tsc --noEmit` e `npm run build`. |
 | 2026-05-26 | Codex | Feature: upload de arquivo e melhorias em documentos | `fileUrl` no schema, Supabase Storage client-side, `FilePreviewModal`, `DocumentForm` com filtro de tipos, `VehicleDetail` e `DriverDetail` com seção de documentos. |
 | 2026-06-09 | Codex | Seed ampliado com dados fictícios | `apps/api/prisma/seed.ts` atualizado para popular usuários, frota, motoristas, vínculos, despesas, manutenções e documentos. Seed executado no Supabase e validado com contagens específicas: 8 veículos, 6 motoristas, 27 despesas, 14 manutenções e 25 documentos. |
+| 2026-08-26 | Claude | Migração para o Supabase Auth | Credenciais delegadas ao Supabase Auth; `passwordHash` removido e `authUserId` adicionado ao model `User`; verificação de token por JWKS (ES256); cadastro em duas etapas com vínculo de perfis preexistentes; `bcryptjs` e `JWT_SECRET` eliminados. 100 testes, `tsc` e build verificados. |
 | 2026-08-24 | Claude | Auditoria, documentação oficial e novo Supabase | Documentação `docs/01`–`docs/08` criada a partir do código e dos `.docx`. README corrigido (Redis e AWS ECS removidos). Scripts SQL versionados em `supabase/`. Mojibake corrigido no CLAUDE.md. E-mail de alertas movido para fora do escopo. 99 testes e `tsc` verificados após as mudanças. |
 | 2026-06-09 | Codex | Dashboard real com filtros e indicadores | Backend do dashboard passou a aceitar filtros de período, veículo e tipo de despesa; frontend ganhou filtros, cards financeiros, gráfico por veículo e lista de últimas despesas. Validação real no Supabase retornou todos os tipos de despesa populados. |
 

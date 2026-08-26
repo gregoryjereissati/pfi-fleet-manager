@@ -46,7 +46,7 @@ O Fleet Manager ataca o problema por quatro mecanismos:
 
 | Módulo | Situação |
 |---|---|
-| Autenticação por e-mail e senha com JWT | ✅ Implementado |
+| Autenticação por e-mail e senha (Supabase Auth) | ✅ Implementado |
 | Controle de acesso por perfil (ADMIN, MANAGER, OPERATOR) | ✅ Implementado |
 | Aprovação e bloqueio de contas de usuário | ✅ Implementado |
 | Cadastro de veículos, com desativação e exclusão permanente | ✅ Implementado |
@@ -74,7 +74,7 @@ O detalhamento por funcionalidade, com evidência no código, está em [`docs/06
 | ORM | Prisma 6 |
 | Banco de dados | PostgreSQL (Supabase) |
 | Armazenamento de arquivos | Supabase Storage |
-| Autenticação | JWT próprio (`jose`) · `bcryptjs` |
+| Autenticação | Supabase Auth · tokens ES256 verificados por JWKS (`jose`) |
 | Validação | Zod |
 | Agendamento | node-cron |
 | Testes | Vitest |
@@ -94,9 +94,11 @@ A camada de serviços não conhece Express, e apenas a camada de repositórios i
 
 ```mermaid
 flowchart LR
-    W["SPA React<br/>apps/web"] -->|"HTTP/JSON + Bearer JWT"| A["API REST Express<br/>apps/api"]
+    W["SPA React<br/>apps/web"] -->|"login"| AU["Supabase Auth"]
+    W -->|"HTTP/JSON + Bearer JWT"| A["API REST Express<br/>apps/api"]
     W -->|"upload de arquivo"| ST["Supabase Storage"]
     A -->|"Prisma"| DB[("PostgreSQL<br/>Supabase")]
+    A -.->|"JWKS"| AU
 ```
 
 Detalhamento em [`docs/04-arquitetura.md`](docs/04-arquitetura.md).
@@ -151,7 +153,7 @@ PORT=3000
 NODE_ENV=development
 DATABASE_URL="postgresql://postgres.<ref>:<SENHA>@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres.<ref>:<SENHA>@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
-JWT_SECRET=<segredo-com-pelo-menos-32-caracteres>
+SUPABASE_URL=https://<ref>.supabase.co
 ```
 
 **`apps/web/.env`** — modelo em [`apps/web/.env.example`](apps/web/.env.example)
@@ -223,7 +225,7 @@ Produto mínimo viável **funcionalmente completo em ambiente de desenvolvimento
 |---|---|
 | TypeScript (backend e frontend) | ✅ Sem erros |
 | ESLint | ✅ Sem erros |
-| Testes automatizados | ✅ 99 aprovados / 13 arquivos |
+| Testes automatizados | ✅ 100 aprovados / 13 arquivos |
 | Build de produção do frontend | ✅ Gerado |
 | Publicação em produção | ⏳ Pendente |
 

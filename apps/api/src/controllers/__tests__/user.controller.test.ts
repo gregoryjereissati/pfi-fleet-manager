@@ -20,7 +20,7 @@ const mockUser = {
   email: 'admin@test.com',
   cpf: '000.000.000-00',
   phone: '(85) 99999-0000',
-  passwordHash: 'hash',
+  authUserId: 'auth-uuid-1',
   role: UserRole.ADMIN,
   status: UserStatus.ACTIVE,
   addressStreet: 'Rua A',
@@ -44,8 +44,8 @@ function makeRes() {
 describe('userController', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('getCurrentUser retorna dto sanitizado sem passwordHash', async () => {
-    const req = { user: mockUser } as Request;
+  it('getCurrentUser retorna dto sanitizado sem dados de credencial', async () => {
+    const req = { user: mockUser } as unknown as Request;
     const res = makeRes();
 
     await userController.getCurrentUser(req, res);

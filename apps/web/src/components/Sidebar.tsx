@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { signOut } from '@/lib/supabase'
 import {
   LayoutDashboard,
   Car,
@@ -34,8 +35,9 @@ export function Sidebar() {
   ]
 
   function handleLogout() {
-    localStorage.removeItem('fm_token')
-    window.location.replace('/')
+    // Aguarda o encerramento da sessão antes de sair, para que o token não
+    // permaneça no armazenamento local após a navegação.
+    void signOut().then(() => window.location.replace('/'))
   }
 
   return (

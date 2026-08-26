@@ -21,7 +21,8 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 | Módulos funcionais do escopo principal | 8 de 8 implementados |
 | Requisitos funcionais originais (RF01–RF10) | 10 atendidos |
 | Requisitos não funcionais (RNF01–RNF07) | 6 atendidos, 1 sem verificação empírica |
-| Testes automatizados | 99 aprovados, 0 reprovados |
+| Migração para o Supabase Auth | Concluída |
+| Testes automatizados | 100 aprovados, 0 reprovados |
 | Compilação TypeScript | Sem erros (backend e frontend) |
 | Análise estática (ESLint) | Sem erros |
 | Build de produção do frontend | Gerado com sucesso |
@@ -37,14 +38,16 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 
 | Funcionalidade | Status | Evidência | Próximo passo |
 |---|---|---|---|
-| Cadastro de usuário | ✅ | `services/auth.service.ts`, `pages/Register.tsx` | — |
-| Login com e-mail e senha | ✅ | `services/auth.service.ts`, `pages/Login.tsx` | — |
-| Emissão e verificação de token JWT | ✅ | `lib/verify-token.ts` | — |
-| Hash de senha com bcrypt | ✅ | `services/auth.service.ts` | — |
+| Cadastro de usuário em duas etapas | ✅ | `services/auth.service.ts`, `pages/Register.tsx` | — |
+| Login com e-mail e senha (Supabase Auth) | ✅ | `lib/supabase.ts`, `pages/Login.tsx` | — |
+| Verificação do token por JWKS (ES256) | ✅ | `lib/verify-token.ts` | — |
+| Renovação automática da sessão | ✅ | Cliente `supabase-js` | — |
+| Vínculo entre conta de acesso e perfil | ✅ | `services/auth.service.ts`, coluna `authUserId` | — |
 | Controle de acesso por perfil (RBAC) | ✅ | `middlewares/authorize.ts` | — |
 | Aprovação de novos usuários pelo administrador | ✅ | `middlewares/authenticate.ts`, `components/AccessGate.tsx` | — |
 | Bloqueio e reativação de contas | ✅ | `PATCH /users/:id/status`, `pages/UserList.tsx` | — |
 | Proteção de rotas no frontend | ✅ | `components/ProtectedRoute.tsx` | — |
+| Alteração da própria senha | ✅ | `supabase.auth.updateUser`, `pages/Profile.tsx` | — |
 | Recuperação autônoma de senha | ❌ | — | Fora do escopo — depende de envio externo |
 | Confirmação de e-mail no cadastro | ❌ | — | Fora do escopo desta versão |
 
@@ -155,7 +158,7 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 | Testes dos middlewares | ✅ | 3 arquivos em `middlewares/__tests__/` | — |
 | Testes de repositório e controller | ✅ | 2 arquivos | — |
 | Validação de entrada com Zod | ✅ | Schemas em `routes/` | — |
-| Validação de variáveis de ambiente | 🟡 | `config/env.ts` | Incluir `DIRECT_URL` |
+| Validação de variáveis de ambiente | ✅ | `config/env.ts` | — |
 | Migrations versionadas | ✅ | 5 migrations | — |
 | Rotina de povoamento do banco | ✅ | `prisma/seed.ts` | — |
 | Configuração do Storage versionada | ✅ | `supabase/storage-setup.sql` | — |
@@ -177,7 +180,7 @@ Instalação de dependências ......... ✅ OK
 Análise estática (ESLint) .......... ✅ OK — nenhum erro
 TypeScript (backend) ............... ✅ OK — nenhum erro
 TypeScript (frontend) .............. ✅ OK — nenhum erro
-Testes automatizados ............... ✅ OK — 99 aprovados / 13 arquivos
+Testes automatizados ............... ✅ OK — 100 aprovados / 13 arquivos
 Build de produção (frontend) ....... 🟡 OK com aviso — pacote único de 969 kB
 Execução local ..................... 🟡 Depende de banco de dados configurado
 ```
@@ -191,15 +194,15 @@ Execução local ..................... 🟡 Depende de banco de dados configurad
 | `services/__tests__/user.service.test.ts` | 11 |
 | `services/__tests__/maintenance.service.test.ts` | 10 |
 | `services/__tests__/driver.service.test.ts` | 10 |
-| `services/__tests__/auth.service.test.ts` | 9 |
+| `services/__tests__/auth.service.test.ts` | 8 |
 | `services/__tests__/expense.service.test.ts` | 9 |
-| `middlewares/__tests__/authenticate.test.ts` | 5 |
+| `middlewares/__tests__/authenticate.test.ts` | 9 |
 | `middlewares/__tests__/authorize.test.ts` | 4 |
 | `services/__tests__/dashboard.service.test.ts` | 3 |
 | `middlewares/__tests__/validate.test.ts` | 3 |
 | `controllers/__tests__/user.controller.test.ts` | 2 |
 | `repositories/__tests__/dashboard.repository.test.ts` | 1 |
-| **Total** | **99** |
+| **Total** | **100** |
 
 ---
 
@@ -210,7 +213,7 @@ Registradas de forma explícita para que o estado do projeto não seja superesti
 | # | Pendência | Impacto | Prioridade |
 |---|---|---|---|
 | 1 | CORS aceita apenas origens `localhost` | Impede o funcionamento após a publicação em produção | Alta |
-| 2 | `DIRECT_URL` não é validada na inicialização | Falha de configuração produz erro de difícil diagnóstico | Média |
+| 2 | A confirmação de e-mail precisa estar desativada no projeto Supabase | Com ela ativa, o cadastro não se completa, pois não há serviço de envio configurado | Média |
 | 3 | Arquivos permanecem no Storage após a exclusão do documento | Acúmulo de arquivos órfãos | Média |
 | 4 | Ausência de validação de arquivo no servidor de aplicação | A restrição depende exclusivamente da política do Storage | Média |
 | 5 | Bucket de arquivos é público | Quem possuir a URL acessa o arquivo sem autenticação | Média |
@@ -232,6 +235,7 @@ Registradas de forma explícita para que o estado do projeto não seja superesti
 | Etapa 4 | Documentos, rotina de sinalização e central de alertas | Concluída |
 | Etapa 5 | Indicadores reais, gestão de usuários e testes | Concluída |
 | Ajustes | Autenticação própria, migração do banco, exclusão permanente, anexo de arquivos, identidade visual | Concluída |
+| Ajustes | Migração da autenticação própria para o **Supabase Auth** | Concluída |
 | Etapa 6 | Publicação em produção e entrega final | **Em andamento** |
 
 ---

@@ -31,21 +31,24 @@ flowchart TB
     end
 
     subgraph Supabase["Supabase (serviços gerenciados)"]
+        AUTH["Auth<br/>e-mail e senha"]
         PG[("PostgreSQL")]
         ST["Storage<br/>bucket: documents"]
     end
 
     SHARED["packages/shared<br/>enums + DTOs"]
 
+    SPA -->|"login / cadastro"| AUTH
     SPA -->|"HTTP/JSON<br/>Bearer token"| API
     SPA -->|"upload de arquivo"| ST
     API -->|"Prisma ORM"| PG
+    API -.->|"JWKS (chave pública)"| AUTH
     CRON --> PG
     SHARED -.->|"tipos"| SPA
     SHARED -.->|"tipos"| API
 ```
 
-**Observação relevante.** O Supabase cumpre dois papéis independentes: hospeda o banco PostgreSQL (acessado apenas pelo backend, via Prisma) e fornece o armazenamento de arquivos (acessado diretamente pelo navegador). O upload de arquivos **não transita pela API** — implicações discutidas na seção 6.
+**Observação relevante.** O Supabase cumpre três papéis independentes: autentica os usuários (Supabase Auth), hospeda o banco PostgreSQL (acessado apenas pelo backend, via Prisma) e fornece o armazenamento de arquivos (acessado diretamente pelo navegador). Nem o login nem o upload transitam pela API — implicações discutidas nas seções 4 e 6.
 
 ---
 
@@ -89,7 +92,7 @@ apps/api/src/
 ├── services/        8 services + __tests__/
 ├── repositories/    7 repositories + __tests__/
 ├── jobs/            alertCron.ts — rotina diária de sinalização
-├── lib/             verify-token.ts (assinatura e verificação JWT), user-dto.ts
+├── lib/             verify-token.ts (verificação do JWT do Supabase), user-dto.ts
 ├── types/           express.d.ts — extensão do objeto Request
 ├── app.ts           montagem da aplicação Express
 └── server.ts        ponto de entrada
@@ -108,7 +111,7 @@ apps/web/src/
 │                    ConfirmDialog, FilePreviewModal,
 │                    ProtectedRoute, AccessGate
 ├── hooks/           11 hooks de dados — encapsulam as chamadas à API
-├── lib/             api.ts (cliente HTTP), supabase.ts (storage),
+├── lib/             api.ts (cliente HTTP), supabase.ts (auth + storage),
 │                    i18n.ts, roles.ts, current-user.ts
 ├── layouts/         AppLayout — moldura das telas autenticadas
 ├── locales/         pt-BR.json · en-US.json
@@ -122,7 +125,7 @@ Não há biblioteca de gerenciamento de estado global nem de cache de requisiç�
 ```mermaid
 flowchart LR
     P["Página<br/>ex: VehicleList"] --> H["Hook<br/>useVehicles"]
-    H --> T["useToken<br/>lê o JWT"]
+    H --> T["useToken<br/>token da sessão Supabase"]
     H --> A["apiFetch<br/>lib/api.ts"]
     A --> API["API REST"]
 ```
@@ -135,55 +138,87 @@ Essa abordagem é adequada à escala do projeto: o estado é predominantemente l
 
 ## 4. Fluxo de autenticação e autorização
 
-O sistema utiliza **autenticação própria**: as credenciais são verificadas pela própria API e o token é assinado localmente com uma chave simétrica.
+O sistema delega a **autenticação** ao **Supabase Auth** e mantém a **autorização** sob controle da aplicação.
+
+Essa separação é deliberada. As credenciais — e-mail, senha, hash e sessão — são responsabilidade de um serviço especializado. Já o papel de acesso (`role`) e a situação de aprovação (`status`) são regras de negócio do Fleet Manager e permanecem na tabela `User`, sob controle da API.
 
 ```mermaid
 sequenceDiagram
     participant U as Usuário
     participant W as Frontend
+    participant SA as Supabase Auth
     participant A as API
     participant D as PostgreSQL
 
     U->>W: e-mail e senha
-    W->>A: POST /api/auth/login
-    A->>D: busca usuário por e-mail
-    D-->>A: registro do usuário
-    A->>A: bcrypt.compare(senha, passwordHash)
-    A->>A: verifica situação (PENDING / BLOCKED)
-    A->>A: assina JWT HS256 (sub = userId, validade 7 dias)
-    A-->>W: token + dados do usuário
-    W->>W: armazena o token em localStorage
+    W->>SA: signInWithPassword()
+    SA->>SA: valida credenciais
+    SA-->>W: access_token (JWT ES256) + refresh_token
+    W->>W: sessão persistida e renovada pelo cliente
 
-    Note over U,D: Requisições subsequentes
+    Note over U,D: Requisições à API
 
-    W->>A: GET /api/vehicles<br/>Authorization: Bearer token
-    A->>A: authenticate — verifica assinatura
-    A->>D: reconsulta o usuário pelo sub
-    D-->>A: usuário com perfil e situação atuais
+    W->>A: GET /api/vehicles<br/>Authorization: Bearer access_token
+    A->>SA: obtém a chave pública (JWKS, em cache)
+    A->>A: verifica assinatura, emissor e público
+    A->>D: busca o perfil por authUserId
+    D-->>A: perfil com papel e situação atuais
     A->>A: rejeita se PENDING ou BLOCKED
-    A->>A: authorize — confere o perfil da rota
+    A->>A: authorize — confere o papel exigido pela rota
     A->>D: consulta os dados
     D-->>A: resultado
     A-->>W: 200 OK
 ```
 
+### Divisão de responsabilidades
+
+| Responsabilidade | Onde reside |
+|---|---|
+| Armazenamento e verificação de senha | Supabase Auth |
+| Emissão e renovação do token de acesso | Supabase Auth |
+| Persistência da sessão no navegador | Cliente `supabase-js` |
+| Papel de acesso (`role`) | Tabela `User`, na aplicação |
+| Situação de aprovação (`status`) | Tabela `User`, na aplicação |
+| Autorização por rota | Middleware `authorize`, na API |
+
+### Verificação do token na API
+
+O Supabase assina os tokens com **chave assimétrica ES256** e publica a chave pública em um endpoint JWKS. A API busca essa chave, mantém-na em cache e verifica a assinatura localmente.
+
+A consequência prática é relevante: **a API não guarda nenhum segredo do Supabase**. Não há chave compartilhada a proteger ou rotacionar, e a verificação não depende de chamada de rede a cada requisição.
+
+Além da assinatura, são conferidos o emissor (`iss`) e o público (`aud`), o que impede que um token emitido por outro projeto Supabase seja aceito.
+
+### Vínculo entre conta de acesso e perfil
+
+A tabela `User` referencia a conta do Supabase pela coluna `authUserId`, correspondente a `auth.users.id`. O cadastro ocorre em duas etapas:
+
+1. O frontend cria a conta no Supabase Auth (`signUp`) e obtém a sessão.
+2. Com o token em mãos, chama `POST /api/auth/register` enviando os dados cadastrais. A API cria o perfil com situação `PENDING`, vinculado ao `authUserId`.
+
+Quando já existe um perfil com o mesmo e-mail e **sem conta vinculada** — situação dos perfis criados pela rotina de povoamento —, a API vincula o perfil existente em vez de criar um novo, preservando seu papel e sua situação.
+
+Se a conta estiver autenticada mas ainda não possuir perfil, a API responde `404 PROFILE_NOT_FOUND` e o frontend redireciona para a conclusão do cadastro. Esse caso cobre a interrupção entre as duas etapas.
+
 ### Decisões de segurança adotadas
 
 | Decisão | Justificativa |
 |---|---|
-| Senha armazenada com hash **bcrypt**, fator de custo 10 | A senha nunca é persistida nem trafega em texto claro. |
-| Token assinado em **HS256** com segredo de no mínimo 32 caracteres | Validado na inicialização por schema Zod. |
-| O middleware **reconsulta o usuário no banco a cada requisição** | Permite que bloqueio ou alteração de perfil tenham efeito imediato, sem aguardar a expiração do token. |
-| Autorização declarada **por rota**, e não no corpo dos serviços | Torna a matriz de permissões auditável pela leitura dos arquivos de rota. |
+| Credenciais delegadas ao **Supabase Auth** | Elimina o armazenamento de senhas pela aplicação e a responsabilidade de implementar hashing, expiração e renovação de sessão. |
+| Verificação por **JWKS com chave pública** | A API não compartilha segredo com o serviço de autenticação. |
+| Conferência de **emissor e público** | Impede o aceite de tokens legítimos emitidos por outro projeto. |
+| O middleware **reconsulta o perfil no banco a cada requisição** | Bloqueio ou alteração de papel têm efeito imediato, sem aguardar a expiração do token. |
+| Papel e situação **fora do token** | O token do Supabase não é fonte de autoridade sobre permissões; a autoridade é o banco da aplicação. |
+| Autorização declarada **por rota** | Torna a matriz de permissões auditável pela leitura dos arquivos de rota. |
 | Validação de entrada com **Zod antes da camada de negócio** | Requisições malformadas são rejeitadas antes de alcançar a lógica da aplicação. |
 
-### Ausência de Row Level Security
+> **Condição de configuração.** A confirmação de e-mail deve estar **desativada** no projeto Supabase. Como a notificação por e-mail está fora do escopo (seção 10 do documento de escopo), não há serviço de envio configurado; com a confirmação ativa, o cadastro não se completa. A consequência é registrada de forma explícita: com a confirmação desativada, a posse do endereço de e-mail não é verificada no momento do cadastro. O controle de acesso efetivo permanece na aprovação manual pelo administrador, exigida antes de qualquer acesso ao sistema.
 
-O banco **não utiliza RLS (Row Level Security)**. Trata-se de decisão arquitetural consciente e não de omissão: o PostgreSQL é acessado exclusivamente pelo backend, por meio de uma única credencial de serviço, e o navegador nunca se conecta diretamente ao banco. A autorização é integralmente aplicada na camada de aplicação, pelo middleware `authorize`.
+### Ausência de Row Level Security nas tabelas da aplicação
+
+O banco **não utiliza RLS** nas tabelas do Fleet Manager. Trata-se de decisão arquitetural consciente: o PostgreSQL é acessado exclusivamente pelo backend, por meio de uma única credencial de serviço, e o navegador nunca se conecta diretamente ao banco. A autorização é integralmente aplicada na camada de aplicação, pelo middleware `authorize`.
 
 O RLS seria indispensável no modelo em que o cliente consulta o banco diretamente — cenário que esta arquitetura não adota. Há, contudo, política de RLS aplicada ao **Storage**, onde o navegador é de fato o agente da requisição (seção 6).
-
----
 
 ## 5. Fluxo de uma requisição típica
 
@@ -284,7 +319,7 @@ Documentos anteriores do projeto — em especial *Modelagem e Arquitetura (17/03
 
 | Componente previsto | Situação real | Justificativa |
 |---|---|---|
-| **Auth0** como provedor de identidade | Substituído por autenticação própria com JWT | Reduziu a dependência externa e o acoplamento a um serviço de terceiros, além de simplificar a execução local. |
+| **Auth0** como provedor de identidade | Substituído pelo **Supabase Auth** | Consolida autenticação, banco e armazenamento em um único serviço já adotado pelo projeto, eliminando uma dependência externa adicional. O projeto passou por uma etapa intermediária com autenticação própria (JWT assinado pela API), abandonada para não manter o armazenamento de senhas sob responsabilidade da aplicação. |
 | **AWS ECS** para publicação do backend | Não implementado | A publicação está pendente. A plataforma definida atualmente é o Railway. |
 | **AWS RDS** como banco de dados | Substituído pelo PostgreSQL do Supabase | Serviço gerenciado com camada gratuita adequada ao projeto e administração integrada. |
 | **Redis** para cache e filas | Não implementado | O volume de dados e a complexidade do MVP não justificaram a introdução de uma camada de cache. Não há dependência de Redis no projeto. |

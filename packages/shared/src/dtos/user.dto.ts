@@ -21,13 +21,15 @@ export interface CurrentUserDto extends UserDto {
   addressZip: string;
 }
 
-export interface RegisterDto {
+/**
+ * Dados do perfil enviados à API após a criação da conta no Supabase Auth.
+ * A senha não faz parte deste contrato: ela é gerenciada pelo Supabase.
+ */
+export interface RegisterProfileDto {
   name: string;
   cpf: string;
   phone: string;
   email: string;
-  password: string;
-  confirmPassword: string;
   requestedRole: UserRole;
   addressStreet: string;
   addressNumber: string;
@@ -37,19 +39,9 @@ export interface RegisterDto {
   addressZip: string;
 }
 
-export interface LoginDto {
-  email: string;
-  password: string;
-}
-
-export interface AuthResponseDto {
-  token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-  };
+export interface RegisterProfileResponseDto {
+  message: string;
+  user: CurrentUserDto;
 }
 
 export interface UpdateUserRoleDto {
@@ -72,6 +64,4 @@ export interface UpdateCurrentUserDto {
   addressCity: string;
   addressState: string;
   addressZip: string;
-  password?: string;
-  confirmPassword?: string;
 }

@@ -45,6 +45,18 @@ O comando `npm install` executado na raiz instala as dependências dos três wor
 | Connection string (pooler e direta) | *Project Settings* → *Database* → *Connection string* |
 | URL do projeto e chave pública | *Project Settings* → *API Keys* |
 
+### 3.3. Configurar o Supabase Auth
+
+O login é realizado pelo **Supabase Auth**, que exige um ajuste no painel:
+
+1. Acessar **Authentication** → **Sign In / Providers** → **Email**
+2. Confirmar que o provedor **Email** está habilitado
+3. **Desativar a opção "Confirm email"**
+
+> **Por que desativar.** Com a confirmação ativa, o Supabase envia um e-mail de verificação e só libera a sessão após o clique no link. Como a notificação por e-mail está fora do escopo do projeto, não há serviço de envio configurado, e o cadastro não se completaria.
+>
+> A consequência é declarada de forma explícita: a posse do endereço de e-mail não é verificada no momento do cadastro. O controle de acesso efetivo permanece na **aprovação manual pelo administrador**, exigida antes de qualquer acesso ao sistema.
+
 ---
 
 ## 4. Variáveis de ambiente
@@ -63,17 +75,14 @@ DATABASE_URL="postgresql://postgres.<project-ref>:<SENHA>@aws-1-sa-east-1.pooler
 # Conexão direta — usada pelas migrations do Prisma
 DIRECT_URL="postgresql://postgres.<project-ref>:<SENHA>@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
 
-# Segredo de assinatura dos tokens (mínimo de 32 caracteres)
-JWT_SECRET=<segredo-aleatorio-com-pelo-menos-32-caracteres>
+# URL do projeto Supabase, sem barra ao final.
+# Usada para localizar o JWKS e validar os tokens do Supabase Auth.
+SUPABASE_URL=https://<project-ref>.supabase.co
 ```
+
+> **A API não usa nenhuma chave secreta do Supabase.** Os tokens são assinados com chave assimétrica (ES256) e verificados com a chave pública publicada pelo próprio projeto.
 
 > **Por que duas URLs.** O Prisma exige conexão direta para aplicar migrations, pois o pooler em modo de transação não suporta comandos DDL. Em tempo de execução, o pooler é preferível por limitar o número de conexões simultâneas.
-
-Para gerar um segredo adequado:
-
-```bash
-openssl rand -base64 48
-```
 
 ### 4.2. Frontend — `apps/web/.env`
 
@@ -121,17 +130,21 @@ Alternativa para quem prefere não configurar a connection string apenas para cr
 
 O script cria os 8 tipos enumerados, as 7 tabelas, as 6 chaves estrangeiras e os índices de unicidade, e registra as migrations como aplicadas — de modo que um `prisma migrate deploy` posterior reconheça o banco como atualizado em vez de tentar recriá-lo.
 
-> **O povoamento continua exigindo a connection string.** O seed gera os hashes de senha com bcrypt em tempo de execução, portanto roda pela aplicação (`npx prisma db seed`) e não pelo SQL Editor. Da mesma forma, o backend só conecta ao banco com `DATABASE_URL` configurada — a senha é necessária na máquina que executa o sistema, ainda que o schema tenha sido criado pelo painel.
+> **O povoamento continua exigindo a connection string.** O seed é executado pela aplicação (`npx prisma db seed`), e não pelo SQL Editor. Da mesma forma, o backend só conecta ao banco com `DATABASE_URL` configurada — a senha do PostgreSQL é necessária na máquina que executa o sistema, ainda que o schema tenha sido criado pelo painel.
 
-### Credenciais de demonstração
+### Perfis de demonstração
 
-| Perfil | E-mail | Senha |
+A rotina de povoamento cria três perfis já aprovados (`ACTIVE`), **sem conta de acesso vinculada**:
+
+| Perfil | E-mail | Papel |
 |---|---|---|
-| Administrador | `admin@fleet-manager.com` | `admin123` |
-| Gestor | `gerente@fleet-manager.com` | `admin123` |
-| Operador | `operador@fleet-manager.com` | `admin123` |
+| Administrador | `admin@fleet-manager.com` | ADMIN |
+| Gestor | `gerente@fleet-manager.com` | MANAGER |
+| Operador | `operador@fleet-manager.com` | OPERATOR |
 
-> Credenciais destinadas exclusivamente a ambiente de desenvolvimento e demonstração acadêmica.
+Para acessar o sistema com qualquer um deles, **cadastre esse mesmo e-mail pela tela de cadastro da aplicação**, escolhendo a senha desejada. A API detecta o perfil existente sem vínculo e o associa à conta recém-criada, preservando o papel e a situação `ACTIVE` — o acesso fica imediatamente liberado, sem necessidade de aprovação.
+
+> Mecanismo destinado a ambiente de desenvolvimento e demonstração acadêmica.
 
 ---
 
@@ -221,7 +234,10 @@ cd apps/web && npm run build              # build concluído
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `Variáveis de ambiente inválidas` na inicialização da API | `DATABASE_URL` ou `JWT_SECRET` ausente, ou segredo com menos de 32 caracteres | Revisar `apps/api/.env` |
+| `Variáveis de ambiente inválidas` na inicialização da API | `DATABASE_URL`, `DIRECT_URL` ou `SUPABASE_URL` ausente ou malformada | Revisar `apps/api/.env` |
+| Cadastro não conclui e pede confirmação de e-mail | Opção "Confirm email" ativa no Supabase | Desativar conforme a seção 3.3 |
+| `401 Invalid or expired token` em todas as rotas | `SUPABASE_URL` da API aponta para outro projeto | Conferir se a API e o frontend usam o mesmo projeto |
+| `404 PROFILE_NOT_FOUND` após o login | Conta criada no Supabase sem perfil na aplicação | Concluir o cadastro; o frontend redireciona automaticamente |
 | `tenant or user not found` | Projeto Supabase inexistente, ou credenciais de outro projeto | Conferir a connection string no painel |
 | `Can't reach database server` | Projeto Supabase pausado por inatividade | Reativar o projeto no painel |
 | Migrations falham, mas a aplicação conecta | `DIRECT_URL` ausente ou apontando para a porta do pooler | Usar a porta 5432 na `DIRECT_URL` |

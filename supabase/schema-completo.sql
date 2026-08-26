@@ -20,10 +20,16 @@
 --   3. Executar em seguida supabase/storage-setup.sql (anexo de arquivos)
 --   4. Popular os dados: cd apps/api && npx prisma db seed
 --
+-- AUTENTICAÇÃO
+--   As credenciais são gerenciadas pelo Supabase Auth (schema auth), que já
+--   existe no projeto e não é criado por este script. A tabela User abaixo
+--   guarda apenas o perfil da aplicação e referencia a conta de acesso pela
+--   coluna authUserId.
+--
 -- IMPORTANTE
 --   Este script cria apenas a ESTRUTURA (tabelas, enums, chaves e índices).
 --   Os dados de demonstração são inseridos pelo seed, que precisa da
---   connection string porque gera os hashes de senha com bcrypt.
+--   connection string configurada em apps/api/.env.
 -- ===========================================================================
 
 -- CreateSchema
@@ -60,7 +66,7 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "cpf" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
+    "authUserId" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'OPERATOR',
     "status" "UserStatus" NOT NULL DEFAULT 'PENDING',
     "addressStreet" TEXT NOT NULL,
@@ -161,6 +167,9 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "User_cpf_key" ON "User"("cpf");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_authUserId_key" ON "User"("authUserId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Vehicle_plate_key" ON "Vehicle"("plate");
 
 -- CreateIndex
@@ -214,9 +223,10 @@ CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
 INSERT INTO "_prisma_migrations"
     (id, checksum, finished_at, migration_name, started_at, applied_steps_count)
 VALUES
-    (gen_random_uuid()::text, 'ef0375da26f0e00834602bc89b76cdb5a2162229c66c678bf1e462247da142be', now(), '20260415182317_init',                        now(), 1),
-    (gen_random_uuid()::text, '6d3651c42b9d62701be1d7427e9feb52e64bad991fb1a54147a59b3a879d8379', now(), '20260417223832_add_document_type_enum',      now(), 1),
-    (gen_random_uuid()::text, '2623c2d7d4d8b10d286546d80fa64849e7b4b6a1c6e8be74813e2c135cb4860b', now(), '20260429003345_add_user_status',             now(), 1),
+    (gen_random_uuid()::text, 'ef0375da26f0e00834602bc89b76cdb5a2162229c66c678bf1e462247da142be', now(), '20260415182317_init', now(), 1),
+    (gen_random_uuid()::text, '6d3651c42b9d62701be1d7427e9feb52e64bad991fb1a54147a59b3a879d8379', now(), '20260417223832_add_document_type_enum', now(), 1),
+    (gen_random_uuid()::text, '2623c2d7d4d8b10d286546d80fa64849e7b4b6a1c6e8be74813e2c135cb4860b', now(), '20260429003345_add_user_status', now(), 1),
     (gen_random_uuid()::text, '94cc5f182752233fb90344f3e814e0f44cb58a2f544d9dd6f60f9b179cdca962', now(), '20260506000000_remove_auth0_add_custom_auth', now(), 1),
-    (gen_random_uuid()::text, '2e37ae300fef3353511a5d46556ec4042b657de1aae8b3883cbf5d28044c1055', now(), '20260526172511_add_file_url_to_document',    now(), 1)
+    (gen_random_uuid()::text, '2e37ae300fef3353511a5d46556ec4042b657de1aae8b3883cbf5d28044c1055', now(), '20260526172511_add_file_url_to_document', now(), 1),
+    (gen_random_uuid()::text, 'e7400b9b5bd075a23ffe440299744c32cf57529b649c7c1b799d03008b54c3c8', now(), '20260826000000_supabase_auth', now(), 1)
 ON CONFLICT (id) DO NOTHING;

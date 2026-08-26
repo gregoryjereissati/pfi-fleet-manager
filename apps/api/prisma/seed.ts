@@ -9,7 +9,6 @@ import {
   UserStatus,
   VehicleStatus,
 } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -26,8 +25,6 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
-  const passwordHash = await bcrypt.hash('admin123', 10);
-
   await prisma.user.upsert({
     where: { email: 'admin@fleet-manager.com' },
     update: {
@@ -48,7 +45,6 @@ async function main() {
       email: 'admin@fleet-manager.com',
       cpf: '00000000000',
       phone: '(85) 99999-0000',
-      passwordHash,
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
       addressStreet: 'Av. Washington Soares',
@@ -80,7 +76,6 @@ async function main() {
       email: 'gerente@fleet-manager.com',
       cpf: '11122233344',
       phone: '(85) 98888-1111',
-      passwordHash,
       role: UserRole.MANAGER,
       status: UserStatus.ACTIVE,
       addressStreet: 'Rua Tibúrcio Cavalcante',
@@ -112,7 +107,6 @@ async function main() {
       email: 'operador@fleet-manager.com',
       cpf: '55566677788',
       phone: '(85) 97777-2222',
-      passwordHash,
       role: UserRole.OPERATOR,
       status: UserStatus.ACTIVE,
       addressStreet: 'Rua Silva Jatahy',
@@ -308,7 +302,12 @@ async function main() {
   await prisma.document.createMany({ data: documents });
 
   console.log('Seed concluído com sucesso.');
-  console.log('Usuários: admin@fleet-manager.com, gerente@fleet-manager.com, operador@fleet-manager.com');
+  console.log('Perfis criados: admin@fleet-manager.com (ADMIN), gerente@fleet-manager.com (MANAGER), operador@fleet-manager.com (OPERATOR)');
+  console.log('');
+  console.log('Os perfis acima ainda NAO possuem conta de acesso vinculada.');
+  console.log('Para acessar o sistema com eles, cadastre esses mesmos e-mails');
+  console.log('pela tela de cadastro da aplicacao: o perfil existente sera');
+  console.log('vinculado a nova conta, preservando o papel e a situacao ACTIVE.');
   console.log(`Veículos: ${vehicles.length}`);
   console.log(`Motoristas: ${drivers.length}`);
   console.log(`Despesas: ${expenses.length}`);

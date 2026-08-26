@@ -6,7 +6,7 @@ interface CreateUserData {
   email: string;
   cpf: string;
   phone: string;
-  passwordHash: string;
+  authUserId: string;
   role: UserRole;
   addressStreet: string;
   addressNumber: string;
@@ -27,7 +27,6 @@ interface UpdateUserProfileData {
   addressCity: string;
   addressState: string;
   addressZip: string;
-  passwordHash?: string;
 }
 
 export const userRepository = {
@@ -45,6 +44,19 @@ export const userRepository = {
 
   findByCpf(cpf: string) {
     return prisma.user.findUnique({ where: { cpf } });
+  },
+
+  findByAuthUserId(authUserId: string) {
+    return prisma.user.findUnique({ where: { authUserId } });
+  },
+
+  /**
+   * Vincula um perfil já existente a uma conta do Supabase Auth.
+   * Usado quando o perfil foi criado previamente (por exemplo, pelo seed) e
+   * a conta de acesso correspondente é criada depois.
+   */
+  linkAuthUser(id: string, authUserId: string) {
+    return prisma.user.update({ where: { id }, data: { authUserId } });
   },
 
   createUser(data: CreateUserData) {

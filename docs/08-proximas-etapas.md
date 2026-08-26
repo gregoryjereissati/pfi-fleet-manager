@@ -31,13 +31,13 @@ Este documento organiza o trabalho restante em ordem de prioridade. Cada item de
 
 **Justificativa.** Concluir a etapa final prevista no planejamento e permitir a demonstração do sistema sem depender de ambiente local.
 
-### 1.3. Validar `DIRECT_URL` na inicialização
+### 1.3. Avaliar a confirmação de e-mail no cadastro
 
-**Situação.** O schema Zod em `config/env.ts` não inclui `DIRECT_URL`, embora o `schema.prisma` a exija.
+**Situação.** A confirmação de e-mail está desativada no projeto Supabase, pois não há serviço de envio configurado. A posse do endereço informado não é verificada no cadastro.
 
-**Encaminhamento.** Adicionar a variável ao schema de validação.
+**Encaminhamento.** Caso o envio de e-mail passe a integrar o escopo, reativar a confirmação no painel do Supabase — o fluxo de cadastro já trata essa resposta e informa o usuário.
 
-**Justificativa.** Correção de baixo custo que substitui uma falha obscura do Prisma por uma mensagem clara na inicialização.
+**Justificativa.** O risco é mitigado pela aprovação manual do administrador, exigida antes de qualquer acesso. O registro da limitação evita que a ausência de verificação passe despercebida.
 
 ---
 
@@ -77,7 +77,7 @@ Este documento organiza o trabalho restante em ordem de prioridade. Cada item de
 
 ### 2.5. Ampliar a cobertura de testes
 
-**Situação.** Os 99 testes existentes concentram-se nas regras de negócio do backend. Não há testes de interface nem de integração da API.
+**Situação.** Os 100 testes existentes concentram-se nas regras de negócio do backend. Não há testes de interface nem de integração da API.
 
 **Encaminhamento.** Introduzir testes de integração com `supertest` — já presente entre as dependências — e testes de componente no frontend.
 
@@ -115,15 +115,14 @@ Itens fora do escopo desta versão, registrados como desdobramentos possíveis d
 
 ```mermaid
 flowchart TB
-    A["1.3 Validar DIRECT_URL"] --> B["1.1 Tornar o CORS configurável"]
-    B --> C["1.2 Publicar backend e frontend"]
+    B["1.1 Tornar o CORS configurável"] --> C["1.2 Publicar backend e frontend"]
     C --> F["2.1 Vincular motorista e usuário"]
     C --> G["2.2 Ciclo de vida dos arquivos"]
     F --> H["2.3 Autoria dos lançamentos"]
     C --> I["2.5 Ampliar testes"]
 ```
 
-A publicação em produção (1.2) é o item de maior valor imediato, pois viabiliza a demonstração do sistema e encerra a última etapa prevista no planejamento. Ela depende de duas correções de baixo custo (1.3 e 1.1), ambas de poucas linhas.
+A publicação em produção (1.2) é o item de maior valor imediato, pois viabiliza a demonstração do sistema e encerra a última etapa prevista no planejamento. Ela depende de uma correção de baixo custo (1.1), de poucas linhas.
 
 Concluída a publicação, o item de maior valor técnico é o vínculo entre motorista e conta de usuário (2.1), por eliminar a única divergência remanescente entre o modelo conceitual descrito na documentação e o modelo implementado.
 

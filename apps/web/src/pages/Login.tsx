@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { apiFetch } from '@/lib/api'
-import type { AuthResponseDto } from '@fleet-manager/shared'
+import { signIn } from '@/lib/supabase'
 
 const inputClass =
   'w-full rounded-lg bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
@@ -23,17 +22,14 @@ export function Login() {
     setError(null)
     setLoading(true)
     try {
-      const data = await apiFetch<AuthResponseDto>('/auth/login', '', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      })
-      localStorage.setItem('fm_token', data.token)
+      await signIn(email, password)
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      const msg = (err as Error).message
-      if (msg.includes('PENDING_APPROVAL')) setError(t('login.error.pending'))
-      else if (msg.includes('BLOCKED')) setError(t('login.error.blocked'))
-      else setError(t('login.error.invalid'))
+      const msg = (err as Error).message.toLowerCase()
+      if (msg.includes('email not confirmed')) setError(t('login.error.emailNotConfirmed'))
+      else if (msg.includes('failed to fetch') || msg.includes('network')) {
+        setError(t('login.error.network'))
+      } else setError(t('login.error.invalid'))
     } finally {
       setLoading(false)
     }

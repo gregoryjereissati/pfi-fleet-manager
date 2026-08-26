@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CurrentUserDto, UpdateCurrentUserDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
+import { updatePassword } from '@/lib/supabase'
 import { notifyCurrentUserUpdated } from '@/lib/current-user'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useToken } from '@/hooks/useToken'
@@ -106,13 +107,17 @@ export function Profile() {
         addressCity: form.addressCity,
         addressState: form.addressState,
         addressZip: form.addressZip,
-        password: form.password,
-        confirmPassword: form.confirmPassword,
       }
       const updatedUser = await apiFetch<CurrentUserDto>('/users/me', token, {
         method: 'PUT',
         body: JSON.stringify(payload),
       })
+
+      // A senha é gerenciada pelo Supabase Auth, e não pela API do
+      // Fleet Manager. Só é alterada quando o campo foi preenchido.
+      if (form.password) {
+        await updatePassword(form.password)
+      }
 
       notifyCurrentUserUpdated(updatedUser)
       setForm(mapUserToForm(updatedUser))
@@ -124,6 +129,8 @@ export function Profile() {
       else if (message.includes('CPF_TAKEN')) setError(t('profile.error.cpfTaken'))
       else if (message.includes('PASSWORD_MISMATCH')) {
         setError(t('profile.error.passwordMismatch'))
+      } else if (message.toLowerCase().includes('password')) {
+        setError(t('profile.error.weakPassword'))
       } else {
         setError(message)
       }

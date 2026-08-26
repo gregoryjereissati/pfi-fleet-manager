@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { UserRole, UserStatus, type UpdateCurrentUserDto } from '@fleet-manager/shared';
 import { AppError } from '../middlewares/error-handler';
 import { userRepository } from '../repositories/user.repository';
@@ -35,10 +34,6 @@ export const userService = {
     const cpfOwner = await userRepository.findByCpf(data.cpf);
     if (cpfOwner && cpfOwner.id !== id) throw new AppError(409, 'CPF_TAKEN');
 
-    if ((data.password || data.confirmPassword) && data.password !== data.confirmPassword) {
-      throw new AppError(400, 'PASSWORD_MISMATCH');
-    }
-
     const payload = {
       name: data.name.trim(),
       cpf: data.cpf.trim(),
@@ -50,7 +45,6 @@ export const userService = {
       addressCity: data.addressCity.trim(),
       addressState: data.addressState.trim().toUpperCase(),
       addressZip: data.addressZip.trim(),
-      ...(data.password ? { passwordHash: await bcrypt.hash(data.password, 10) } : {}),
     };
 
     return userRepository.updateProfile(id, payload);

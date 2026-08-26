@@ -4,13 +4,6 @@ import { userRepository } from '../../repositories/user.repository';
 import { UserRole, UserStatus } from '@fleet-manager/shared';
 import { AppError } from '../../middlewares/error-handler';
 
-vi.mock('bcryptjs', () => ({
-  default: {
-    hash: vi.fn().mockResolvedValue('new-hash'),
-  },
-}));
-
-import bcrypt from 'bcryptjs';
 
 vi.mock('../../repositories/user.repository', () => ({
   userRepository: {
@@ -31,7 +24,7 @@ const mockUser = {
   email: 'admin@test.com',
   cpf: '000.000.000-00',
   phone: '(85) 99999-0000',
-  passwordHash: 'hash',
+  authUserId: 'auth-uuid-1',
   role: UserRole.ADMIN,
   status: UserStatus.ACTIVE,
   addressStreet: 'Rua A',
@@ -165,22 +158,7 @@ describe('userService', () => {
       expect(userRepository.updateProfile).not.toHaveBeenCalled();
     });
 
-    it('lança 400 PASSWORD_MISMATCH quando senha e confirmação não conferem', async () => {
-      vi.mocked(userRepository.findById).mockResolvedValue(mockUser);
-      vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
-      vi.mocked(userRepository.findByCpf).mockResolvedValue(null);
-
-      await expect(
-        userService.updateCurrentUser('user-1', {
-          ...profilePayload,
-          password: 'nova-senha',
-          confirmPassword: 'outra-senha',
-        }),
-      ).rejects.toThrow(new AppError(400, 'PASSWORD_MISMATCH'));
-      expect(userRepository.updateProfile).not.toHaveBeenCalled();
-    });
-
-    it('atualiza o próprio perfil sem trocar a senha quando password não é informado', async () => {
+    it('atualiza o próprio perfil sem tocar em credenciais', async () => {
       const updatedUser = {
         ...mockUser,
         ...profilePayload,
@@ -198,36 +176,8 @@ describe('userService', () => {
         ...profilePayload,
         addressState: 'CE',
       });
-      expect(bcrypt.hash).not.toHaveBeenCalled();
       expect(result).toEqual(updatedUser);
     });
 
-    it('atualiza o próprio perfil e troca a senha quando informado', async () => {
-      const updatedUser = {
-        ...mockUser,
-        ...profilePayload,
-        addressState: 'CE',
-        passwordHash: 'new-hash',
-      };
-
-      vi.mocked(userRepository.findById).mockResolvedValue(mockUser);
-      vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
-      vi.mocked(userRepository.findByCpf).mockResolvedValue(null);
-      vi.mocked(userRepository.updateProfile).mockResolvedValue(updatedUser);
-
-      const result = await userService.updateCurrentUser('user-1', {
-        ...profilePayload,
-        password: 'nova-senha',
-        confirmPassword: 'nova-senha',
-      });
-
-      expect(bcrypt.hash).toHaveBeenCalledWith('nova-senha', 10);
-      expect(userRepository.updateProfile).toHaveBeenCalledWith('user-1', {
-        ...profilePayload,
-        addressState: 'CE',
-        passwordHash: 'new-hash',
-      });
-      expect(result).toEqual(updatedUser);
-    });
   });
 });

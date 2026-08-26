@@ -1,5 +1,7 @@
+import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { signOut } from '@/lib/supabase'
 
 interface AccessGateProps {
   children: React.ReactNode
@@ -10,8 +12,7 @@ export function AccessGate({ children }: AccessGateProps) {
   const { currentUser, loading, error } = useCurrentUser()
 
   function handleLogout() {
-    localStorage.removeItem('fm_token')
-    window.location.replace('/')
+    void signOut().then(() => window.location.replace('/'))
   }
 
   if (loading) {
@@ -20,6 +21,12 @@ export function AccessGate({ children }: AccessGateProps) {
         <span className="text-gray-500 text-sm">{t('common.loading')}</span>
       </div>
     )
+  }
+
+  // Conta de acesso válida, mas sem perfil no Fleet Manager: o cadastro foi
+  // interrompido entre a criação da conta e o envio dos dados cadastrais.
+  if (error === 'PROFILE_NOT_FOUND') {
+    return <Navigate to="/register?completar=true" replace />
   }
 
   if (error === 'PENDING_APPROVAL') {

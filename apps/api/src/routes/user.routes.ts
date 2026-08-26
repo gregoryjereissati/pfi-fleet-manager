@@ -8,11 +8,6 @@ import { validate } from '../middlewares/validate';
 
 export const userRouter = Router();
 
-const optionalPasswordSchema = z.preprocess(
-  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
-  z.string().min(6).optional(),
-);
-
 const updateCurrentUserSchema = z.object({
   name: z.string().trim().min(1),
   cpf: z.string().trim().min(1),
@@ -24,8 +19,6 @@ const updateCurrentUserSchema = z.object({
   addressCity: z.string().trim().min(1),
   addressState: z.string().trim().min(2).max(2),
   addressZip: z.string().trim().min(1),
-  password: optionalPasswordSchema,
-  confirmPassword: optionalPasswordSchema,
 });
 
 userRouter.use(authenticate);

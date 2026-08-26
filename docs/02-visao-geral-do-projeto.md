@@ -103,7 +103,7 @@ fleet-manager/
 ├── packages/
 │   └── shared/       Enumerações e DTOs compartilhados
 ├── docs/             Documentação do projeto
-├── supabase/         Script de configuração do Storage
+├── supabase/         Scripts SQL — schema completo e Storage
 └── package.json      Definição dos workspaces
 ```
 
@@ -121,7 +121,8 @@ A adoção de monorepo é justificada pelo compartilhamento de tipos entre front
 | ORM | Prisma 6 |
 | Banco de dados | PostgreSQL (Supabase) |
 | Arquivos | Supabase Storage |
-| Autenticação | JWT (`jose`) e `bcryptjs` |
+| Autenticação | Supabase Auth (e-mail e senha) |
+| Verificação do token na API | `jose` — JWKS com chave pública ES256 |
 | Validação | Zod |
 | Agendamento | node-cron |
 | Testes | Vitest |
@@ -130,9 +131,9 @@ A adoção de monorepo é justificada pelo compartilhamento de tipos entre front
 
 ## 7. Estado atual
 
-O produto mínimo viável está **funcionalmente completo em ambiente de desenvolvimento**: todos os módulos possuem persistência real em banco de dados relacional, o código compila sem erros e 99 testes automatizados são aprovados.
+O produto mínimo viável está **funcionalmente completo em ambiente de desenvolvimento**: todos os módulos possuem persistência real em banco de dados relacional, o código compila sem erros e 100 testes automatizados são aprovados.
 
-Permanecem pendentes a publicação em ambiente de produção e o envio de notificações por e-mail. O detalhamento encontra-se em [06-status-de-desenvolvimento.md](06-status-de-desenvolvimento.md).
+Permanece pendente a publicação em ambiente de produção. O detalhamento encontra-se em [06-status-de-desenvolvimento.md](06-status-de-desenvolvimento.md).
 
 ---
 

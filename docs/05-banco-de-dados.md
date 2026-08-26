@@ -23,7 +23,7 @@ erDiagram
         string email UK
         string cpf UK
         string phone
-        string passwordHash
+        string authUserId UK
         enum role
         enum status
         string addressStreet
@@ -99,7 +99,7 @@ erDiagram
     VEHICLE }o--o{ DRIVER : "_VehicleDrivers"
 ```
 
-> **Nota.** A entidade `USER` não possui relacionamento com as demais. Ela representa a conta de acesso ao sistema, enquanto `DRIVER` representa o cadastro do motorista. A ausência de vínculo é uma limitação conhecida do modelo, discutida na seção 6.
+> **Nota.** A entidade `USER` não possui relacionamento com as demais tabelas da aplicação. Ela representa o perfil de acesso ao sistema, enquanto `DRIVER` representa o cadastro do motorista. A ausência de vínculo é uma limitação conhecida do modelo, discutida na seção 6. O vínculo com a conta de autenticação é externo ao schema `public`, feito pela coluna `authUserId` (ver seção 2.1).
 
 ---
 
@@ -107,7 +107,9 @@ erDiagram
 
 ### 2.1. User — contas de acesso ao sistema
 
-Armazena os usuários que se autenticam na aplicação, seu perfil de acesso e sua situação de aprovação.
+Armazena o **perfil de aplicação** de cada usuário: dados cadastrais, papel de acesso e situação de aprovação.
+
+As credenciais (e-mail e senha) **não residem nesta tabela** — são gerenciadas pelo Supabase Auth, no schema `auth`. A coluna `authUserId` estabelece o vínculo entre as duas. O e-mail é mantido também aqui, por ser dado cadastral e permitir vincular perfis criados previamente à conta de acesso correspondente.
 
 | Campo | Tipo | Restrições | Descrição |
 |---|---|---|---|
@@ -116,7 +118,7 @@ Armazena os usuários que se autenticam na aplicação, seu perfil de acesso e s
 | `email` | String | **único**, obrigatório | E-mail, usado como credencial de login |
 | `cpf` | String | **único**, obrigatório | CPF, 11 dígitos numéricos |
 | `phone` | String | obrigatório | Telefone de contato |
-| `passwordHash` | String | obrigatório | Hash bcrypt da senha (fator 10) |
+| `authUserId` | String | **único**, opcional | Identificador da conta no Supabase Auth (`auth.users.id`). Nulo enquanto o perfil não estiver vinculado a uma conta de acesso. |
 | `role` | UserRole | padrão `OPERATOR` | Perfil de acesso |
 | `status` | UserStatus | padrão `PENDING` | Situação da conta |
 | `addressStreet` | String | obrigatório | Logradouro |
@@ -128,7 +130,7 @@ Armazena os usuários que se autenticam na aplicação, seu perfil de acesso e s
 | `createdAt` | DateTime | automático | Data de criação |
 | `updatedAt` | DateTime | automático | Data da última alteração |
 
-**Uso pela aplicação:** `auth.service` (cadastro e login), `authenticate` (validação a cada requisição), `user.service` (gestão e perfil próprio).
+**Uso pela aplicação:** `auth.service` (criação e vínculo do perfil), `authenticate` (busca por `authUserId` a cada requisição), `user.service` (gestão e perfil próprio).
 
 ### 2.2. Vehicle — veículos da frota
 
@@ -271,6 +273,7 @@ O histórico de evolução do schema está versionado em `apps/api/prisma/migrat
 | `20260429003345_add_user_status` | Introdução da enumeração `UserStatus` e do fluxo de aprovação |
 | `20260506000000_remove_auth0_add_custom_auth` | Remoção do identificador externo e adição dos campos de autenticação própria e endereço |
 | `20260526172511_add_file_url_to_document` | Adição do campo `fileUrl` para o anexo digital |
+| `20260826000000_supabase_auth` | Migração para o Supabase Auth: remoção de `passwordHash` e adição de `authUserId` |
 
 ### Reconstrução do banco em um ambiente novo
 
@@ -293,6 +296,7 @@ O bucket e as políticas do Storage são recriados separadamente, executando [`s
 | `User` e `Driver` não possuem vínculo | Um usuário com perfil OPERATOR, que na prática é o motorista, não pode ser associado ao seu cadastro de motorista nem ao veículo que conduz. | Introdução de uma chave estrangeira opcional entre as entidades. |
 | Ausência de auditoria de autoria | Não é possível determinar qual usuário registrou determinada despesa ou manutenção. | Adição de coluna `createdById` nas entidades transacionais. |
 | A exclusividade veículo/motorista em `Document` é validada apenas na aplicação | Inserções realizadas fora da aplicação podem violar a regra RN03. | Adição de `CHECK CONSTRAINT` por migration. |
+| Não há integridade referencial entre `User.authUserId` e `auth.users.id` | O Prisma gerencia apenas o schema `public`; a exclusão de uma conta no Supabase Auth deixa o perfil órfão. | Avaliar chave estrangeira entre schemas ou rotina de conciliação. |
 | Ausência de exclusão lógica em despesas e manutenções | A exclusão desses registros é definitiva e não preserva histórico. | Avaliar exclusão lógica caso a rastreabilidade se torne requisito. |
 
 ---
@@ -309,7 +313,9 @@ A rotina [`apps/api/prisma/seed.ts`](../apps/api/prisma/seed.ts) popula o banco 
 
 A rotina é **idempotente**: executá-la novamente não duplica registros.
 
-> **Credenciais de demonstração.** O usuário administrador é criado com o e-mail `admin@fleet-manager.com` e a senha `admin123`. Trata-se de credencial destinada exclusivamente a ambiente de desenvolvimento e demonstração acadêmica, e deve ser alterada em qualquer uso real.
+> **Perfis de demonstração.** A rotina cria os perfis `admin@fleet-manager.com` (ADMIN), `gerente@fleet-manager.com` (MANAGER) e `operador@fleet-manager.com` (OPERATOR), todos com situação `ACTIVE` e **sem conta de acesso vinculada** (`authUserId` nulo) — a rotina não cria contas no Supabase Auth.
+>
+> Para acessar o sistema com esses perfis, basta cadastrar os mesmos e-mails pela tela de cadastro da aplicação: a API detecta o perfil existente sem vínculo e o associa à conta recém-criada, preservando o papel e a situação `ACTIVE`. Esse mecanismo destina-se a ambiente de desenvolvimento e demonstração acadêmica.
 
 ---
 

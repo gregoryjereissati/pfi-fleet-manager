@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 
 vi.mock('../../lib/verify-token', () => ({
-  verifyJwt: vi.fn(),
+  verifySupabaseToken: vi.fn(),
 }));
 
 vi.mock('../../config/database', () => ({
@@ -14,20 +14,22 @@ vi.mock('../../config/database', () => ({
 }));
 
 vi.mock('../../config/env', () => ({
-  env: { JWT_SECRET: 'test-secret-32-characters-long!!!' },
+  env: { SUPABASE_URL: 'https://projeto.supabase.co' },
 }));
 
-import { verifyJwt } from '../../lib/verify-token';
+import { verifySupabaseToken } from '../../lib/verify-token';
 import { prisma } from '../../config/database';
-import { authenticate } from '../authenticate';
+import { authenticate, requireSupabaseSession } from '../authenticate';
+
+const authUser = { authUserId: 'auth-uuid-1', email: 'test@test.com' };
 
 const mockUser = {
   id: 'user-1',
   name: 'Test User',
   email: 'test@test.com',
-  cpf: '000.000.000-00',
+  cpf: '00000000000',
   phone: '(85) 99999-0000',
-  passwordHash: 'hash',
+  authUserId: 'auth-uuid-1',
   role: 'ADMIN' as const,
   status: 'ACTIVE' as const,
   addressStreet: 'Rua A',
@@ -56,65 +58,110 @@ describe('authenticate', () => {
 
   beforeEach(() => vi.clearAllMocks());
 
-  it('retorna 401 quando header Authorization está ausente', async () => {
-    const req = makeReq();
+  it('retorna 401 quando o header Authorization está ausente', async () => {
     const res = makeRes();
 
-    await authenticate(req, res, next);
+    await authenticate(makeReq(), res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Missing authorization header' });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('retorna 401 quando token é inválido', async () => {
-    vi.mocked(verifyJwt).mockRejectedValue(new Error('invalid'));
-    const req = makeReq('Bearer bad-token');
+  it('retorna 401 quando o token do Supabase é inválido', async () => {
+    vi.mocked(verifySupabaseToken).mockRejectedValue(new Error('invalid'));
     const res = makeRes();
 
-    await authenticate(req, res, next);
+    await authenticate(makeReq('Bearer bad-token'), res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
   });
 
-  it('retorna 404 quando usuário não existe no banco', async () => {
-    vi.mocked(verifyJwt).mockResolvedValue('user-missing');
+  it('retorna 404 PROFILE_NOT_FOUND quando a conta ainda não tem perfil', async () => {
+    vi.mocked(verifySupabaseToken).mockResolvedValue(authUser);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
-    const req = makeReq('Bearer valid-token');
     const res = makeRes();
 
-    await authenticate(req, res, next);
+    await authenticate(makeReq('Bearer valid-token'), res, next);
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ error: 'User not found' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'PROFILE_NOT_FOUND' });
   });
 
-  it('retorna 403 PENDING_APPROVAL quando usuário está pendente', async () => {
-    vi.mocked(verifyJwt).mockResolvedValue('user-1');
+  it('busca o perfil pelo identificador do Supabase Auth', async () => {
+    vi.mocked(verifySupabaseToken).mockResolvedValue(authUser);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser);
+
+    await authenticate(makeReq('Bearer valid-token'), makeRes(), vi.fn());
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { authUserId: 'auth-uuid-1' },
+    });
+  });
+
+  it('retorna 403 PENDING_APPROVAL quando o perfil aguarda aprovação', async () => {
+    vi.mocked(verifySupabaseToken).mockResolvedValue(authUser);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...mockUser,
       status: 'PENDING' as const,
     });
-    const req = makeReq('Bearer valid-token');
     const res = makeRes();
 
-    await authenticate(req, res, next);
+    await authenticate(makeReq('Bearer valid-token'), res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ error: 'PENDING_APPROVAL' });
   });
 
-  it('chama next e define req.user quando token é válido e usuário está ativo', async () => {
-    vi.mocked(verifyJwt).mockResolvedValue('user-1');
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser);
-    const req = makeReq('Bearer valid-token') as Request & { user?: typeof mockUser };
+  it('retorna 403 BLOCKED mesmo com token válido e não expirado', async () => {
+    vi.mocked(verifySupabaseToken).mockResolvedValue(authUser);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      status: 'BLOCKED' as const,
+    });
     const res = makeRes();
+
+    await authenticate(makeReq('Bearer valid-token'), res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'BLOCKED' });
+  });
+
+  it('define req.user e req.authUser quando o perfil está ativo', async () => {
+    vi.mocked(verifySupabaseToken).mockResolvedValue(authUser);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser);
+    const req = makeReq('Bearer valid-token');
     const nextFn = vi.fn();
 
-    await authenticate(req, res, nextFn);
+    await authenticate(req, makeRes(), nextFn);
 
     expect(req.user).toEqual(mockUser);
+    expect(req.authUser).toEqual(authUser);
+    expect(nextFn).toHaveBeenCalledOnce();
+  });
+});
+
+describe('requireSupabaseSession', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('retorna 401 quando o header Authorization está ausente', async () => {
+    const res = makeRes();
+
+    await requireSupabaseSession(makeReq(), res, vi.fn());
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('libera a requisição sem exigir perfil na aplicação', async () => {
+    vi.mocked(verifySupabaseToken).mockResolvedValue(authUser);
+    const req = makeReq('Bearer valid-token');
+    const nextFn = vi.fn();
+
+    await requireSupabaseSession(req, makeRes(), nextFn);
+
+    expect(req.authUser).toEqual(authUser);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(nextFn).toHaveBeenCalledOnce();
   });
 });

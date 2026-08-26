@@ -1,12 +1,18 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { UserRole } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
+import { getAccessToken, hasSession, signIn, signUp } from '@/lib/supabase'
 
 export function Register() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+
+  // Modo "completar cadastro": a conta de acesso já existe no Supabase, mas o
+  // perfil da aplicação não chegou a ser criado.
+  const completingProfile = params.get('completar') === 'true'
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
@@ -36,28 +42,62 @@ export function Register() {
       setError(t('register.validation.cpf'))
       return
     }
-    if (form.password !== form.confirmPassword) {
+    if (!completingProfile && form.password !== form.confirmPassword) {
       setError(t('register.error.passwordMismatch'))
       return
     }
     setError(null)
     setLoading(true)
+
     try {
-      await apiFetch('/auth/register', '', {
+      // Etapa 1 — garantir a conta de acesso no Supabase Auth.
+      if (!(await hasSession())) {
+        try {
+          const sessionStarted = await signUp(form.email, form.password)
+          if (!sessionStarted) {
+            // O projeto Supabase exige confirmação de e-mail. Sem ela não há
+            // token para criar o perfil na etapa seguinte.
+            setError(t('register.error.emailConfirmationRequired'))
+            return
+          }
+        } catch (signUpError) {
+          const msg = (signUpError as Error).message.toLowerCase()
+          if (msg.includes('already registered') || msg.includes('already exists')) {
+            // A conta já existe: autentica para vincular o perfil a ela.
+            try {
+              await signIn(form.email, form.password)
+            } catch {
+              setError(t('register.error.emailTaken'))
+              return
+            }
+          } else {
+            throw signUpError
+          }
+        }
+      }
+
+      // Etapa 2 — criar o perfil da aplicação vinculado à conta autenticada.
+      const token = await getAccessToken()
+      const { password: _password, confirmPassword: _confirmPassword, ...profile } = form
+
+      await apiFetch('/auth/register', token, {
         method: 'POST',
-        body: JSON.stringify({ ...form, cpf: cpfDigits }),
+        body: JSON.stringify({ ...profile, cpf: cpfDigits }),
       })
+
       navigate('/login?registered=true', { replace: true })
     } catch (err) {
       const msg = (err as Error).message
       if (msg === 'Failed to fetch' || msg.toLowerCase().includes('network')) {
         setError(t('register.error.network'))
-      } else if (msg.includes('EMAIL_TAKEN')) {
+      } else if (msg.includes('EMAIL_TAKEN') || msg.includes('PROFILE_ALREADY_EXISTS')) {
         setError(t('register.error.emailTaken'))
       } else if (msg.includes('CPF_TAKEN')) {
         setError(t('register.error.cpfTaken'))
       } else if (msg.includes('Invalid data')) {
         setError(t('register.error.invalidData'))
+      } else if (msg.toLowerCase().includes('password')) {
+        setError(t('register.error.weakPassword'))
       } else {
         setError(t('register.error.generic'))
       }

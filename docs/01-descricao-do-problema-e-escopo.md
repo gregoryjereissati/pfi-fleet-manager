@@ -133,7 +133,7 @@ O projeto contempla o desenvolvimento de uma aplicação web completa, composta 
 | Funcionalidade | Situação |
 |---|---|
 | Cadastro de usuários com aprovação por administrador | Implementada |
-| Autenticação por e-mail e senha com token JWT | Implementada |
+| Autenticação por e-mail e senha via Supabase Auth | Implementada |
 | Controle de acesso por perfil (ADMIN, MANAGER, OPERATOR) | Implementada |
 | Bloqueio e reativação de contas de usuário | Implementada |
 | CRUD de veículos, com desativação e exclusão permanente | Implementada |
@@ -187,7 +187,7 @@ As funcionalidades a seguir foram deliberadamente excluídas do projeto e **não
 | ORM | Prisma 6 |
 | Banco de dados | PostgreSQL, hospedado no Supabase |
 | Armazenamento de arquivos | Supabase Storage |
-| Autenticação | JWT próprio (biblioteca `jose`), senhas com hash `bcryptjs` |
+| Autenticação | Supabase Auth (e-mail e senha); tokens ES256 verificados por JWKS |
 | Validação | Zod (corpo das requisições e variáveis de ambiente) |
 | Agendamento | node-cron |
 | Testes | Vitest |

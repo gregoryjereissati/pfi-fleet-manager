@@ -25,7 +25,7 @@ A coluna **Situação** reflete o estado verificado no código-fonte, e não a i
 | **RF06** | O sistema deverá registrar documentos obrigatórios com data de vencimento. | ✅ | `document.service.ts`; enumeração `DocumentType` com 6 tipos |
 | **RF07** | O sistema deverá emitir alertas para vencimentos próximos de documentos e manutenções. | ✅ | `AlertCenter.tsx`, `alertCron.ts`, `useAlertCount.ts` — **ver observação abaixo** |
 | **RF08** | O sistema deverá gerar indicadores financeiros básicos, como custo por veículo e evolução mensal de despesas. | ✅ | `dashboard.service.ts`, `Dashboard.tsx` |
-| **RF09** | O sistema deverá possuir autenticação de usuários. | ✅ | `auth.service.ts`, `verify-token.ts` |
+| **RF09** | O sistema deverá possuir autenticação de usuários. | ✅ | Supabase Auth; verificação do token em `lib/verify-token.ts` |
 | **RF10** | O sistema deverá controlar níveis de acesso por perfil (Administrador, Gestor e Operador). | ✅ | `authorize.ts`; enumeração `UserRole` |
 
 > **Observação sobre o RF07 — canal de emissão do alerta.** O requisito é atendido **dentro da aplicação**: o sistema classifica automaticamente documentos e manutenções por situação de vencimento, consolida-os em uma central de alertas e exibe contadores no menu lateral e no cabeçalho. Uma rotina diária identifica os documentos que vencem em até 30 dias e os marca como sinalizados, de forma idempotente.
@@ -40,7 +40,7 @@ A coluna **Situação** reflete o estado verificado no código-fonte, e não a i
 | **RF12** | O sistema deverá permitir o anexo de arquivo digital (imagem ou PDF) ao registro de documento, com visualização. | ✅ | `lib/supabase.ts`, `FilePreviewModal.tsx` |
 | **RF13** | O sistema deverá exigir aprovação de um administrador para liberar o acesso de usuários recém-cadastrados. | ✅ | `UserStatus.PENDING`, `AccessGate.tsx`, `authenticate.ts` |
 | **RF14** | O sistema deverá permitir o bloqueio e a reativação de contas de usuário pelo administrador. | ✅ | `PATCH /users/:id/status`, `UserList.tsx` |
-| **RF15** | O sistema deverá permitir que o usuário edite seus próprios dados cadastrais e altere sua senha. | ✅ | `GET/PUT /users/me`, `Profile.tsx` |
+| **RF15** | O sistema deverá permitir que o usuário edite seus próprios dados cadastrais e altere sua senha. | ✅ | `GET/PUT /users/me` (dados cadastrais) e `supabase.auth.updateUser` (senha), em `Profile.tsx` |
 | **RF16** | O sistema deverá distinguir a desativação de um registro de sua exclusão permanente. | ✅ | `DELETE /:id` (desativa) e `DELETE /:id/permanent` (exclui) |
 | **RF17** | O sistema deverá apresentar a interface em português brasileiro e inglês, com escolha persistida. | ✅ | `lib/i18n.ts`, `locales/pt-BR.json`, `locales/en-US.json` |
 
@@ -60,8 +60,8 @@ Registrados para delimitar o alcance do sistema e evitar interpretação ampliad
 | ID | Descrição | Situação | Como é atendido |
 |---|---|---|---|
 | **RNF01** | O sistema deverá ser desenvolvido como aplicação web responsiva. | ✅ | React com TailwindCSS; layout adaptável por breakpoints. |
-| **RNF02** | O sistema deverá garantir armazenamento seguro dos dados em banco de dados relacional. | ✅ | PostgreSQL gerenciado no Supabase; conexão TLS; senhas com hash bcrypt (fator 10). |
-| **RNF03** | O sistema deverá possuir controle de autenticação e autorização. | ✅ | JWT assinado em HS256; middlewares `authenticate` e `authorize` aplicados por rota. |
+| **RNF02** | O sistema deverá garantir armazenamento seguro dos dados em banco de dados relacional. | ✅ | PostgreSQL gerenciado no Supabase, com conexão TLS. As senhas não são armazenadas pela aplicação: ficam sob responsabilidade do Supabase Auth. |
+| **RNF03** | O sistema deverá possuir controle de autenticação e autorização. | ✅ | Autenticação pelo Supabase Auth, com token ES256 verificado por JWKS; autorização pelos middlewares `authenticate` e `authorize`, aplicados por rota. |
 | **RNF04** | O sistema deverá apresentar tempo de resposta adequado às operações básicas (até 3 segundos em operações comuns). | 🟡 | As consultas usam índices e agregações no banco. **Não foi realizada medição formal de desempenho**, portanto o atendimento não está comprovado por evidência empírica. |
 | **RNF05** | O sistema deverá ser desenvolvido utilizando arquitetura cliente-servidor. | ✅ | SPA React consumindo API REST em Express, processos independentes. |
 | **RNF06** | O sistema deverá permitir escalabilidade futura para inclusão de novas funcionalidades. | ✅ | Arquitetura em camadas, monorepo com tipos compartilhados, migrations versionadas. |
@@ -71,9 +71,9 @@ Registrados para delimitar o alcance do sistema e evitar interpretação ampliad
 
 | ID | Descrição | Situação | Como é atendido |
 |---|---|---|---|
-| **RNF08** | O código deverá possuir cobertura de testes automatizados nas regras de negócio do backend. | ✅ | 99 testes automatizados em 13 arquivos, executados com Vitest. |
+| **RNF08** | O código deverá possuir cobertura de testes automatizados nas regras de negócio do backend. | ✅ | 100 testes automatizados em 13 arquivos, executados com Vitest. |
 | **RNF09** | A interface deverá estar disponível em português brasileiro e inglês. | ✅ | i18next com detecção e persistência da preferência. |
-| **RNF10** | As variáveis de ambiente deverão ser validadas na inicialização da aplicação. | 🟡 | `config/env.ts` valida com Zod, mas **não valida `DIRECT_URL`**, exigida pelo Prisma nas migrations. |
+| **RNF10** | As variáveis de ambiente deverão ser validadas na inicialização da aplicação. | ✅ | `config/env.ts` valida com Zod `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `PORT` e `NODE_ENV`, interrompendo a inicialização em caso de configuração inválida. |
 
 ---
 
@@ -93,7 +93,9 @@ Registrados para delimitar o alcance do sistema e evitar interpretação ampliad
 | **RN10** | A situação de vencimento de um documento é calculada dinamicamente a partir da data de validade, não sendo armazenada. | `document.repository.ts`. |
 | **RN11** | Documentos que vencem em até 30 dias são sinalizados diariamente por rotina automatizada, de forma idempotente. | `jobs/alertCron.ts`, execução diária à meia-noite. |
 | **RN12** | Os dados de identificação do veículo (placa, marca, modelo e cor) são normalizados para letras maiúsculas. | `VehicleForm.tsx`. |
-| **RN13** | O token de autenticação expira em 7 dias. | `lib/verify-token.ts`. |
+| **RN13** | O token de acesso é emitido e renovado pelo Supabase Auth; a API apenas verifica sua validade, o emissor e o público a cada requisição. | `lib/verify-token.ts`. |
+| **RN14** | O cadastro ocorre em duas etapas: criação da conta no Supabase Auth e criação do perfil na aplicação, vinculado pelo campo `authUserId`. | `auth.service.ts`, `Register.tsx`. |
+| **RN15** | Quando já existe perfil com o mesmo e-mail e sem conta vinculada, o cadastro vincula o perfil existente em vez de criar outro, preservando seu papel e sua situação. | `auth.service.registerProfile`. |
 
 ---
 
@@ -133,7 +135,7 @@ Matriz extraída da configuração real das rotas em `apps/api/src/routes/`.
 | RF06, RF12 | Documentos | `/api/documents` |
 | RF07 | Alertas | `/api/documents/alerts/count` |
 | RF08 | Indicadores | `/api/dashboard/indicators` |
-| RF09 | Autenticação | `/api/auth/register`, `/api/auth/login` |
+| RF09 | Autenticação | Supabase Auth (login) · `/api/auth/register` (perfil) |
 | RF10, RF13, RF14 | Gestão de usuários | `/api/users` |
 | RF15 | Perfil do usuário | `/api/users/me` |
 | RF17 | Internacionalização | — (camada de interface) |

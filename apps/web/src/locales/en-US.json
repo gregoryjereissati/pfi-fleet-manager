@@ -292,5 +292,10 @@
   "register.error.invalidData": "Invalid data. Please check the fields and try again.",
   "register.error.network": "Could not connect to the server. Check your connection and try again.",
   "register.error.generic": "Error sending request. Please try again.",
-  "register.validation.cpf": "CPF must have 11 digits (numbers only)."
+  "register.validation.cpf": "CPF must have 11 digits (numbers only).",
+  "login.error.emailNotConfirmed": "You must confirm your e-mail before signing in. Please check your inbox.",
+  "login.error.network": "Could not reach the server. Check your connection and try again.",
+  "register.error.emailConfirmationRequired": "Account created, but you must confirm your e-mail before completing registration.",
+  "register.error.weakPassword": "The password does not meet the minimum requirements. Use at least 6 characters.",
+  "profile.error.weakPassword": "The new password does not meet the minimum requirements. Use at least 6 characters."
 }
