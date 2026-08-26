@@ -29,7 +29,7 @@ Essas decisões foram tomadas e documentadas no spec. Não altere sem alinhar co
 | Autenticação | Supabase Auth (e-mail/senha) | Credenciais no Supabase; a API verifica o token ES256 pelo JWKS do projeto, sem segredo compartilhado. Papel e situação seguem na tabela `User` |
 | Validação | Zod | Validação de body nas rotas e de env vars na startup |
 | Controle de acesso | RBAC | Roles: ADMIN, MANAGER, OPERATOR |
-| Deploy Backend | Railway | Deploy do backend Node.js via GitHub — suporta processo persistente e cron jobs; free tier suficiente para apresentação |
+| Deploy | Vercel (projeto único) | Frontend estático e API serverless no mesmo domínio: elimina CORS e mantém uma única URL, no plano gratuito. O Railway foi descartado por não ter mais plano gratuito permanente. Publicado em https://pfi-fleet-manager-api.vercel.app |
 | Monorepo | npm workspaces | Sem Turborepo/Nx — simples e suficiente |
 | Framework HTTP | Express 4 | Mais documentado, ampla adoção acadêmica |
 | Testes | Vitest | Rápido, TypeScript nativo |
@@ -185,7 +185,7 @@ O seed **não cria contas no Supabase Auth**. Para acessar com qualquer um deles
 
 ## Estado Atual do Projeto
 
-> **Última atualização:** 2026-08-26 (migração da autenticação para o Supabase Auth)
+> **Última atualização:** 2026-08-26 (Supabase Auth e publicação em produção na Vercel — https://pfi-fleet-manager-api.vercel.app)
 > **Atualizar esta seção a cada task concluída antes de fazer push.**
 
 > Referências antigas à arquitetura anterior podem aparecer em seções históricas de sprints já concluídas. O estado atual do projeto é o descrito nas seções de arquitetura, setup e fluxo acima.
@@ -249,6 +249,14 @@ O seed **não cria contas no Supabase Auth**. Para acessar com qualquer um deles
   - Indicadores financeiros usam o mesmo recorte dos gráficos e da listagem de despesas
   - Dashboard exibe total, quantidade, média, despesas por mês, por tipo, por veículo e últimas despesas
   - Alertas de manutenção e documentos foram separados em pendentes, atrasados, vencidos e vencendo
+
+- [x] **Publicação em produção na Vercel**
+  - Projeto único: frontend estático e API serverless no mesmo domínio, sem CORS entre eles
+  - `api/index.ts` exporta a aplicação Express como função; `vercel.json` define build, reescritas e cron
+  - `node-cron` desligado quando `VERCEL=1`; a rotina diária passa a ser chamada em `GET /api/jobs/alerts`, protegida por `CRON_SECRET`
+  - `packages/shared` passou a emitir CJS e ESM — o `main` apontava para `.ts`, que o Node do runtime não carrega
+  - `binaryTargets` do Prisma inclui `rhel-openssl-3.0.x`
+  - Publicado e validado em https://pfi-fleet-manager-api.vercel.app
 
 - [x] **Migração da autenticação para o Supabase Auth**
   - Credenciais deixam de ser armazenadas pela aplicação; `passwordHash` removido
@@ -341,9 +349,9 @@ _Nenhum._
 - [x] [#40] Validação do MVP com dados reais
 
 #### Sprint 6 — Deploy e Entrega (issues: #41–#44)
-- [ ] [#41] Deploy do frontend na Vercel
-- [ ] [#42] Deploy do backend no Railway
-- [ ] [#43] Configurar PostgreSQL do Supabase para produção
+- [x] [#41] Deploy do frontend na Vercel
+- [x] [#42] Deploy do backend — Vercel serverless, no mesmo projeto
+- [x] [#43] Configurar PostgreSQL do Supabase para produção
 - [ ] [#44] Entrega final e apresentação
 
 ---

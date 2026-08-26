@@ -355,6 +355,26 @@ O comportamento é equivalente ao do ambiente local: a rotina permanece idempote
 4. Cadastrar as variáveis da seção 11.3 **antes** do primeiro build, pois as variáveis `VITE_*` são embutidas no pacote durante a construção.
 5. Concluir o deploy e verificar `https://<projeto>.vercel.app/health`.
 
+**Ambiente publicado:** https://pfi-fleet-manager-api.vercel.app
+
+### 11.6. Requisitos que a publicação impôs ao código
+
+Dois ajustes foram necessários para que a aplicação funcionasse fora do ambiente de desenvolvimento. Ficam registrados por serem exigências do modelo serverless, e não preferências.
+
+**O pacote compartilhado precisa emitir JavaScript.** `packages/shared` declarava `"main": "src/index.ts"`. Em desenvolvimento isso funciona, porque `tsx`, `vitest` e `vite` compilam TypeScript em tempo de execução. O runtime serverless é Node puro e não carrega `.ts`, produzindo a falha:
+
+```text
+Cannot find module '/var/task/node_modules/@fleet-manager/shared/src/index.ts'
+```
+
+O pacote passou a publicar duas saídas: `dist/cjs` para o Node e `dist/esm` para o Vite — o Rollup não resolve importações nomeadas a partir de CommonJS em dependência de workspace. O campo `exports` direciona cada consumidor ao formato adequado, e a compilação ocorre em `postinstall`.
+
+**O cliente Prisma precisa do binário do runtime.** O `schema.prisma` declara `binaryTargets = ["native", "rhel-openssl-3.0.x"]`: o primeiro atende a máquina de desenvolvimento, o segundo o runtime serverless.
+
+### 11.7. Roteamento
+
+A função é exposta em `/api/index`. Sem uma reescrita, apenas esse caminho exato a alcança, e as demais rotas respondem 404. O `vercel.json` encaminha `/api/(.*)` e `/health` para a função; como as reescritas só são avaliadas após a checagem do sistema de arquivos, não há recursão.
+
 > Após alterar qualquer variável `VITE_*`, é necessário reconstruir o projeto: o valor é embutido no pacote JavaScript em tempo de build, e não lido em tempo de execução.
 
 ---

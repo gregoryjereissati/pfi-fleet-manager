@@ -58,7 +58,7 @@ O Fleet Manager ataca o problema por quatro mecanismos:
 | Painel de indicadores com filtros e gráficos | ✅ Implementado |
 | Gestão de usuários e perfil próprio | ✅ Implementado |
 | Interface em português e inglês | ✅ Implementado |
-| **Publicação em produção** | ⏳ Pendente |
+| **Publicação em produção** | ✅ [https://pfi-fleet-manager-api.vercel.app](https://pfi-fleet-manager-api.vercel.app) |
 
 O detalhamento por funcionalidade, com evidência no código, está em [`docs/06-status-de-desenvolvimento.md`](docs/06-status-de-desenvolvimento.md).
 
@@ -219,7 +219,9 @@ Verificação: `curl http://localhost:3000/health`
 
 ## Status
 
-Produto mínimo viável **funcionalmente completo em ambiente de desenvolvimento**.
+Produto mínimo viável **funcionalmente completo e publicado em produção**.
+
+🔗 **https://pfi-fleet-manager-api.vercel.app**
 
 | Verificação | Resultado |
 |---|---|
@@ -227,9 +229,9 @@ Produto mínimo viável **funcionalmente completo em ambiente de desenvolvimento
 | ESLint | ✅ Sem erros |
 | Testes automatizados | ✅ 100 aprovados / 13 arquivos |
 | Build de produção do frontend | ✅ Gerado |
-| Publicação em produção | ⏳ Pendente |
+| Publicação em produção | ✅ Concluída |
 
-**Pendências declaradas:** o sistema ainda não foi publicado em produção e não foi aplicado em uma organização real — a validação usou base de dados fictícia. O acompanhamento de vencimentos ocorre dentro da aplicação; a notificação por canais externos está fora do escopo por decisão de projeto.
+**Pendências declaradas:** o sistema não foi aplicado em uma organização real — a validação usou base de dados fictícia. O acompanhamento de vencimentos ocorre dentro da aplicação; a notificação por canais externos está fora do escopo por decisão de projeto.
 
 ---
 

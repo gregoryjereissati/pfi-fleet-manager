@@ -26,9 +26,9 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 | Compilação TypeScript | Sem erros (backend e frontend) |
 | Análise estática (ESLint) | Sem erros |
 | Build de produção do frontend | Gerado com sucesso |
-| Publicação em produção | Não realizada |
+| Publicação em produção | **Concluída** — https://pfi-fleet-manager-api.vercel.app |
 
-**Situação geral:** produto mínimo viável funcionalmente completo em ambiente de desenvolvimento, com publicação em produção pendente.
+**Situação geral:** produto mínimo viável funcionalmente completo e **publicado em produção**, disponível em https://pfi-fleet-manager-api.vercel.app.
 
 ---
 
@@ -166,9 +166,9 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 | Bloqueio do acesso externo às tabelas (RLS + revoke) | ✅ | `supabase/schema-completo.sql` | — |
 | Testes automatizados de interface | ⏳ | — | Introduzir testes de componente |
 | Testes de integração da API | ⏳ | — | `supertest` já é dependência do projeto |
-| Integração contínua (CI) | ⏳ | — | Configurar execução automática dos testes |
-| Publicação do frontend | ⏳ | — | Publicar na Vercel |
-| Publicação do backend | ⏳ | — | Publicar no Railway |
+| Integração contínua (CI) | 🟡 | Build automático a cada envio ao GitHub | Adicionar execução dos testes |
+| Publicação do frontend | ✅ | Vercel — https://pfi-fleet-manager-api.vercel.app | — |
+| Publicação do backend | ✅ | Mesma URL, como função serverless | — |
 | Configuração de CORS para produção | ✅ | `app.ts`, `config/env.ts` | — |
 
 ---
@@ -237,7 +237,8 @@ Registradas de forma explícita para que o estado do projeto não seja superesti
 | Etapa 5 | Indicadores reais, gestão de usuários e testes | Concluída |
 | Ajustes | Autenticação própria, migração do banco, exclusão permanente, anexo de arquivos, identidade visual | Concluída |
 | Ajustes | Migração da autenticação própria para o **Supabase Auth** | Concluída |
-| Etapa 6 | Publicação em produção e entrega final | **Em andamento** |
+| Etapa 6 | Publicação em produção | Concluída |
+| Etapa 6 | Entrega final e apresentação | **Em andamento** |
 
 ---
 
