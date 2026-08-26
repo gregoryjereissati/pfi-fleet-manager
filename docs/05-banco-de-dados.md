@@ -302,7 +302,16 @@ npx prisma db seed          # popula a base com dados de demonstração
 
 O bucket e as políticas do Storage são recriados separadamente, executando [`supabase/storage-setup.sql`](../supabase/storage-setup.sql) no editor SQL do Supabase.
 
-**Grau de reprodutibilidade:** a estrutura relacional é **integralmente reprodutível** a partir do repositório. A configuração do Storage é reprodutível por meio do script SQL versionado. Os arquivos previamente enviados ao bucket não são recuperáveis, pois residem apenas no serviço de armazenamento.
+**Grau de reprodutibilidade:**
+
+| Componente | Reprodutível a partir do repositório |
+|---|---|
+| Estrutura relacional, enumerações, chaves e índices | ✅ Integralmente, por `prisma migrate deploy` ou pelo script SQL |
+| Bloqueio de acesso externo (RLS e revogação) | ✅ Incluído no script SQL |
+| Dados de demonstração | ✅ Pela rotina de povoamento |
+| Bucket do Storage | ✅ Incluído no script SQL |
+| Políticas do Storage | ⚠️ **Não** — exigem criação manual pelo painel, por limitação de propriedade da tabela `storage.objects`. Estão documentadas de forma prescritiva em [07-configuracao-e-execucao.md](07-configuracao-e-execucao.md#62-criar-as-políticas-pelo-painel). |
+| Arquivos já enviados ao bucket | ❌ Residem apenas no serviço de armazenamento |
 
 ---
 

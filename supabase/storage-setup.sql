@@ -1,103 +1,112 @@
 -- ---------------------------------------------------------------------------
 -- Fleet Manager — Configuração do Supabase Storage
 -- ---------------------------------------------------------------------------
--- Cria o bucket de arquivos de documentos e as políticas de acesso
--- necessárias para o upload realizado pelo frontend.
+-- Cria o bucket usado para armazenar os arquivos anexados aos documentos.
 --
 -- Como executar: painel do Supabase > SQL Editor > New query > colar > Run.
 --
--- Contexto: o Fleet Manager usa o Supabase Auth. O navegador envia os arquivos
--- ao Storage com a sessão do usuário autenticado, portanto na role
--- `authenticated`. Sem a política de INSERT abaixo, o upload falha com
--- "new row violates row-level security policy".
+-- ATENÇÃO — a configuração do Storage tem DUAS ETAPAS:
+--   Etapa 1 (este arquivo)  — criação do bucket, por SQL.
+--   Etapa 2 (painel)        — criação das políticas de acesso, pela interface
+--                             Storage > Policies. As instruções completas
+--                             estão no final deste arquivo.
 --
--- SOBRE A PROPRIEDADE DA TABELA storage.objects
---   A tabela storage.objects pertence ao papel `supabase_storage_admin`, e não
---   ao `postgres` usado pelo SQL Editor. Como o PostgreSQL exige ser dono da
---   tabela para criar políticas, o bloco de políticas abaixo assume esse papel
---   com SET ROLE antes de executá-las.
+-- Por que as políticas não estão neste script:
+--   A tabela `storage.objects` pertence ao papel `supabase_storage_admin`. O
+--   PostgreSQL exige ser dono da tabela para criar políticas sobre ela, e o
+--   papel `postgres` — usado pelo SQL Editor — não é dono nem pode assumir
+--   aquele papel. As duas tentativas por SQL falham:
 --
---   Também por isso NÃO há um "alter table storage.objects enable row level
---   security" neste script: além de exigir propriedade, o RLS já vem
---   habilitado nessa tabela por padrão no Supabase.
+--     ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+--       -> ERROR: 42501: must be owner of table objects
 --
---   Caso o SET ROLE falhe no seu projeto, use a alternativa pelo painel,
---   descrita ao final deste arquivo.
+--     SET ROLE supabase_storage_admin;
+--       -> ERROR: 42501: permission denied to set role "supabase_storage_admin"
+--
+--   O caminho suportado pela plataforma é a interface Storage > Policies, que
+--   executa a criação com o papel adequado. O SQL equivalente está registrado
+--   ao final, em comentário, para servir de referência.
+--
+--   Observação: não é necessário habilitar o RLS em `storage.objects` — ele já
+--   vem habilitado por padrão nos projetos Supabase.
 -- ---------------------------------------------------------------------------
 
--- 1. Bucket público de documentos -------------------------------------------
+-- Etapa 1 — Bucket público de documentos ------------------------------------
+-- Público: os arquivos são exibidos na aplicação por URL direta
+-- (getPublicUrl), sem necessidade de assinatura.
 insert into storage.buckets (id, name, public)
 values ('documents', 'documents', true)
 on conflict (id) do update set public = true;
 
--- 2. Políticas de acesso -----------------------------------------------------
-set role supabase_storage_admin;
 
--- 2.1. Upload de arquivos por usuários autenticados
--- Restringe as extensões aceitas, já que não há validação server-side.
-drop policy if exists "Allow anon document uploads" on storage.objects;
-drop policy if exists "Allow authenticated document uploads" on storage.objects;
-
-create policy "Allow authenticated document uploads"
-on storage.objects
-for insert
-to authenticated
-with check (
-  bucket_id = 'documents'
-  and storage.extension(name) in ('jpg', 'jpeg', 'png', 'webp', 'pdf')
-);
-
--- 2.2. Substituição de arquivos
-drop policy if exists "Allow authenticated document updates" on storage.objects;
-
-create policy "Allow authenticated document updates"
-on storage.objects
-for update
-to authenticated
-using (bucket_id = 'documents')
-with check (bucket_id = 'documents');
-
--- 2.3. Remoção de arquivos
-drop policy if exists "Allow authenticated document deletes" on storage.objects;
-
-create policy "Allow authenticated document deletes"
-on storage.objects
-for delete
-to authenticated
-using (bucket_id = 'documents');
-
--- 2.4. Leitura pelos usuários autenticados
--- O bucket é público, portanto a leitura por URL direta independe de política.
--- Esta política atende às consultas de listagem feitas pelo cliente.
-drop policy if exists "Allow public document reads" on storage.objects;
-
-create policy "Allow public document reads"
-on storage.objects
-for select
-to anon, authenticated
-using (bucket_id = 'documents');
-
-reset role;
-
+-- ===========================================================================
+-- Etapa 2 — Políticas de acesso (criar pelo painel)
+-- ===========================================================================
+-- Caminho: Storage > Policies > bucket `documents` > New policy
+--          > "For full customization"
+--
+-- Criar as quatro políticas abaixo. O campo "Policy name" é livre; os demais
+-- devem seguir exatamente o indicado.
+--
 -- ---------------------------------------------------------------------------
--- ALTERNATIVA — criar as políticas pelo painel
+-- POLÍTICA 1 — Envio de arquivos
+--   Nome              : Allow authenticated document uploads
+--   Allowed operation : INSERT
+--   Target roles      : authenticated
+--   WITH CHECK        :
+--
+--       bucket_id = 'documents'
+--       and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')
+--
+--   A restrição de extensões é a ÚNICA validação de tipo de arquivo do
+--   sistema, já que o upload não passa pela API. Se for omitida, o sistema
+--   continua funcionando, porém aceitará qualquer tipo de arquivo.
+--
 -- ---------------------------------------------------------------------------
--- Caso o comando SET ROLE acima seja rejeitado, execute apenas a seção 1
--- (criação do bucket) e configure as políticas pela interface:
+-- POLÍTICA 2 — Substituição de arquivos
+--   Nome              : Allow authenticated document updates
+--   Allowed operation : UPDATE
+--   Target roles      : authenticated
+--   USING             : bucket_id = 'documents'
+--   WITH CHECK        : bucket_id = 'documents'
 --
---   Storage > Policies > selecionar o bucket `documents` > New policy
---
--- Criar quatro políticas sobre o bucket `documents`:
---
---   | Operação | Papéis permitidos        |
---   |----------|--------------------------|
---   | INSERT   | authenticated            |
---   | UPDATE   | authenticated            |
---   | DELETE   | authenticated            |
---   | SELECT   | anon, authenticated      |
---
--- A restrição de extensões (jpg, jpeg, png, webp, pdf) aplicada na política de
--- INSERT é a única validação de tipo de arquivo existente, já que o upload não
--- passa pela API. Se as políticas forem criadas pelo painel sem essa
--- verificação, o sistema continua funcionando, porém sem essa restrição.
 -- ---------------------------------------------------------------------------
+-- POLÍTICA 3 — Remoção de arquivos
+--   Nome              : Allow authenticated document deletes
+--   Allowed operation : DELETE
+--   Target roles      : authenticated
+--   USING             : bucket_id = 'documents'
+--
+-- ---------------------------------------------------------------------------
+-- POLÍTICA 4 — Leitura
+--   Nome              : Allow public document reads
+--   Allowed operation : SELECT
+--   Target roles      : anon, authenticated
+--   USING             : bucket_id = 'documents'
+--
+-- ===========================================================================
+-- SQL equivalente (referência — não executável pelo SQL Editor)
+-- ===========================================================================
+-- Registrado para documentar exatamente o que a interface cria. Só funciona
+-- em uma conexão com privilégios de `supabase_storage_admin`.
+--
+--   create policy "Allow authenticated document uploads"
+--   on storage.objects for insert to authenticated
+--   with check (
+--     bucket_id = 'documents'
+--     and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')
+--   );
+--
+--   create policy "Allow authenticated document updates"
+--   on storage.objects for update to authenticated
+--   using (bucket_id = 'documents')
+--   with check (bucket_id = 'documents');
+--
+--   create policy "Allow authenticated document deletes"
+--   on storage.objects for delete to authenticated
+--   using (bucket_id = 'documents');
+--
+--   create policy "Allow public document reads"
+--   on storage.objects for select to anon, authenticated
+--   using (bucket_id = 'documents');
+-- ===========================================================================

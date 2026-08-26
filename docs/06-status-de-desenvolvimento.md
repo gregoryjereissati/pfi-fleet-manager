@@ -161,7 +161,8 @@ Este documento apresenta o estado real do desenvolvimento. Funcionalidades parci
 | Validação de variáveis de ambiente | ✅ | `config/env.ts` | — |
 | Migrations versionadas | ✅ | 5 migrations | — |
 | Rotina de povoamento do banco | ✅ | `prisma/seed.ts` | — |
-| Configuração do Storage versionada | ✅ | `supabase/storage-setup.sql` | — |
+| Bucket do Storage versionado | ✅ | `supabase/storage-setup.sql` | — |
+| Políticas do Storage versionadas | 🟡 | Documentadas, criadas pelo painel | Limitação de propriedade de `storage.objects` |
 | Bloqueio do acesso externo às tabelas (RLS + revoke) | ✅ | `supabase/schema-completo.sql` | — |
 | Testes automatizados de interface | ⏳ | — | Introduzir testes de componente |
 | Testes de integração da API | ⏳ | — | `supertest` já é dependência do projeto |

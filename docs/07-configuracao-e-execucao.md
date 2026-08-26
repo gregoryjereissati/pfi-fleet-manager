@@ -152,17 +152,42 @@ Para acessar o sistema com qualquer um deles, **cadastre esse mesmo e-mail pela 
 
 ## 6. Configuração do Storage
 
-O anexo de arquivos aos documentos requer um bucket e as respectivas políticas de acesso.
+O anexo de arquivos aos documentos exige um bucket e as respectivas políticas de acesso. A configuração tem **duas etapas**, por uma limitação de propriedade descrita adiante.
 
-No painel do Supabase, abrir **SQL Editor** → **New query**, colar o conteúdo de [`supabase/storage-setup.sql`](../supabase/storage-setup.sql) e executar.
+### 6.1. Criar o bucket (por SQL)
 
-O script cria o bucket `documents` como público e aplica quatro políticas sobre ele: envio, substituição e remoção por usuários autenticados, e leitura. O envio restringe as extensões a `jpg`, `jpeg`, `png`, `webp` e `pdf` — como o upload não passa pela API, essa é a única validação de tipo de arquivo existente.
+No painel do Supabase, abrir **SQL Editor** → **New query**, colar o conteúdo de [`supabase/storage-setup.sql`](../supabase/storage-setup.sql) e executar. O script cria o bucket `documents` como público.
 
-> **Sobre a propriedade da tabela.** A tabela `storage.objects` pertence ao papel `supabase_storage_admin`, e não ao `postgres` usado pelo SQL Editor. Como o PostgreSQL exige ser dono da tabela para criar políticas, o script assume esse papel com `SET ROLE` antes de criá-las.
->
-> Pelo mesmo motivo, o script **não** executa `ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY`: além de exigir propriedade, o RLS já vem habilitado nessa tabela por padrão. Tentar executá-lo produz o erro `42501: must be owner of table objects`.
->
-> Se o `SET ROLE` for rejeitado no seu projeto, execute apenas a criação do bucket e configure as políticas por **Storage → Policies**. As instruções estão no final do próprio arquivo SQL.
+### 6.2. Criar as políticas (pelo painel)
+
+Acessar **Storage** → **Policies** → bucket `documents` → **New policy** → *For full customization*, e criar as quatro políticas:
+
+| Política | Operação | Papéis | Expressão |
+|---|---|---|---|
+| Envio | INSERT | `authenticated` | `bucket_id = 'documents' and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')` |
+| Substituição | UPDATE | `authenticated` | `bucket_id = 'documents'` |
+| Remoção | DELETE | `authenticated` | `bucket_id = 'documents'` |
+| Leitura | SELECT | `anon`, `authenticated` | `bucket_id = 'documents'` |
+
+> A restrição de extensões na política de envio é a **única validação de tipo de arquivo do sistema**, já que o upload não transita pela API (ver [04-arquitetura.md](04-arquitetura.md#6-armazenamento-de-arquivos)).
+
+### 6.3. Por que as políticas não são criadas por SQL
+
+A tabela `storage.objects` pertence ao papel `supabase_storage_admin`. O PostgreSQL exige ser proprietário da tabela para criar políticas sobre ela, e o papel `postgres` — utilizado pelo SQL Editor — não é proprietário nem pode assumir aquele papel. As duas tentativas por SQL são rejeitadas:
+
+```text
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+  ERROR: 42501: must be owner of table objects
+
+SET ROLE supabase_storage_admin;
+  ERROR: 42501: permission denied to set role "supabase_storage_admin"
+```
+
+O caminho suportado pela plataforma é a interface **Storage → Policies**, que executa a criação com o papel adequado. O SQL equivalente está registrado ao final de [`supabase/storage-setup.sql`](../supabase/storage-setup.sql), em comentário, para documentar exatamente o que a interface cria.
+
+Não é necessário habilitar o RLS em `storage.objects`: ele já vem habilitado por padrão nos projetos Supabase.
+
+> **Efeito sobre a reprodutibilidade.** Esta é a única parte do ambiente que não pode ser recriada executando arquivos do repositório. A configuração está documentada de forma completa e prescritiva, mas depende de execução manual pela interface.
 
 ---
 
@@ -252,7 +277,8 @@ cd apps/web && npm run build              # build concluído
 | `A API retornou HTML em vez de JSON` | Backend fora do ar, ou `VITE_API_URL` incorreta | Iniciar a API e conferir a variável |
 | Erro de CORS no navegador | Origem não permitida | Em desenvolvimento, apenas `localhost` é aceito |
 | `new row violates row-level security policy` no upload | Políticas do Storage não aplicadas | Executar `supabase/storage-setup.sql` |
-| `42501: must be owner of table objects` no SQL Editor | Tentativa de alterar `storage.objects`, que pertence a `supabase_storage_admin` | Usar a versão atual do script, que assume o papel com `SET ROLE` |
+| `42501: must be owner of table objects` ou `permission denied to set role` | Tentativa de configurar políticas de Storage por SQL | Criar as políticas pelo painel, conforme a seção 6.2 |
+| Bucket não aparece após executar o script | O SQL Editor executa em transação: um erro posterior desfaz o `insert` | Executar novamente o script já corrigido |
 | Logo não aparece na interface | Arquivo `apps/web/public/logo.svg` ausente | Confirmar que o arquivo foi obtido no clone |
 | Variáveis do frontend ignoradas | Prefixo incorreto | O Vite exige o prefixo `VITE_` |
 
