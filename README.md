@@ -183,13 +183,17 @@ npx prisma db seed          # popula com dados de demonstração
 
 Para o anexo de arquivos, executar também [`supabase/storage-setup.sql`](supabase/storage-setup.sql) no SQL Editor.
 
-### Credenciais de demonstração
+### Perfis de demonstração
 
-| Perfil | E-mail | Senha |
+A rotina de povoamento cria três perfis já aprovados (`ACTIVE`), **sem conta de acesso vinculada** — ela não cria contas no Supabase Auth:
+
+| Perfil | E-mail | Papel |
 |---|---|---|
-| Administrador | `admin@fleet-manager.com` | `admin123` |
-| Gestor | `gerente@fleet-manager.com` | `admin123` |
-| Operador | `operador@fleet-manager.com` | `admin123` |
+| Administrador | `admin@fleet-manager.com` | ADMIN |
+| Gestor | `gerente@fleet-manager.com` | MANAGER |
+| Operador | `operador@fleet-manager.com` | OPERATOR |
+
+Para acessar com qualquer um deles, **cadastre o mesmo e-mail pela tela de cadastro da aplicação**, escolhendo a senha desejada. A API detecta o perfil existente sem vínculo e o associa à conta recém-criada, preservando o papel e a situação `ACTIVE` — o acesso fica liberado de imediato, sem necessidade de aprovação.
 
 > Uso exclusivo em ambiente de desenvolvimento e demonstração acadêmica.
 
