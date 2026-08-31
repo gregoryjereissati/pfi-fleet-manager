@@ -45,13 +45,22 @@ def configurar():
 
     for nome, tam in (('Heading 1', 14), ('Heading 2', 12), ('Heading 3', 12)):
         e = doc.styles[nome]
-        e.font.name = 'Times New Roman'
         e.font.size = Pt(tam)
         e.font.bold = True
         e.font.color.rgb = RGBColor(0, 0, 0)
         e.paragraph_format.space_before = Pt(18)
         e.paragraph_format.space_after = Pt(12)
         e.paragraph_format.line_spacing = 1.5
+        # Os estilos de título herdam a fonte principal do tema do documento.
+        # Definir apenas `font.name` não basta: é preciso remover a referência
+        # ao tema, caso contrário o Word continua aplicando a fonte do tema.
+        rfonts = e.element.get_or_add_rPr().get_or_add_rFonts()
+        for atributo in ('asciiTheme', 'hAnsiTheme', 'cstheme', 'eastAsiaTheme'):
+            chave = qn('w:' + atributo)
+            if chave in rfonts.attrib:
+                del rfonts.attrib[chave]
+        for atributo in ('ascii', 'hAnsi', 'cs', 'eastAsia'):
+            rfonts.set(qn('w:' + atributo), 'Times New Roman')
 
 
 def p(texto='', alinhamento=None, negrito=False, tamanho=None, italico=False,
