@@ -72,7 +72,7 @@ def folha_rosto():
     par = doc.add_paragraph()
     par.paragraph_format.left_indent = Cm(8)
     par.paragraph_format.line_spacing = 1.0
-    r = par.add_run('Orientador: Prof. Me. Ronnison Reges Vidal')
+    r = par.add_run('Orientador: Prof. Me. Ronaldo Gonçalves Junior')
     r.font.size = Pt(11)
     for _ in range(5):
         centro()
