@@ -169,3 +169,67 @@ on conflict (id) do update set public = true;
 --     select public.pode_acessar_documentos('<company_id de outra empresa>');    -- false
 --   rollback;
 -- ===========================================================================
+
+-- ===========================================================================
+-- ATUALIZAÇÃO — os anexos passam a ser servidos pela API
+-- ===========================================================================
+-- O recorte descrito acima é POR EMPRESA, e a regra da aplicação é mais
+-- estreita: o motorista alcança os próprios documentos pessoais e os dos
+-- veículos a que está vinculado agora — não a CNH de um colega da mesma
+-- empresa. Falando direto com o Storage, um motorista contornava a API e a
+-- política deixava passar, porque o colega é da mesma empresa.
+--
+-- Reproduzir a regra inteira em RLS significaria reescrevê-la em SQL, em
+-- duplicata com o serviço que já a aplica — e duas cópias divergem. A saída é
+-- a contrária: tirar o Storage do alcance do navegador.
+--
+-- O que mudou no código
+-- ---------------------
+--   · O frontend não importa mais `supabase.storage` em lugar nenhum.
+--   · `GET /documents/:id/arquivo` devolve uma URL assinada de leitura,
+--     válida por 60s, depois de aplicar o mesmo recorte da consulta ao
+--     documento — quem não alcança a linha recebe 404 e não chega a assinar.
+--   · `POST /documents/arquivo/url-de-envio` devolve a URL de envio e o
+--     caminho, que começa pela empresa do RECORTE DE ACESSO, nunca pela do
+--     corpo da requisição. As extensões aceitas passaram a ser conferidas
+--     pela API (Zod), e não mais só pela política de INSERT.
+--   · A API assina com a `service_role`, que atravessa a RLS.
+--
+-- Passo a passo no painel
+-- -----------------------
+-- Faça isto DEPOIS de publicar o código acima. Enquanto a versão antiga do
+-- frontend estiver no ar, ela ainda fala com o Storage e para de funcionar
+-- assim que as políticas saírem.
+--
+--   Storage > Policies > bucket `documents`  -> APAGAR todas as políticas:
+--
+--       documentos_alterar_da_propria_empresa flreew_0   (UPDATE)
+--       documentos_alterar_da_propria_empresa flreew_1   (SELECT)
+--       documentos_enviar_para_a_propria_empresa flreew_0 (INSERT)
+--       documentos_ler_da_propria_empresa flreew_0       (SELECT)
+--       documentos_remover_da_propria_empresa flreew_0   (DELETE)
+--       documentos_remover_da_propria_empresa flreew_1   (SELECT)
+--
+-- Nenhuma política nova entra no lugar. Com a RLS habilitada — como já vem por
+-- padrão — e nenhuma política, o acesso é NEGADO a `anon` e a `authenticated`,
+-- e a `service_role` continua passando. É o mesmo critério já aplicado às
+-- tabelas da aplicação.
+--
+-- O bucket permanece PRIVADO. Torná-lo público serviria os arquivos sem passar
+-- por RLS, e desfaria a mudança inteira.
+--
+-- Conferência
+-- -----------
+--   select policyname, cmd, roles
+--   from pg_policies
+--   where schemaname = 'storage' and tablename = 'objects';
+--   -- não deve sobrar nenhuma linha para o bucket `documents`
+--
+-- Na aplicação: abrir um anexo continua funcionando (a API assina), e uma
+-- chamada direta ao Storage com o token de um usuário passa a receber 400/403.
+--
+-- A função `public.pode_acessar_documentos()` fica sem uso, mas NÃO é removida
+-- aqui: ela só sai em migration própria, depois que estas políticas estiverem
+-- trocadas e validadas. Removê-la antes derrubaria as políticas que ainda a
+-- chamam.
+-- ===========================================================================

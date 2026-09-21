@@ -106,7 +106,14 @@ NODE_ENV=development
 DATABASE_URL="postgresql://postgres.<ref>:<SENHA>@<host>.pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres.<ref>:<SENHA>@<host>.pooler.supabase.com:5432/postgres"
 SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<chave-service-role>
 ```
+
+> A `SUPABASE_SERVICE_ROLE_KEY` é exigida **em tempo de execução**: é com ela que
+> a API assina as URLs dos anexos. Ela também precisa estar cadastrada nas
+> variáveis de ambiente do projeto na Vercel — sem isso a publicação sobe e
+> falha ao abrir ou enviar um anexo. É uma chave **secreta**: nunca use o
+> prefixo `VITE_` nem a coloque no frontend.
 
 **`apps/web/.env`** — modelo em [`apps/web/.env.example`](apps/web/.env.example)
 
@@ -266,54 +273,75 @@ Isso não implementa o isolamento por empresa; serve para negar acesso a `anon` 
 ninguém chega às tabelas por fora da API, via PostgREST. A aplicação conecta com
 um papel que contorna a RLS, e por isso continua operando normalmente.
 
-### Anexos: recorte por empresa no Storage
+### Anexos: servidos pela API
 
 Os arquivos anexados aos documentos ficam no bucket `documents` do Supabase
 Storage, **fora** das tabelas — e por isso fora do recorte que a aplicação
-aplica às linhas. Até a correção descrita aqui, as políticas do bucket exigiam
-apenas que o pedido viesse de alguém autenticado: qualquer usuário do sistema
-podia listar, baixar, sobrescrever e apagar anexo de **qualquer** empresa,
-falando direto com a API do Storage.
+aplica às linhas.
 
-A correção tem três partes:
+A primeira correção recortou o bucket **por empresa**: o caminho do arquivo
+passou a começar pelo identificador da empresa (`<companyId>/<entityId>/<uuid>.<ext>`),
+o bucket virou privado, e as políticas passaram a chamar
+`public.pode_acessar_documentos()`, da migration `0005`. Isso fechou o buraco
+maior — antes qualquer usuário autenticado alcançava o anexo de qualquer
+empresa —, mas não a regra inteira.
 
-1. **O caminho do arquivo começa pelo identificador da empresa** —
-   `<companyId>/<entityId>/<uuid>.<ext>`. Sem isso nenhuma política teria de
-   onde tirar a empresa dona do arquivo.
-2. **O bucket é privado.** A leitura usa URL assinada de validade curta, gerada
-   na abertura do anexo. Uma URL pública valeria para sempre, para qualquer
-   pessoa que a tivesse visto uma vez — inclusive depois de perder acesso.
-3. **As políticas do bucket chamam `public.pode_acessar_documentos()`**, criada
-   na migration `0005`. Ela compara o primeiro segmento do caminho com a empresa
-   de quem pede e exige perfil ACTIVE.
+A regra da aplicação é mais estreita que "mesma empresa":
 
-A função é `security definer` porque uma política do Storage é avaliada como o
-papel `authenticated`, que não tem privilégio algum sobre `public.users` — uma
-consulta direta falharia antes mesmo da RLS. Ela não devolve dados: responde sim
-ou não sobre o pedido em questão.
+- **ADMIN e MANAGER** enxergam todos os documentos da empresa.
+- **OPERATOR** enxerga os próprios documentos pessoais e os dos veículos a que
+  está vinculado **agora** — não a CNH de um colega da mesma empresa.
 
-As políticas são criadas **pelo painel** (Storage > Policies), não por migration:
-`storage.objects` pertence ao papel `supabase_storage_admin`, e o `postgres` não
-pode criar política sobre ela. Os comandos estão em
-[`supabase-fleet/storage-setup.sql`](supabase-fleet/storage-setup.sql).
+Um motorista podia contornar a API e pedir o arquivo direto ao Storage: a
+política deixava passar, porque o colega é da mesma empresa. Reproduzir a regra
+inteira em RLS exigiria reescrevê-la em SQL, em duplicata com o serviço que já
+a aplica — e duas cópias divergem.
+
+A saída foi a contrária: **tirar o Storage do alcance do navegador.**
+
+| | Como é agora |
+|---|---|
+| Leitura | `GET /documents/:id/arquivo` devolve `{ url }`, assinada, válida por 60s |
+| Envio | `POST /documents/arquivo/url-de-envio` devolve `{ url, caminho }`; o cliente faz `PUT` na URL |
+| Políticas do bucket | nenhuma — RLS habilitada nega tudo a `anon` e `authenticated` |
+| Quem toca o Storage | só a API, com a `service_role` |
+
+A leitura reaproveita `documentService.getDocument`, que **já** aplica o recorte:
+o que está fora do alcance de quem pede devolve 404 e nunca chega a ser
+assinado. A regra não é reescrita em lugar nenhum — é por reaproveitá-la que o
+arquivo obedece à mesma condição que a linha.
+
+No envio, a empresa do caminho vem do **recorte de acesso**, nunca do corpo da
+requisição, e a entidade dona passa pela mesma verificação que a criação do
+documento faz. As extensões aceitas (`jpg`, `jpeg`, `png`, `webp`, `pdf`)
+deixaram de depender da política de INSERT e são conferidas pela API.
+
+`documents.file_url` guarda o **caminho**, não uma URL. A API não usa o
+`@supabase/supabase-js`: fala com o Storage por `fetch`, como os scripts de
+manutenção da base.
+
+As políticas são apagadas **pelo painel** (Storage > Policies), não por
+migration: `storage.objects` pertence ao papel `supabase_storage_admin`, e o
+`postgres` não pode criar nem apagar política sobre ela. O passo a passo está
+em [`supabase-fleet/storage-setup.sql`](supabase-fleet/storage-setup.sql).
 
 ### O que ainda falta nos anexos
 
-O recorte acima é **por empresa**. A regra da aplicação é mais estreita: o
-motorista alcança os próprios documentos pessoais e os dos veículos a que está
-vinculado — não a CNH de um colega da mesma empresa. Reproduzir isso em RLS
-exigiria reescrever a regra em SQL, em duplicata com o serviço que já a aplica.
-
-Fechar essa diferença significa servir os arquivos pela API: as políticas passam
-a negar tudo para `authenticated`, `file_url` guarda o caminho, e a API — que já
-resolveu empresa, papel e vínculo — emite a URL assinada. O envio passa a usar
-URL de upload assinada, também emitida por ela.
-
-O super administrador tem, hoje, alcance mais largo que o recorte da sessão dele:
-a função o autoriza em qualquer empresa, porque o Storage não tem como saber qual
-empresa ele escolheu — isso é um conceito da API, transmitido em cabeçalho. Não
-amplia o que ele já pode ver, mas é uma diferença real, e desaparece junto com a
-mudança acima.
+- **Apagar as políticas no painel.** O código já está pronto, mas enquanto as
+  políticas existirem o atalho pelo Storage continua aberto. A troca é feita
+  depois da publicação, para não derrubar a versão anterior do frontend, que
+  ainda fala com o Storage.
+- **Remover `public.pode_acessar_documentos()`.** Ela fica sem uso quando as
+  políticas saírem, e só então é removida, em migration própria — migrations
+  são somente-adição, e apagar a função antes derrubaria as políticas que ainda
+  a chamam. Com isso desaparece também a última diferença de alcance do super
+  administrador: a função o autoriza em qualquer empresa, porque o Storage não
+  tem como saber qual empresa ele escolheu na sessão — isso é um conceito da
+  API.
+- **Recolher o arquivo antigo quando o anexo é substituído.** Trocar o anexo de
+  um documento grava o caminho novo e deixa o anterior no bucket. Ninguém o
+  alcança — nenhuma tela o referencia e o Storage só responde à API —, mas ele
+  ocupa espaço.
 
 ---
 
@@ -331,7 +359,7 @@ Verificação rápida: `curl http://localhost:3000/health`
 ## Validação
 
 ```bash
-npm run test:api                    # 193 testes
+npm run test:api                    # 217 testes
 cd apps/api && npx tsc --noEmit     # sem erros
 cd apps/web && npx tsc --noEmit     # sem erros
 cd apps/web && npm run build        # gera o pacote de produção
