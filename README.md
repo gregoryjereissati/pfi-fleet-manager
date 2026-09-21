@@ -401,7 +401,7 @@ npm run test:api                    # 220 testes
 cd apps/api && npx tsc --noEmit     # sem erros
 cd apps/web && npx tsc --noEmit     # sem erros
 cd apps/web && npm run build        # gera o pacote de produção
-npm run lint                        # sem erros
+npm run lint                        # sem erros (API e frontend, .ts e .tsx)
 ```
 
 Tudo deve passar limpo — **não há erro nem aviso pré-existente**. Se algum

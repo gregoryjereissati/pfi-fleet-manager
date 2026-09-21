@@ -12,7 +12,7 @@
     "build:api": "npm run build --workspace=apps/api",
     "test": "npm run test --workspaces --if-present",
     "test:api": "npm run test --workspace=apps/api",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "vercel-build": "npm run build:shared && npm run build --workspace=apps/web",
     "postinstall": "npm run build:shared",
