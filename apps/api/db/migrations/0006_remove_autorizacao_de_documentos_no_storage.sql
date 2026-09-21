@@ -1,0 +1,25 @@
+-- =============================================================================
+-- 0006 — Remove a função de autorização dos anexos no Storage
+-- =============================================================================
+-- `public.pode_acessar_documentos`, criada na 0005, existia para as políticas
+-- do bucket `documents`: ela comparava o primeiro segmento do caminho do
+-- arquivo com a empresa de quem pedia.
+--
+-- Esse recorte era por EMPRESA, e a regra da aplicação é mais estreita: o
+-- motorista alcança os próprios documentos pessoais e os dos veículos a que
+-- está vinculado — não a CNH de um colega da mesma empresa. Falando direto com
+-- o Storage, um motorista contornava a API e a política deixava passar.
+--
+-- A correção foi tirar o Storage do alcance do navegador. As políticas do
+-- bucket foram apagadas — com RLS habilitada e nenhuma política, o acesso é
+-- negado a `anon` e `authenticated` —, e quem assina leitura e envio passou a
+-- ser a API, com a `service_role`, depois de aplicar o recorte completo.
+--
+-- Sem as políticas, nada mais chama esta função. Ela sai agora, e não junto
+-- com a troca: apagá-la antes derrubaria as políticas que ainda a chamavam.
+--
+-- Nenhum dado depende dela. A função não guardava estado: respondia sim ou não
+-- sobre um pedido em curso.
+-- =============================================================================
+
+drop function if exists public.pode_acessar_documentos(text);
