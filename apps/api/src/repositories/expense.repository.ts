@@ -176,13 +176,23 @@ export const expenseRepository = {
   ): Promise<ExpenseWithVehicle> {
     // Só as chaves presentes em `data` e listadas em CAMPOS_ALTERAVEIS entram
     // no SET. O nome da coluna vem da lista, não do corpo da requisição.
-    const chaves = CAMPOS_ALTERAVEIS.filter((campo) => campo in data);
+    //
+    // O autor entra no mesmo objeto, e não como fragmento à parte: o auxiliar
+    // do postgres.js decide se monta um SET a partir da instrução que veio
+    // antes dele, e dentro de um fragmento aninhado essa instrução chega
+    // vazia — ele tentava então listar identificadores e quebrava
+    // (`xs.map is not a function`). Assim também desaparece o caso de SET
+    // vazio: o autor está sempre presente.
+    const alteracoes = { ...data, updatedById };
+    const chaves = [
+      ...CAMPOS_ALTERAVEIS.filter((campo) => campo in data),
+      'updatedById',
+    ] as (keyof UpdateExpenseData | 'updatedById')[];
 
     const [despesa] = await client<ExpenseWithVehicle[]>`
       with alterada as (
         update expenses
-        set ${chaves.length > 0 ? client`${client(data, ...chaves)},` : client``}
-            updated_by_id = ${updatedById}
+        set ${client(alteracoes, ...chaves)}
         where id = ${id}
         returning *
       )

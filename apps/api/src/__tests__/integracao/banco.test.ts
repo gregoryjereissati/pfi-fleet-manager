@@ -4,6 +4,7 @@ import { sql } from '../../config/database';
 import { dashboardRepository } from '../../repositories/dashboard.repository';
 import { expenseRepository } from '../../repositories/expense.repository';
 import { documentRepository } from '../../repositories/document.repository';
+import { maintenanceRepository } from '../../repositories/maintenance.repository';
 import { assignmentRepository } from '../../repositories/assignment.repository';
 import { vehicleRepository } from '../../repositories/vehicle.repository';
 import { driverRepository } from '../../repositories/driver.repository';
@@ -494,6 +495,73 @@ describe.skipIf(!temBanco)('integração com o banco', () => {
       `;
 
       expect(depois.total).toBe(antes.total);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('alteração parcial', () => {
+    /**
+     * As três alterações montam o `set` com o auxiliar do postgres.js, a partir
+     * das chaves presentes no corpo. O SQL resultante só aparece no banco real:
+     * nos testes de serviço o repositório é substituído, e uma montagem inválida
+     * passaria despercebida até alguém tentar editar um lançamento.
+     */
+    it('a despesa aceita alterar um único campo', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        const [despesa] = await expenseRepository.findMany({ companyId: a.companyId });
+
+        const alterada = await expenseRepository.update(
+          tx,
+          despesa.id,
+          { description: 'descrição revista' },
+          a.gerenteId,
+        );
+
+        expect(alterada.description).toBe('descrição revista');
+        expect(alterada.amount).toBe(despesa.amount);
+        expect(alterada.updatedById).toBe(a.gerenteId);
+      });
+    });
+
+    it('a manutenção aceita alterar um único campo', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        const [manutencao] = await maintenanceRepository.findMany({ companyId: a.companyId });
+
+        const alterada = await maintenanceRepository.update(
+          tx,
+          manutencao.id,
+          { description: 'revisão reagendada' },
+          a.gerenteId,
+        );
+
+        expect(alterada.description).toBe('revisão reagendada');
+        expect(alterada.type).toBe(manutencao.type);
+        expect(alterada.updatedById).toBe(a.gerenteId);
+      });
+    });
+
+    // O caminho do anexo entra por aqui: gravar `fileUrl` é uma alteração de um
+    // campo só, e é o que o formulário faz depois de enviar o arquivo.
+    it('o documento aceita gravar só o caminho do anexo', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        const [documento] = await documentRepository.findMany({ companyId: a.companyId });
+        const caminho = `${a.companyId}/${crypto.randomUUID()}/${crypto.randomUUID()}.pdf`;
+
+        const alterado = await documentRepository.update(
+          tx,
+          documento.id,
+          { fileUrl: caminho },
+          a.gerenteId,
+        );
+
+        expect(alterado.fileUrl).toBe(caminho);
+        expect(alterado.expiryDate).toBe(documento.expiryDate);
+
+        const [linha] = await tx<{ updatedById: string }[]>`
+          select updated_by_id as "updatedById" from documents where id = ${documento.id}
+        `;
+        expect(linha.updatedById).toBe(a.gerenteId);
+      });
     });
   });
 
