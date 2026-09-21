@@ -13,10 +13,6 @@
 
 const CHAVE = 'fleet-manager:empresa-ativa'
 
-type Ouvinte = (empresaId: string | null) => void
-
-const ouvintes = new Set<Ouvinte>()
-
 function ler(): string | null {
   try {
     return window.localStorage.getItem(CHAVE)
@@ -44,19 +40,4 @@ export function definirEmpresaAtiva(empresaId: string | null): void {
   } catch {
     // Sem armazenamento a escolha vale só enquanto a página estiver aberta.
   }
-
-  for (const ouvinte of ouvintes) ouvinte(empresaId)
-}
-
-/**
- * Observa a troca de empresa.
- *
- * Trocar de empresa muda **todo** o conteúdo da aplicação, então quem guarda
- * dados precisa descartá-los. O cache de sessão já faz isso por conta própria,
- * porque a chave dele inclui a empresa; este aviso existe para o que não passa
- * por ele.
- */
-export function aoTrocarEmpresa(ouvinte: Ouvinte): () => void {
-  ouvintes.add(ouvinte)
-  return () => ouvintes.delete(ouvinte)
 }

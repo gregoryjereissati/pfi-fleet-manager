@@ -13,11 +13,6 @@
 
 /** Violação de restrição de unicidade. */
 const UNIQUE_VIOLATION = '23505';
-/** Violação de chave estrangeira. */
-const FOREIGN_KEY_VIOLATION = '23503';
-/** Violação de restrição `check`. */
-const CHECK_VIOLATION = '23514';
-
 interface ErroPostgres {
   code?: string;
   constraint_name?: string;
@@ -41,19 +36,4 @@ export function ehViolacaoDeUnicidade(erro: unknown, restricao?: string): boolea
   if (!restricao) return true;
 
   return postgres.constraint_name === restricao;
-}
-
-/** Violação de chave estrangeira: referência a uma linha que não existe. */
-export function ehViolacaoDeChaveEstrangeira(erro: unknown): boolean {
-  return comoErroPostgres(erro)?.code === FOREIGN_KEY_VIOLATION;
-}
-
-/** Violação de restrição `check` declarada no schema. */
-export function ehViolacaoDeRegra(erro: unknown): boolean {
-  return comoErroPostgres(erro)?.code === CHECK_VIOLATION;
-}
-
-/** Nome da restrição violada, quando o erro o informa. */
-export function restricaoViolada(erro: unknown): string | null {
-  return comoErroPostgres(erro)?.constraint_name ?? null;
 }

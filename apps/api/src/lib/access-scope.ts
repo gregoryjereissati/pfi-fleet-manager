@@ -33,24 +33,6 @@ export interface AccessScope {
   isSuperAdmin: boolean;
 }
 
-/** Super administrador da plataforma, agindo em qualquer empresa. */
-export function isPlatformAdmin(scope: AccessScope): boolean {
-  return scope.isSuperAdmin;
-}
-
-/** Administrador da empresa cliente: controla os acessos da própria empresa. */
-export function isCompanyAdmin(scope: AccessScope): boolean {
-  return scope.role === UserRole.ADMIN;
-}
-
-/**
- * Trabalha no escopo da empresa inteira: administrador e gerente.
- * Contrapõe-se ao escopo do motorista, restrito aos próprios lançamentos.
- */
-export function hasCompanyWideScope(scope: AccessScope): boolean {
-  return scope.role === UserRole.ADMIN || scope.role === UserRole.MANAGER;
-}
-
 /**
  * Escopo de motorista: enxerga e altera apenas os lançamentos de sua autoria.
  *

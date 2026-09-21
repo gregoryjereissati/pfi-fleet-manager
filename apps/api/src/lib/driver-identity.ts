@@ -40,11 +40,3 @@ export function resolveDriverIdentity(driver: DriverIdentitySource): DriverIdent
     linkedToUser: false,
   };
 }
-
-/** `select` mínimo do usuário para resolver a identidade da ficha. */
-export const driverUserSelect = {
-  id: true,
-  name: true,
-  cpf: true,
-  email: true,
-} as const;

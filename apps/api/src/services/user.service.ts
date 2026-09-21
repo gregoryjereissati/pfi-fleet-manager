@@ -210,5 +210,3 @@ export const userService = {
     });
   },
 };
-
-export const __testing = { ensureDriverProfile };
