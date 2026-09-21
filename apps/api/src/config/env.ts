@@ -25,6 +25,19 @@ const envSchema = z.object({
     .transform((value) => value.replace(/\/$/, '')),
 
   /**
+   * Chave `service_role` do projeto Supabase.
+   *
+   * Necessária **em tempo de execução**: os anexos deixaram de ser alcançados
+   * pelo navegador, e é a API que assina as URLs de leitura e de envio junto
+   * ao Storage. Antes só os scripts de manutenção a usavam, e por isso ela não
+   * constava aqui.
+   *
+   * Sem ela cadastrada no ambiente de publicação, a aplicação sobe e falha ao
+   * abrir ou enviar um anexo.
+   */
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+
+  /**
    * Origens autorizadas pelo CORS, separadas por vírgula.
    * Em desenvolvimento, qualquer porta de localhost é aceita mesmo sem esta
    * variável; em produção, o domínio do frontend precisa constar aqui.

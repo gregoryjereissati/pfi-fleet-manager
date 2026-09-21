@@ -50,6 +50,26 @@ export const documentController = {
     }
   },
 
+  /** URL assinada de leitura do anexo, no mesmo recorte da consulta. */
+  async getFileUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const arquivo = await documentService.getFileUrl(getScope(req), req.params.id);
+      res.json(arquivo);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /** URL assinada para o cliente enviar o anexo, com o caminho já decidido. */
+  async createUploadUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const envio = await documentService.createUploadUrl(getScope(req), req.body);
+      res.status(201).json(envio);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const document = await documentService.createDocument(getScope(req), req.body);

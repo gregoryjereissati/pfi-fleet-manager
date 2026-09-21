@@ -11,11 +11,19 @@ import { vehicleRepository } from '../repositories/vehicle.repository';
 import { driverRepository } from '../repositories/driver.repository';
 import { assignmentService } from './assignment.service';
 import { diffFields, pickFields, recordChange } from '../lib/audit';
+import { assinarEnvio, assinarLeitura } from '../lib/storage';
+import { caminhoDoAnexo, type ExtensaoDeAnexo } from '../lib/anexos';
 import type { AccessScope } from '../lib/access-scope';
 
 const AUDITED_FIELDS = ['type', 'expiryDate', 'fileUrl'] as const;
 
 export type DocumentQuery = Omit<DocumentFilters, 'companyId' | 'driverScope'>;
+
+export interface UploadUrlInput {
+  vehicleId?: string;
+  driverId?: string;
+  extensao: ExtensaoDeAnexo;
+}
 
 export interface CreateDocumentInput {
   vehicleId?: string;
@@ -24,6 +32,41 @@ export interface CreateDocumentInput {
   /** Data civil, `YYYY-MM-DD`. */
   expiryDate: string;
   fileUrl?: string;
+}
+
+/**
+ * Entidade dona do documento, conferida dentro da empresa de quem pede.
+ *
+ * Veículo e motorista são localizados **dentro da empresa**: um documento — e o
+ * anexo dele — não chega a ser vinculado a uma entidade de outra empresa,
+ * porque a entidade não é encontrada.
+ *
+ * Devolve o identificador da entidade, que é o segundo segmento do caminho do
+ * anexo no Storage.
+ */
+async function titularDoDocumento(
+  scope: AccessScope,
+  data: { vehicleId?: string; driverId?: string },
+): Promise<string> {
+  if (!data.vehicleId && !data.driverId) {
+    throw new AppError(400, 'vehicleId or driverId is required');
+  }
+
+  if (data.vehicleId && data.driverId) {
+    throw new AppError(400, 'Document must belong to either a vehicle or a driver');
+  }
+
+  if (data.vehicleId) {
+    const vehicle = await vehicleRepository.findSummaryById(data.vehicleId, scope.companyId);
+    if (!vehicle) throw new AppError(404, 'Vehicle not found');
+
+    return data.vehicleId;
+  }
+
+  const driver = await driverRepository.findById(data.driverId as string, scope.companyId);
+  if (!driver) throw new AppError(404, 'Driver not found');
+
+  return data.driverId as string;
 }
 
 export const documentService = {
@@ -54,25 +97,7 @@ export const documentService = {
   },
 
   async createDocument(scope: AccessScope, data: CreateDocumentInput) {
-    if (!data.vehicleId && !data.driverId) {
-      throw new AppError(400, 'vehicleId or driverId is required');
-    }
-
-    if (data.vehicleId && data.driverId) {
-      throw new AppError(400, 'Document must belong to either a vehicle or a driver');
-    }
-
-    // Veículo e motorista são localizados dentro da empresa: um documento não
-    // chega a ser anexado a uma entidade de outra empresa.
-    if (data.vehicleId) {
-      const vehicle = await vehicleRepository.findSummaryById(data.vehicleId, scope.companyId);
-      if (!vehicle) throw new AppError(404, 'Vehicle not found');
-    }
-
-    if (data.driverId) {
-      const driver = await driverRepository.findById(data.driverId, scope.companyId);
-      if (!driver) throw new AppError(404, 'Driver not found');
-    }
+    await titularDoDocumento(scope, data);
 
     return emTransacao(async (tx) => {
       const document = await documentRepository.create(tx, {
@@ -140,6 +165,44 @@ export const documentService = {
 
       return documentRepository.delete(tx, id);
     });
+  },
+
+  /**
+   * Endereço temporário para ler o anexo de um documento.
+   *
+   * O recorte é o mesmo da consulta ao documento — `getDocument` já devolve 404
+   * para o que está fora do alcance de quem pede, inclusive o documento pessoal
+   * de um colega da mesma empresa. A regra não é reescrita aqui: é justamente
+   * por reaproveitá-la que o arquivo obedece à mesma condição que a linha.
+   */
+  async getFileUrl(scope: AccessScope, id: string): Promise<{ url: string }> {
+    const document = await this.getDocument(scope, id);
+
+    // Documento sem anexo não tem arquivo a servir. A resposta é a mesma de um
+    // documento inexistente: não há o que abrir.
+    if (!document.fileUrl) throw new AppError(404, 'Document file not found');
+
+    return { url: await assinarLeitura(document.fileUrl) };
+  },
+
+  /**
+   * Endereço temporário para enviar um anexo, com o caminho já decidido.
+   *
+   * A empresa do caminho vem do recorte de acesso, nunca do corpo da
+   * requisição: quem envia escolhe o arquivo, não onde ele cai.
+   *
+   * O caminho devolvido é o que o cliente grava depois em `fileUrl`. Um envio
+   * sem o documento correspondente deixa apenas um arquivo órfão, que nenhuma
+   * tela alcança.
+   */
+  async createUploadUrl(
+    scope: AccessScope,
+    data: UploadUrlInput,
+  ): Promise<{ url: string; caminho: string }> {
+    const entityId = await titularDoDocumento(scope, data);
+    const caminho = caminhoDoAnexo(scope.companyId, entityId, data.extensao);
+
+    return { url: await assinarEnvio(caminho), caminho };
   },
 
   /**

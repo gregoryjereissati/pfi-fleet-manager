@@ -6,6 +6,7 @@ import { documentController } from '../controllers/document.controller';
 import { authenticate } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
+import { caminhoDeAnexo, uploadUrlSchema } from '../lib/anexos';
 
 const createDocumentSchema = z
   .object({
@@ -13,7 +14,7 @@ const createDocumentSchema = z
     driverId: z.string().trim().min(1).optional(),
     type: z.nativeEnum(DocumentType),
     expiryDate: dataCivil,
-    fileUrl: z.string().trim().url().optional(),
+    fileUrl: caminhoDeAnexo.optional(),
   })
   .refine((data) => Boolean(data.vehicleId) !== Boolean(data.driverId), {
     message: 'Provide either vehicleId or driverId',
@@ -23,7 +24,7 @@ const updateDocumentSchema = z
   .object({
     type: z.nativeEnum(DocumentType).optional(),
     expiryDate: dataCivil.optional(),
-    fileUrl: z.string().trim().url().optional(),
+    fileUrl: caminhoDeAnexo.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field is required',
@@ -44,9 +45,20 @@ documentRouter.get(
   documentController.getAlertCount,
 );
 documentRouter.get(
+  '/:id/arquivo',
+  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
+  documentController.getFileUrl,
+);
+documentRouter.get(
   '/:id',
   authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
   documentController.getById,
+);
+documentRouter.post(
+  '/arquivo/url-de-envio',
+  authorize(UserRole.ADMIN, UserRole.MANAGER),
+  validate(uploadUrlSchema),
+  documentController.createUploadUrl,
 );
 documentRouter.post(
   '/',
