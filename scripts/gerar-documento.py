@@ -34,7 +34,7 @@ def capa():
     for _ in range(6):
         centro()
     centro('FLEET MANAGER', negrito=True, tamanho=18)
-    centro('Sistema de Gestão Inteligente de Frotas', tamanho=14)
+    centro('Sistema Web de Gestão de Frotas', tamanho=14)
     for _ in range(7):
         centro()
     centro('André Luiz Cavalcante da Silva (2310287)')
@@ -54,7 +54,7 @@ def folha_rosto():
     for _ in range(5):
         centro()
     centro('FLEET MANAGER', negrito=True, tamanho=16)
-    centro('Sistema de Gestão Inteligente de Frotas', tamanho=13)
+    centro('Sistema Web de Gestão de Frotas', tamanho=13)
     for _ in range(4):
         centro()
 
@@ -99,13 +99,16 @@ def resumo():
         'em React com Vite, e a interface de programação de aplicações REST, em Node.js com '
         'Express, adota arquitetura em camadas com dependência unidirecional entre rotas, '
         'controladores, serviços e repositórios. A persistência ocorre em PostgreSQL gerenciado '
-        'pelo Supabase, acessado exclusivamente por meio do mapeador objeto-relacional Prisma. A '
+        'pelo Supabase, acessado por SQL parametrizado, sem mapeador objeto-relacional. A '
         'autenticação é delegada ao Supabase Auth, que emite tokens assinados com chave '
         'assimétrica pelo algoritmo ES256; a aplicação os verifica com a chave pública publicada '
         'pelo próprio serviço, sem armazenar segredo algum. O controle de acesso baseado em '
         'papéis permanece sob responsabilidade da aplicação, com papel e situação de aprovação '
-        'persistidos fora do token, o que confere efeito imediato ao bloqueio de contas. A '
-        'qualidade foi verificada por cem testes automatizados das regras de negócio. O sistema '
+        'persistidos fora do token, o que confere efeito imediato ao bloqueio de contas. Os '
+        'dados são segregados por empresa: o identificador da organização participa da condição '
+        'de toda consulta e deriva do perfil autenticado, nunca de dado enviado pelo cliente. A '
+        'qualidade foi verificada por duzentos e vinte testes automatizados das regras de '
+        'negócio e da integração com o banco. O sistema '
         'encontra-se publicado em ambiente de produção, com interface e servidor atendidos pelo '
         'mesmo domínio. Registra-se, como delimitação, que a validação empregou base de dados '
         'fictícia, não tendo o sistema sido aplicado em uma organização real.')
@@ -167,7 +170,6 @@ def listas():
         ('JWKS', 'JSON Web Key Set'),
         ('JWT', 'JSON Web Token'),
         ('MVP', 'Minimum Viable Product'),
-        ('ORM', 'Object-Relational Mapping'),
         ('RBAC', 'Role-Based Access Control'),
         ('REST', 'Representational State Transfer'),
         ('RF', 'Requisito Funcional'),
@@ -242,9 +244,13 @@ def cap1():
       'necessidade real de organizações de pequeno e médio porte.')
 
     h2('1.2 Objetivo geral')
-    p('Desenvolver um sistema web para gestão inteligente de frotas, com foco no controle '
-      'operacional, financeiro e documental de veículos, promovendo maior previsibilidade de '
-      'custos, redução de riscos legais e suporte à tomada de decisão estratégica.')
+    p('Desenvolver um sistema web para gestão de frotas, com foco no controle operacional, '
+      'financeiro e documental de veículos, promovendo transparência e rastreabilidade dos '
+      'custos por ativo, classificação automática de vencimentos e redução de riscos legais.')
+    p('Delimita-se o alcance: o sistema consolida e classifica dados registrados, mas não '
+      'realiza projeção financeira nem recomendação automática. Os indicadores apresentados '
+      'são apurações do histórico lançado, e a classificação de vencimentos deriva de regra '
+      'declarada sobre a data de validade — não de inferência.')
 
     h2('1.3 Objetivos específicos')
     for o in (
@@ -325,17 +331,25 @@ def cap2():
       'sem que seja necessário iniciar servidor ou banco de dados, o que viabiliza a verificação '
       'descrita na seção 5.2.')
 
-    h2('2.4 Banco de dados relacional e mapeamento objeto-relacional')
+    h2('2.4 Banco de dados relacional e acesso a dados')
     p('O PostgreSQL é sistema gerenciador de banco de dados relacional de código aberto, '
       'reconhecido pela robustez, pela conformidade com o padrão SQL e pelo suporte a transações '
       'com garantias de atomicidade, consistência, isolamento e durabilidade. Tais '
       'características asseguram a integridade referencial em cenários com múltiplas entidades '
       'relacionadas, como veículos, motoristas, despesas e documentos.')
-    p('O Prisma é ferramenta de mapeamento objeto-relacional para TypeScript que gera cliente '
-      'fortemente tipado a partir de um esquema declarativo. Isso reduz erros em tempo de '
-      'execução e dispensa a escrita manual de SQL nas operações rotineiras. No projeto, o banco '
-      'é hospedado no Supabase, plataforma que provê PostgreSQL gerenciado, e o Prisma constitui '
-      'a única via de acesso aos dados a partir da aplicação.')
+    p('O acesso aos dados ocorre por SQL parametrizado, sem mapeador objeto-relacional. A '
+      'consulta é escrita na linguagem do próprio banco, e os valores trafegam como parâmetros '
+      'da instrução, nunca concatenados ao texto dela — condição que impede a injeção de SQL '
+      'por construção, e não por disciplina de quem escreve.')
+    p('A escolha tem contrapartida. Um mapeador gera cliente tipado a partir de esquema '
+      'declarativo e dispensa a escrita manual de consultas rotineiras; abrir mão dele custa '
+      'verbosidade. Em troca, o comportamento no banco fica explícito no código: não há '
+      'tradução intermediária entre o que se lê e o que é executado, e recursos do PostgreSQL '
+      'permanecem disponíveis sem depender do que a camada de abstração expõe. Considerando que '
+      'o isolamento entre organizações depende de o identificador da empresa participar da '
+      'condição de toda consulta, a legibilidade direta dessa condição pesou na decisão.')
+    p('O banco é hospedado no Supabase, plataforma que provê PostgreSQL gerenciado. O acesso a '
+      'partir da aplicação é restrito à camada de repositórios.')
 
     h2('2.5 Autenticação delegada e controle de acesso')
     p('A autenticação verifica a identidade de um usuário, ao passo que a autorização determina '
@@ -419,7 +433,7 @@ def cap3():
            [['Linguagem', 'TypeScript, no servidor e na interface'],
             ['Interface', 'React 18, Vite, React Router, Tailwind CSS, Recharts, i18next'],
             ['Servidor', 'Node.js com Express 4, em arquitetura de camadas'],
-            ['Mapeamento objeto-relacional', 'Prisma 6'],
+            ['Acesso a dados', 'postgres.js — SQL parametrizado, sem ORM'],
             ['Banco de dados', 'PostgreSQL gerenciado pelo Supabase'],
             ['Autenticação', 'Supabase Auth, com verificação de token por JWKS'],
             ['Armazenamento de arquivos', 'Supabase Storage'],
@@ -460,8 +474,7 @@ def cap4():
       'Os controladores traduzem a requisição HTTP em chamada de serviço e o retorno em resposta '
       'HTTP, sem conter regra de negócio. Os serviços concentram as regras de negócio e não '
       'conhecem o Express: não recebem os objetos de requisição e resposta. Os repositórios '
-      'encapsulam todo o acesso ao banco e constituem a única camada que importa o cliente '
-      'Prisma.')
+      'encapsulam todo o acesso ao banco e constituem a única camada em que há SQL.')
     p('O isolamento da camada de serviços em relação ao protocolo HTTP é o que viabiliza os '
       'testes automatizados descritos na seção 5.2: os serviços são exercitados com repositórios '
       'substituídos por dublês, sem necessidade de servidor ou banco em execução.')
@@ -478,32 +491,59 @@ def cap4():
       'compilação ocorre automaticamente após a instalação das dependências.')
 
     h2('4.4 Modelo de dados')
-    p('O modelo é composto por seis entidades e oito enumerações, organizadas em torno da '
-      'entidade Veículo, que concentra as três dimensões da gestão de frota. A Figura 5 '
-      'apresenta o modelo entidade-relacionamento.')
+    p('O modelo é composto por nove entidades, organizadas em torno de duas fronteiras: a '
+      'entidade Empresa, que delimita o alcance de todo dado operacional, e a entidade Veículo, '
+      'que concentra as três dimensões da gestão de frota. A Figura 5 apresenta o modelo '
+      'entidade-relacionamento.')
     figura('fig05-modelo-er.png', 'Figura 5 — Modelo entidade-relacionamento')
     tabela('Tabela 7 — Entidades do modelo de dados',
            ['Entidade', 'Finalidade e observações'],
-           [['Vehicle', 'Veículo da frota. Entidade central; a placa é única.'],
-            ['Driver', 'Motorista, com número e validade da habilitação. CPF e CNH únicos.'],
+           [['Company', 'Organização cliente. Fronteira de isolamento: seu identificador '
+                        'participa da condição de toda consulta operacional. Possui código de '
+                        'adesão próprio, apresentado no cadastro.'],
+            ['User', 'Perfil de acesso: dados cadastrais, papel efetivo, papel solicitado e '
+                     'situação de aprovação. As credenciais residem no serviço de '
+                     'autenticação.'],
+            ['Vehicle', 'Veículo da frota. Entidade central da operação; a placa é única '
+                        'dentro da empresa.'],
+            ['Driver', 'Ficha de motorista, com número e validade da habilitação. Quando '
+                       'vinculada a um usuário, nome e CPF ficam nulos: a identidade pertence '
+                       'ao perfil, e não é duplicada.'],
+            ['VehicleDriverAssignment', 'Vínculo entre veículo e motorista, com data de início '
+                                        'e de término. Encerrar não apaga: o período '
+                                        'permanece consultável.'],
             ['Expense', 'Despesa operacional, obrigatoriamente vinculada a um veículo. '
                         'O valor usa tipo decimal, evitando erro de arredondamento.'],
             ['Maintenance', 'Manutenção preventiva ou corretiva, com data prevista e de '
                             'conclusão.'],
             ['Document', 'Documento obrigatório com data de vencimento e anexo digital '
                          'opcional. Vincula-se a um veículo ou a um motorista.'],
-            ['User', 'Perfil de acesso: dados cadastrais, papel e situação de aprovação. '
-                     'As credenciais residem no serviço de autenticação.']],
-           larguras=[3.5, 12.5])
-    p('Três aspectos do modelo merecem registro. Primeiro, a obrigatoriedade do vínculo entre '
-      'despesa e veículo, garantida por restrição no banco, é o que torna confiável a apuração '
-      'do custo por ativo. Segundo, a situação de vencimento do documento não é armazenada: ela '
-      'é calculada a cada consulta a partir da data de validade, o que elimina a possibilidade '
-      'de o dado ficar defasado. Terceiro, as exclusões em cascata sustentam a distinção entre '
-      'desativar um registro, que preserva o histórico, e excluí-lo permanentemente.')
-    p('Registra-se, como limitação do modelo, que as entidades Usuário e Motorista não possuem '
-      'vínculo formal, ainda que o papel de operador corresponda conceitualmente ao condutor. A '
-      'unificação está prevista como evolução.')
+            ['ChangeLog', 'Histórico de alterações: entidade afetada, ação, campos alterados, '
+                          'autor e motivo. Grava o nome do autor por cópia.']],
+           larguras=[4.4, 11.6])
+    p('Cinco aspectos do modelo merecem registro.')
+    p('Primeiro, o identificador da empresa está presente em cada entidade operacional, e não é '
+      'derivado percorrendo relacionamentos. A decisão é deliberada: obter a empresa por caminho '
+      'indireto tornaria o isolamento dependente da correção de cada junção, ao passo que a '
+      'coluna própria permite que toda consulta a declare diretamente na condição.')
+    p('Segundo, a obrigatoriedade do vínculo entre despesa e veículo, garantida por restrição no '
+      'banco, é o que torna confiável a apuração do custo por ativo.')
+    p('Terceiro, a situação de vencimento do documento não é armazenada: ela é calculada a cada '
+      'consulta a partir da data de validade, o que elimina a possibilidade de o dado ficar '
+      'defasado. As datas de vencimento empregam tipo de data civil, sem hora nem fuso horário, '
+      'de modo que o dia exibido não dependa da localização de quem consulta.')
+    p('Quarto, a relação entre veículo e motorista é de muitos para muitos com período, '
+      'representada por entidade própria. Substituição e compartilhamento são operação '
+      'corriqueira em uma frota, e registrar apenas o vínculo vigente impediria responder quem '
+      'conduzia determinado veículo em uma data passada.')
+    p('Quinto, a autoria dos lançamentos não possui relacionamento declarado com a entidade de '
+      'usuário: é um identificador simples. Assim, remover um usuário não altera nem apaga os '
+      'lançamentos que ele registrou. O nome legível do autor é obtido do histórico de '
+      'alterações, que o grava por cópia no momento da ação.')
+    p('Registra-se, ainda, que a ficha de motorista e o perfil de usuário passaram a ser '
+      'vinculáveis: aprovar alguém como operador cria a ficha correspondente, de forma '
+      'idempotente. As colunas de nome e documento na ficha permanecem no modelo para as fichas '
+      'anteriores à integração, que não possuem usuário associado.')
 
     h2('4.5 Autenticação e controle de acesso')
     p('A Figura 6 apresenta o fluxo de autenticação e o acesso subsequente a um recurso '
@@ -522,6 +562,27 @@ def cap4():
       'reconsultado a cada requisição.')
     figura('fig09-ciclo-usuario.png', 'Figura 9 — Ciclo de vida da conta de usuário',
            largura=14)
+    p('O controle de acesso opera dentro de uma organização. Cada perfil pertence a uma '
+      'empresa, e o identificador dessa empresa participa da condição de toda consulta e de '
+      'toda escrita. Esse identificador é obtido do perfil reconsultado no banco a cada '
+      'requisição, e nunca de dado enviado pelo cliente — inclusive o token, que poderia '
+      'carregá-lo, não é a fonte. O ingresso em uma organização ocorre por código de adesão '
+      'informado no cadastro.')
+    p('Acima das organizações existe um perfil de administração da plataforma, que não pertence '
+      'a nenhuma delas e escolhe, a cada sessão, em qual vai operar. Duas decisões sustentam '
+      'essa condição. A primeira é que ela não constitui um papel: reside em coluna própria da '
+      'entidade de usuário, e não na enumeração de papéis. O papel é dado de entrada em dois '
+      'pontos — o cadastro registra o solicitado, a aprovação registra o efetivo — e um valor '
+      'adicional na enumeração tornaria possível pleitear ou conceder a condição por esses '
+      'caminhos. A segunda é que a empresa escolhida trafega em cabeçalho próprio, e é aceita '
+      'somente após o servidor confirmar, no banco, que o perfil autenticado possui aquela '
+      'condição; para qualquer outro perfil o cabeçalho é ignorado.')
+    p('O recorte do operador é mais estreito que o da organização. Ele alcança os lançamentos '
+      'de sua própria autoria, os veículos a que está vinculado no momento e os próprios '
+      'documentos pessoais. Compartilhar um veículo com outro motorista não concede acesso aos '
+      'lançamentos nem aos documentos pessoais dele. A verificação é do servidor: restringir '
+      'apenas o que a interface oferece deixaria a regra a cargo da tela, e uma requisição '
+      'construída manualmente a contornaria.')
     p('A Tabela 6 apresenta a matriz de controle de acesso efetivamente aplicada, extraída da '
       'configuração das rotas.')
     tabela('Tabela 6 — Matriz de controle de acesso por papel',
@@ -555,15 +616,34 @@ def cap4():
       'usuários permite listar contas, alterar papel e situação e excluir registros.')
 
     h2('4.7 Armazenamento de arquivos')
-    p('O anexo de arquivos aos documentos utiliza o serviço de armazenamento do Supabase, com '
-      'envio realizado diretamente pelo navegador, conforme a Figura 7.')
+    p('O anexo de arquivos aos documentos utiliza o serviço de armazenamento do Supabase. O '
+      'repositório é privado e não possui política de acesso alguma, de modo que credenciais '
+      'de navegador não o alcançam: apenas o servidor o acessa, com a chave de serviço. A '
+      'Figura 7 apresenta o fluxo.')
     figura('fig07-sequencia-upload.png', 'Figura 7 — Anexo de arquivo ao documento')
-    p('O desenho reduz a carga sobre a camada de serviço e dispensa o tráfego do arquivo por um '
-      'intermediário. Em contrapartida, introduz limitações que devem ser declaradas: a '
-      'validação do tipo de arquivo é realizada pela política de acesso do próprio serviço de '
-      'armazenamento, e não pela aplicação; a exclusão de um documento remove o registro no '
-      'banco, mas não o arquivo correspondente; e o repositório de arquivos é público, de modo '
-      'que quem detiver o endereço acessa o conteúdo sem autenticação.')
+    p('Tanto a leitura quanto o envio passam pela aplicação, que emite endereços assinados de '
+      'validade curta. Para ler, o cliente informa o identificador do documento, não o caminho '
+      'do arquivo; a aplicação recupera o documento pelo mesmo procedimento usado na consulta '
+      'comum e, se ele não estiver ao alcance de quem pede, responde como se não existisse — '
+      'sem chegar a assinar endereço algum. Para enviar, a aplicação decide o caminho de '
+      'destino e devolve um endereço de gravação; o caminho começa pelo identificador da '
+      'empresa, obtido do perfil autenticado.')
+    p('A decisão é consequência de uma verificação. A alternativa, adotada em versão anterior, '
+      'era o envio direto do navegador ao serviço de armazenamento, com o controle de acesso '
+      'expresso nas políticas do repositório. Esse desenho reduz a carga sobre o servidor, mas '
+      'obriga a reescrever a regra de autorização na linguagem do armazenamento — e a regra da '
+      'aplicação é mais estreita do que a pertinência à mesma organização: um operador alcança '
+      'os próprios documentos pessoais e os dos veículos a que está vinculado no momento, não o '
+      'documento pessoal de um colega. Uma política capaz de distinguir isso duplicaria, em '
+      'outra linguagem, lógica que a camada de serviços já aplica; duas expressões da mesma '
+      'regra divergem com o tempo. Concentrar a decisão em um único ponto elimina a duplicação, '
+      'ao custo de uma requisição adicional para obter o endereço assinado.')
+    p('Três consequências acompanham o desenho. A validação do tipo de arquivo passa a ser '
+      'responsabilidade da aplicação, que aceita apenas imagens nos formatos correntes e '
+      'documentos em PDF. A substituição de um anexo e a exclusão de um documento removem o '
+      'arquivo correspondente do repositório, operação realizada após a confirmação da '
+      'transação e cuja eventual falha é registrada sem interromper a resposta. E o endereço de '
+      'leitura expira, de modo que sua divulgação acidental não concede acesso permanente.')
 
     h2('4.8 Rotina automatizada de vencimentos')
     p('Uma rotina diária identifica os documentos que vencem em até trinta dias e os sinaliza '
@@ -654,11 +734,14 @@ def cap5():
       'da notificação ativa fora do sistema — delimitação declarada de forma explícita para que '
       'o alcance não seja interpretado de maneira ampliada.')
     p('Além dos requisitos previstos no levantamento inicial, o desenvolvimento incorporou '
-      'funcionalidades identificadas durante o trabalho: vínculo de muitos para muitos entre '
-      'veículos e motoristas; anexo de arquivo digital aos documentos, com visualização; fluxo '
-      'de aprovação de contas por administrador; bloqueio e reativação de contas; edição do '
-      'perfil próprio; distinção entre desativação e exclusão permanente; e interface em '
-      'português brasileiro e inglês.')
+      'funcionalidades identificadas durante o trabalho: segregação de dados por organização, '
+      'com ingresso por código de adesão e perfil de administração da plataforma acima das '
+      'organizações; vínculo de muitos para muitos entre veículos e motoristas, com registro '
+      'do período de vigência; anexo de arquivo digital aos documentos, servido pela aplicação '
+      'com endereço assinado de validade curta; histórico de alterações com autor, campos '
+      'modificados e motivo; fluxo de aprovação de contas por administrador; bloqueio e '
+      'reativação de contas; edição do perfil próprio; distinção entre desativação e exclusão '
+      'permanente; e interface em português brasileiro e inglês.')
     tabela('Tabela 4 — Requisitos não funcionais e situação de atendimento',
            ['Código', 'Requisito', 'Situação'],
            [['RNF01', 'Aplicação web responsiva', 'Atendido'],
@@ -692,7 +775,19 @@ def cap5():
             ['RN10', 'A situação de vencimento é calculada dinamicamente, não armazenada.'],
             ['RN11', 'Documentos que vencem em até trinta dias são sinalizados diariamente, '
                      'de forma idempotente.'],
-            ['RN12', 'Os dados de identificação do veículo são normalizados em maiúsculas.']],
+            ['RN12', 'Os dados de identificação do veículo são normalizados em maiúsculas.'],
+            ['RN13', 'Todo dado operacional pertence a uma organização, e o identificador '
+                     'dela participa da condição de toda consulta, derivado do perfil '
+                     'autenticado e nunca de dado enviado pelo cliente.'],
+            ['RN14', 'O operador alcança os lançamentos de sua autoria, os veículos a que '
+                     'está vinculado no momento e os próprios documentos pessoais; '
+                     'compartilhar um veículo não concede acesso aos dados pessoais de '
+                     'outro motorista.'],
+            ['RN15', 'O arquivo anexado obedece ao mesmo alcance do documento a que '
+                     'pertence: o endereço de leitura só é emitido a quem alcança o '
+                     'registro.'],
+            ['RN16', 'Toda criação, alteração, cancelamento e exclusão é registrada no '
+                     'histórico, com autor, campos alterados e motivo quando aplicável.']],
            larguras=[1.8, 14.2])
 
     h2('5.2 Verificação da qualidade')
@@ -703,14 +798,21 @@ def cap5():
            [['Compilação TypeScript do servidor', 'Sem erros'],
             ['Compilação TypeScript da interface', 'Sem erros'],
             ['Análise estática com ESLint', 'Sem erros'],
-            ['Testes automatizados com Vitest', '100 testes aprovados, em 13 arquivos'],
+            ['Testes automatizados com Vitest', '220 testes aprovados, em 15 arquivos'],
             ['Construção do pacote de produção', 'Concluída com sucesso'],
             ['Publicação em produção', 'Concluída e verificada em ambiente publicado']],
            larguras=[8.0, 8.0])
-    p('Os cem testes distribuem-se entre os serviços de veículos, motoristas, despesas, '
-      'manutenções, documentos, indicadores, usuários e autenticação, além dos middlewares de '
-      'autenticação, autorização e validação. Reitera-se que a cobertura concentra-se nas regras '
-      'de negócio: não há testes de interface nem de integração de ponta a ponta.')
+    p('Os testes dividem-se em dois conjuntos. O primeiro exercita as regras de negócio sem '
+      'banco de dados, substituindo os repositórios por dublês: cobre os serviços de veículos, '
+      'motoristas, vínculos, despesas, manutenções, documentos, indicadores, usuários e '
+      'autenticação, além dos middlewares de autenticação, autorização e validação. O segundo '
+      'executa contra o banco real e verifica o que somente ele pode responder — se as '
+      'consultas de fato isolam organizações, se os totais de fato ignoram lançamentos '
+      'cancelados, se a precisão monetária sobrevive ao percurso completo e se as restrições '
+      'declaradas no esquema realmente recusam o que deveriam. As escritas desse conjunto '
+      'ocorrem em transações revertidas ao final, de modo que a base não é alterada.')
+    p('Reitera-se que a cobertura concentra-se nas regras de negócio e na integração com o '
+      'banco: não há testes de interface nem de ponta a ponta pelo navegador.')
     p('A verificação do ambiente publicado abrangeu o carregamento da interface, o roteamento da '
       'aplicação de página única, a rejeição de requisições sem credencial, o fluxo completo de '
       'autenticação, a consulta a dados reais, o painel de indicadores e a rotina agendada, '
@@ -725,16 +827,30 @@ def cap5():
       'fundamentadas, e não como resultados medidos. A comprovação empírica demandaria adoção '
       'por uma frota real, com medição comparativa antes e depois, o que se situa fora do '
       'escopo temporal deste trabalho.')
-    p('Do ponto de vista técnico, registram-se as seguintes limitações. A validação do tipo de '
-      'arquivo anexado ocorre na política do serviço de armazenamento, e não na camada de '
-      'aplicação. A exclusão de um documento não remove o arquivo correspondente, o que permite '
-      'o acúmulo de arquivos órfãos. O repositório de arquivos é público, de modo que o '
-      'conhecimento do endereço basta para o acesso. As entidades Usuário e Motorista não '
-      'possuem vínculo formal no modelo de dados. Não há registro de autoria dos lançamentos, o '
-      'que impede determinar qual usuário registrou determinada despesa. E a verificação de '
-      'posse do endereço de correio eletrônico está desativada no cadastro, decorrência da '
-      'exclusão do envio de mensagens do escopo; o risco é mitigado pela aprovação manual '
-      'exigida antes de qualquer acesso.')
+    p('Registra-se, na mesma linha, que a validação das funcionalidades com especialistas do '
+      'domínio não foi realizada. O procedimento previsto consiste em demonstração guiada do '
+      'sistema seguida de roteiro estruturado de perguntas, aplicado a gestores de frota e '
+      'proprietários de operações de transporte, com registro do perfil de cada respondente e '
+      'sem coleta de dado pessoal identificável; as respostas seriam consolidadas em planilha '
+      'para análise. O procedimento está descrito por permitir sua execução, não por ter sido '
+      'executado — nenhuma entrevista foi conduzida até o fechamento deste texto, e nenhum '
+      'resultado dessa natureza é aqui apresentado.')
+    p('Do ponto de vista técnico, registram-se as seguintes limitações. A verificação de posse '
+      'do endereço de correio eletrônico está desativada no cadastro, decorrência da exclusão '
+      'do envio de mensagens do escopo; o risco é mitigado pela aprovação manual exigida antes '
+      'de qualquer acesso, e a mesma dependência impede a recuperação autônoma de senha. Não '
+      'há testes de interface nem de ponta a ponta pelo navegador, de modo que a verificação '
+      'automatizada alcança as regras e a persistência, mas não a camada de apresentação. A '
+      'integração com sistemas governamentais — consulta de pontuação em habilitação, por '
+      'exemplo — não foi implementada, por depender de acesso não disponível publicamente. E '
+      'não há planejamento nem otimização de rotas, recurso deliberadamente fora do escopo, '
+      'que distingue a solução de ferramentas comerciais de gestão de frota.')
+    p('Sobre a escolha de acesso a dados, registra-se a contrapartida assumida: prescindir de '
+      'mapeador objeto-relacional aumenta a verbosidade das operações rotineiras e transfere ao '
+      'desenvolvedor a responsabilidade de declarar, em cada consulta, a condição de isolamento '
+      'por organização. Optou-se por essa forma para que tal condição permaneça visível no '
+      'ponto em que é aplicada, e a verificação automatizada contra o banco real cobre '
+      'justamente esse risco.')
     p('Cada uma dessas limitações foi identificada por verificação do próprio código, e não '
       'inferida. O registro explícito cumpre função metodológica: delimita o que o sistema '
       'efetivamente entrega e distingue-o do que permanece como evolução possível.')
@@ -751,15 +867,20 @@ def cap6():
       'relacional única. O objetivo geral foi alcançado: o sistema foi desenvolvido, verificado '
       'e publicado em ambiente de produção, e os dez requisitos funcionais definidos no termo de '
       'abertura foram atendidos.')
-    p('A contribuição técnica do trabalho concentra-se em três decisões arquiteturais. A '
+    p('A contribuição técnica do trabalho concentra-se em quatro decisões arquiteturais. A '
       'primeira é a organização do servidor em camadas com dependência unidirecional, que não se '
       'limita a uma escolha estética: por isolarem-se do protocolo HTTP, as regras de negócio '
-      'puderam ser exercitadas por cem testes automatizados sem infraestrutura de apoio. A '
+      'puderam ser exercitadas por duzentos e vinte testes automatizados, a maior parte deles '
+      'sem infraestrutura de apoio. A '
       'segunda é a delegação da autenticação a serviço especializado com verificação por chave '
       'pública, mantendo, contudo, a autorização sob controle da aplicação — desenho que retira '
       'do sistema a responsabilidade de guardar senhas sem transferir a terceiros a autoridade '
       'sobre permissões. A terceira é o compartilhamento de tipos entre interface e servidor, que '
-      'converte divergências de contrato em erros de compilação.')
+      'converte divergências de contrato em erros de compilação. A quarta é a segregação de '
+      'dados por organização aplicada na camada de aplicação, com o identificador da empresa '
+      'presente em cada entidade operacional e derivado sempre do perfil autenticado: decisão '
+      'que atravessa o modelo de dados, as consultas e o acesso aos arquivos anexados, e que '
+      'sustenta o uso do sistema por mais de uma organização sobre a mesma base.')
     p('O percurso também produziu aprendizado sobre a distância entre projetar e publicar. Duas '
       'exigências só se manifestaram na publicação: o pacote compartilhado precisou passar a '
       'emitir código compilado, pois o ambiente de execução não interpreta TypeScript, e a '
@@ -807,8 +928,8 @@ def referencias():
         'POSTGRESQL GLOBAL DEVELOPMENT GROUP. PostgreSQL Documentation. 2026. Disponível em: '
         'https://www.postgresql.org/docs. Acesso em: 26 ago. 2026.',
 
-        'PRISMA DATA, INC. Prisma Documentation: next-generation ORM for Node.js and '
-        'TypeScript. 2026. Disponível em: https://www.prisma.io/docs. Acesso em: 26 ago. 2026.',
+        'PORSAGER, Rasmus. postgres: PostgreSQL client for Node.js. 2026. Disponível em: '
+        'https://github.com/porsager/postgres. Acesso em: 21 set. 2026.',
 
         'SANDHU, Ravi S. et al. Role-based access control models. IEEE Computer, v. 29, n. 2, '
         'p. 38-47, fev. 1996.',
@@ -848,13 +969,13 @@ def referencias():
 def anexo_a():
     h1('ANEXO A — TERMO DE ABERTURA DO PROJETO')
     h2('A.1 Identificação do projeto')
-    p('Nome do projeto: Fleet Manager — Sistema de Gestão Inteligente de Frotas. '
+    p('Nome do projeto: Fleet Manager — Sistema Web de Gestão de Frotas. '
       'Código do projeto: FM-PFI-2026.')
 
     h2('A.2 Objetivos')
     p('Desenvolver um sistema web para gestão de frotas, com foco no controle operacional, '
-      'financeiro e documental de veículos, permitindo maior previsibilidade de custos, redução '
-      'de riscos legais e apoio à tomada de decisão estratégica.')
+      'financeiro e documental de veículos, permitindo transparência dos custos por ativo, '
+      'redução de riscos legais e apoio à tomada de decisão.')
 
     h2('A.3 Escopo')
     p('O projeto contempla o cadastro e a gestão de veículos e motoristas; o registro de '
@@ -953,10 +1074,11 @@ def anexo_b():
              'Autenticação delegada ao Supabase Auth, com token ES256 verificado pela chave '
              'pública do serviço; autorização por papéis aplicada na aplicação.'],
             ['Persistência',
-             'PostgreSQL gerenciado pelo Supabase, acessado exclusivamente pelo Prisma.'],
+             'PostgreSQL gerenciado pelo Supabase, acessado por SQL parametrizado a partir da '
+             'camada de repositórios.'],
             ['Armazenamento de arquivos',
-             'Supabase Storage, com envio direto pelo navegador e política de restrição de '
-             'tipos.'],
+             'Supabase Storage, alcançado apenas pelo servidor, que emite endereços assinados '
+             'de validade curta após aplicar o controle de acesso.'],
             ['Internacionalização',
              'Português brasileiro e inglês, com preferência persistida no navegador.'],
             ['Custo',

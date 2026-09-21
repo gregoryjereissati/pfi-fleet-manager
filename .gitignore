@@ -19,3 +19,8 @@ __pycache__/
 
 # Configuração local de servidores MCP (aponta para o projeto Supabase do autor)
 .mcp.json
+
+# Artefatos regeneráveis do Documento Técnico. Só o PDF é versionado: o .docx
+# sai de scripts/gerar-documento.py e as figuras, de scripts/gerar-diagramas.py.
+docs/academico/*.docx
+docs/academico/figuras/

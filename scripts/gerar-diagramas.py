@@ -303,8 +303,8 @@ def fig04():
 # Figura 5 — Modelo entidade-relacionamento
 # ---------------------------------------------------------------------------
 def fig05():
-    s = cab(900, 700)
-    s += texto(450, 30, 'Modelo entidade-relacionamento', 15, '600')
+    s = cab(980, 850)
+    s += texto(490, 30, 'Modelo entidade-relacionamento', 15, '600')
 
     def ent(x, y, w, nome, campos, cor=FUNDO_A):
         h = 30 + len(campos) * 17
@@ -317,51 +317,76 @@ def fig05():
             t += texto(x + 10, y + 44 + i * 17, c, 11, '400', anc='start')
         return t
 
-    s += ent(330, 55, 210, 'Expense',
-             ['PK id', 'FK vehicleId', 'type, amount', 'date, description'])
-    s += ent(640, 55, 210, 'Maintenance',
-             ['PK id', 'FK vehicleId', 'type, status', 'scheduledDate', 'completedDate'])
-    s += ent(40, 250, 200, 'Driver',
-             ['PK id', 'UK cpf, UK cnh', 'cnhExpiry', 'phone', 'status'])
-    s += ent(330, 250, 210, 'Vehicle',
-             ['PK id', 'UK plate', 'brand, model, year', 'color', 'status'], FUNDO_D)
-    s += ent(640, 250, 210, 'Document',
-             ['PK id', 'FK vehicleId (opc.)', 'FK driverId (opc.)', 'type, expiryDate',
-              'fileUrl, alertSent'])
-    s += ent(40, 470, 250, 'User',
-             ['PK id', 'UK email, UK cpf', 'UK authUserId', 'role, status', 'endereço'],
-             FUNDO_C)
+    # A empresa fica fora da moldura: ela é a fronteira, não um dado recortado.
+    s += ent(370, 40, 240, 'Company',
+             ['PK id', 'name, cnpj', 'UK joinCode', 'status'], FUNDO_B)
 
-    # Vehicle 1:N Expense
-    s += linha(435, 250, 435, 153, seta=False)
-    s += rotulo(435, 205, '1 : N')
+    s += (f'<rect x="20" y="165" width="940" height="575" rx="8" fill="none" '
+          f'stroke="{BORDA}" stroke-width="1.3" stroke-dasharray="7 5"/>')
+    s += texto(950, 186, 'company_id presente em cada entidade operacional',
+               11.5, '500', BORDA, anc='end')
+    s += linha(490, 138, 490, 165, seta=False)
+    s += rotulo(516, 155, '1 : N')
+
+    s += ent(280, 195, 205, 'Expense',
+             ['PK id', 'FK companyId', 'FK vehicleId', 'type, amount, date',
+              'status, createdById'])
+    s += ent(560, 195, 215, 'Maintenance',
+             ['PK id', 'FK companyId', 'FK vehicleId', 'type, status',
+              'scheduled/completedDate'])
+
+    s += ent(40, 390, 195, 'Driver',
+             ['PK id', 'FK companyId', 'FK userId (opc.)', 'cnh, cnhExpiry', 'status'])
+    s += ent(275, 390, 215, 'VehicleDriverAssignment',
+             ['PK id', 'FK companyId', 'FK vehicleId', 'FK driverId',
+              'startDate, endDate'])
+    s += ent(555, 390, 205, 'Vehicle',
+             ['PK id', 'FK companyId', 'UK plate', 'brand, model, year', 'status'], FUNDO_D)
+
+    s += ent(40, 590, 215, 'User',
+             ['PK id', 'FK companyId (opc.)', 'UK email, UK authUserId',
+              'role, requestedRole', 'status, isSuperAdmin'], FUNDO_C)
+    s += ent(320, 590, 230, 'Document',
+             ['PK id', 'FK companyId', 'FK vehicleId (opc.)', 'FK driverId (opc.)',
+              'type, expiryDate', 'fileUrl, alertSent'])
+    s += ent(640, 590, 230, 'ChangeLog',
+             ['PK id', 'FK companyId', 'entityType, entityId', 'action, changes',
+              'actorId, actorName'])
+
     # Vehicle 1:N Maintenance
-    s += linha(505, 250, 700, 170, seta=False)
-    s += rotulo(605, 208, '1 : N')
+    s += linha(667, 310, 667, 390, seta=False)
+    s += rotulo(694, 348, '1 : N')
+    # Vehicle 1:N Expense
+    s += polilinha([(382, 310), (382, 350), (600, 350), (600, 390)])
+    s += rotulo(480, 345, '1 : N')
+    # Driver N:M Vehicle, através do vínculo com período
+    s += linha(235, 447, 275, 447, seta=False)
+    s += rotulo(255, 441, '1 : N')
+    s += linha(490, 447, 555, 447, seta=False)
+    s += rotulo(522, 441, 'N : 1')
     # Vehicle 1:N Document
-    s += linha(540, 300, 640, 300, seta=False)
-    s += rotulo(590, 296, '1 : N')
-    # Driver N:M Vehicle
-    s += linha(240, 300, 330, 300, seta=False)
-    s += rotulo(285, 296, 'N : M')
-    # Driver 1:N Document — roteado por baixo, sem atravessar Vehicle
-    s += polilinha([(140, 365), (140, 415), (745, 415), (745, 365)])
-    s += rotulo(442, 419, '1 : N')
+    s += polilinha([(600, 505), (600, 545), (435, 545), (435, 590)])
+    s += rotulo(520, 540, '1 : N')
+    # Driver 1:N Document
+    s += polilinha([(200, 505), (200, 565), (380, 565), (380, 590)])
+    s += rotulo(282, 560, '1 : N')
+    # User 1:0..1 Driver
+    s += linha(110, 505, 110, 590, seta=False)
+    s += rotulo(138, 550, '1 : 0..1')
 
-    # Vínculo com o Supabase Auth
-    s += caixa(330, 480, 530, 76,
-               ['Supabase Auth — schema auth',
-                'User.authUserId referencia auth.users.id;',
-                'vínculo externo ao schema public, fora do controle do Prisma'],
-               FUNDO_B, tracejado=True, tam=12)
-    s += linha(290, 518, 328, 518, tracejada=True, seta=False)
-
-    s += texto(450, 625,
-               'Um Documento pertence a um Veículo OU a um Motorista, nunca a ambos '
+    s += texto(490, 768,
+               'Um documento pertence a um veículo OU a um motorista, nunca a ambos '
                'e nunca a nenhum.', 11.5, '400', BORDA)
-    s += texto(450, 648,
-               'A entidade User não se relaciona com as demais: representa a conta de acesso, '
-               'não o condutor.', 11.5, '400', BORDA)
+    s += texto(490, 790,
+               'A ficha de motorista vinculada a um usuário não duplica identidade: '
+               'nome e CPF ficam nulos.', 11.5, '400', BORDA)
+    s += texto(490, 812,
+               'A autoria dos lançamentos é identificador simples, sem relacionamento '
+               'declarado: remover um usuário não altera o que ele registrou.',
+               11.5, '400', BORDA)
+    s += texto(490, 834,
+               'User.authUserId referencia a conta no Supabase Auth, externa ao schema '
+               'public.', 11.5, '400', BORDA)
     salvar('fig05-modelo-er', s)
 
 
@@ -405,23 +430,25 @@ def fig06():
 # Figura 7 — Sequência: anexo de arquivo a documento
 # ---------------------------------------------------------------------------
 def fig07():
-    s = cab(880, 420)
-    s += texto(440, 28, 'Anexo de arquivo ao documento', 15, '600')
+    s = cab(980, 500)
+    s += texto(490, 28, 'Anexo de arquivo ao documento', 15, '600')
 
-    atores = [('Usuário', 90), ('Frontend', 280), ('Supabase Storage', 500), ('API', 700), ('PostgreSQL', 830)]
+    atores = [('Usuário', 85), ('Frontend', 265), ('API', 470),
+              ('Supabase Storage', 700), ('PostgreSQL', 880)]
     for nome, x in atores:
         s += caixa(x - 82, 50, 164, 34, nome, FUNDO_A, tam=12)
-        s += _segmentos_tracejados(x, 84, x, 385, 5, 5)
+        s += _segmentos_tracejados(x, 84, x, 462, 5, 5)
 
     msgs = [
-        (90, 280, 120, 'seleciona arquivo e preenche o formulário'),
-        (280, 500, 160, 'upload para documents/{id}/{uuid}.{ext}'),
-        (500, 500, 200, 'política de RLS confere a extensão'),
-        (500, 280, 240, 'confirmação'),
-        (280, 500, 275, 'getPublicUrl()'),
-        (500, 280, 310, 'URL pública'),
-        (280, 700, 345, 'POST /api/documents { ..., fileUrl }'),
-        (700, 830, 378, 'persiste o registro'),
+        (85, 265, 120, 'seleciona arquivo e preenche o formulário'),
+        (265, 470, 156, 'POST /documents/arquivo/url-de-envio'),
+        (470, 470, 194, 'confere alcance da entidade e a extensão'),
+        (470, 700, 238, 'assina envio para {companyId}/{entityId}/{uuid}.{ext}'),
+        (700, 470, 274, 'endereço assinado'),
+        (470, 265, 308, '{ url, caminho }'),
+        (265, 700, 344, 'PUT do arquivo no endereço assinado'),
+        (265, 470, 386, 'POST /documents { ..., fileUrl: caminho }'),
+        (470, 880, 422, 'persiste o registro'),
     ]
     for x1, x2, y, txt in msgs:
         if x1 == x2:
@@ -431,6 +458,11 @@ def fig07():
         else:
             s += linha(x1, y, x2, y, aberta=(x2 < x1))
             s += rotulo((x1 + x2) / 2, y - 7, txt, 11)
+
+    s += texto(490, 484,
+               'O repositório é privado e sem política: apenas o servidor o alcança. '
+               'A leitura segue o mesmo caminho, com endereço de validade curta.',
+               11.5, '400', BORDA)
     salvar('fig07-sequencia-upload', s)
 
 

@@ -2,7 +2,7 @@
 
 # Fleet Manager
 
-**Sistema de Gestão Inteligente de Frotas**
+**Sistema Web de Gestão de Frotas**
 
 Universidade de Fortaleza — UNIFOR · Ciência da Computação · 2026
 
