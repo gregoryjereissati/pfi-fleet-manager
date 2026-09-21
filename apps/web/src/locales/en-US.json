@@ -130,6 +130,7 @@
   "documents.types.SEGURO": "Insurance",
   "documents.upload.current": "Current file",
   "documents.upload.label": "Document file",
+  "documents.upload.noCompany": "Could not determine the company for this upload. Please reload the page.",
   "documents.upload.placeholder": "Select image or PDF",
   "documents.upload.uploading": "Uploading file...",
   "documents.validation.entity": "Select a vehicle or driver.",

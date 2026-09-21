@@ -113,3 +113,59 @@ on conflict (id) do update set public = true;
 --   using (bucket_id = 'documents')
 --   with check (bucket_id = 'documents');
 -- ===========================================================================
+
+-- ===========================================================================
+-- ATUALIZAÇÃO — recorte por empresa
+-- ===========================================================================
+-- As políticas registradas acima estão OBSOLETAS e eram inseguras: a única
+-- condição era `bucket_id = 'documents'`, sem nenhuma menção a empresa, dono ou
+-- caminho. Qualquer usuário autenticado alcançava, listava, sobrescrevia e
+-- apagava anexo de qualquer empresa, falando direto com a API do Storage.
+--
+-- O que mudou:
+--
+--   1. O caminho do arquivo passou a começar pelo identificador da empresa:
+--      `<companyId>/<entityId>/<uuid>.<ext>`. Sem isso, nenhuma política teria
+--      de onde tirar a empresa dona do arquivo.
+--
+--   2. O bucket passou a ser PRIVADO. A leitura usa URL assinada de validade
+--      curta (`createSignedUrl`), gerada na abertura do anexo.
+--
+--   3. A autorização passou a ser decidida por `public.pode_acessar_documentos`,
+--      criada na migration 0005. Ela é `security definer` porque uma política do
+--      Storage é avaliada como o papel `authenticated`, que não tem privilégio
+--      algum sobre `public.users` — uma consulta direta falharia antes da RLS.
+--
+-- Passo a passo no painel
+-- -----------------------
+--   Storage > documents > Edit bucket  -> desmarcar "Public bucket"
+--   Storage > Policies                 -> apagar as políticas antigas e criar
+--                                         as quatro abaixo, com target role
+--                                         `authenticated`
+--
+-- SELECT / UPDATE / DELETE  — expressão USING:
+--
+--   bucket_id = 'documents'
+--   and public.pode_acessar_documentos((storage.foldername(name))[1])
+--
+-- INSERT — expressão WITH CHECK:
+--
+--   bucket_id = 'documents'
+--   and public.pode_acessar_documentos((storage.foldername(name))[1])
+--   and storage.extension(name) = any (array['jpg','jpeg','png','webp','pdf'])
+--
+-- No UPDATE, o painel grava apenas o USING. Não é problema: sem WITH CHECK, o
+-- PostgreSQL aplica a expressão do USING também à linha nova — mover um arquivo
+-- para o prefixo de outra empresa continua barrado.
+--
+-- Conferência
+-- -----------
+-- Simulando um usuário autenticado, sem precisar da interface:
+--
+--   begin;
+--     set local role authenticated;
+--     set local request.jwt.claims = '{"sub":"<auth_user_id>","role":"authenticated"}';
+--     select public.pode_acessar_documentos('<company_id da propria empresa>');  -- true
+--     select public.pode_acessar_documentos('<company_id de outra empresa>');    -- false
+--   rollback;
+-- ===========================================================================

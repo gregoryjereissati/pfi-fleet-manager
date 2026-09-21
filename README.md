@@ -266,27 +266,54 @@ Isso não implementa o isolamento por empresa; serve para negar acesso a `anon` 
 ninguém chega às tabelas por fora da API, via PostgREST. A aplicação conecta com
 um papel que contorna a RLS, e por isso continua operando normalmente.
 
-### Pendência conhecida: o bucket de anexos é público
+### Anexos: recorte por empresa no Storage
 
-O bucket `documents` do Supabase Storage está configurado como **público**.
-Qualquer pessoa de posse da URL lê o arquivo — CNH, CRLV, apólice — sem passar
-pela API e sem pertencer à empresa dona do documento. **O isolamento por empresa
-não vale para os arquivos.**
+Os arquivos anexados aos documentos ficam no bucket `documents` do Supabase
+Storage, **fora** das tabelas — e por isso fora do recorte que a aplicação
+aplica às linhas. Até a correção descrita aqui, as políticas do bucket exigiam
+apenas que o pedido viesse de alguém autenticado: qualquer usuário do sistema
+podia listar, baixar, sobrescrever e apagar anexo de **qualquer** empresa,
+falando direto com a API do Storage.
 
-O frontend envia direto para o bucket e guarda a URL pública
-(`apps/web/src/lib/supabase.ts`), e a API apenas devolve essa URL em
-`documents.file_url`.
+A correção tem três partes:
 
-Corrigir exige três passos coordenados, que mexem em frontend e API:
+1. **O caminho do arquivo começa pelo identificador da empresa** —
+   `<companyId>/<entityId>/<uuid>.<ext>`. Sem isso nenhuma política teria de
+   onde tirar a empresa dona do arquivo.
+2. **O bucket é privado.** A leitura usa URL assinada de validade curta, gerada
+   na abertura do anexo. Uma URL pública valeria para sempre, para qualquer
+   pessoa que a tivesse visto uma vez — inclusive depois de perder acesso.
+3. **As políticas do bucket chamam `public.pode_acessar_documentos()`**, criada
+   na migration `0005`. Ela compara o primeiro segmento do caminho com a empresa
+   de quem pede e exige perfil ACTIVE.
 
-1. Tornar o bucket privado.
-2. Gravar em `file_url` o **caminho** do objeto, não uma URL pública.
-3. A API passa a emitir uma URL assinada de curta duração ao devolver o
-   documento, já dentro do recorte de empresa e papel que ela hoje aplica às
-   linhas — e o envio passa a usar URL de upload assinada, emitida pela API.
+A função é `security definer` porque uma política do Storage é avaliada como o
+papel `authenticated`, que não tem privilégio algum sobre `public.users` — uma
+consulta direta falharia antes mesmo da RLS. Ela não devolve dados: responde sim
+ou não sobre o pedido em questão.
 
-Enquanto isso não for feito, o sistema **não** pode ser descrito como
-isolado ponto a ponto: as linhas estão isoladas, os arquivos não.
+As políticas são criadas **pelo painel** (Storage > Policies), não por migration:
+`storage.objects` pertence ao papel `supabase_storage_admin`, e o `postgres` não
+pode criar política sobre ela. Os comandos estão em
+[`supabase-fleet/storage-setup.sql`](supabase-fleet/storage-setup.sql).
+
+### O que ainda falta nos anexos
+
+O recorte acima é **por empresa**. A regra da aplicação é mais estreita: o
+motorista alcança os próprios documentos pessoais e os dos veículos a que está
+vinculado — não a CNH de um colega da mesma empresa. Reproduzir isso em RLS
+exigiria reescrever a regra em SQL, em duplicata com o serviço que já a aplica.
+
+Fechar essa diferença significa servir os arquivos pela API: as políticas passam
+a negar tudo para `authenticated`, `file_url` guarda o caminho, e a API — que já
+resolveu empresa, papel e vínculo — emite a URL assinada. O envio passa a usar
+URL de upload assinada, também emitida por ela.
+
+O super administrador tem, hoje, alcance mais largo que o recorte da sessão dele:
+a função o autoriza em qualquer empresa, porque o Storage não tem como saber qual
+empresa ele escolheu — isso é um conceito da API, transmitido em cabeçalho. Não
+amplia o que ele já pode ver, mas é uma diferença real, e desaparece junto com a
+mudança acima.
 
 ---
 

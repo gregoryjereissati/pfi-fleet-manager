@@ -7,6 +7,7 @@ import { useDrivers } from '@/hooks/useDrivers'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
 import { uploadDocumentFile } from '@/lib/supabase'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import type { DocumentItem } from '@/hooks/useDocuments'
 
 type EntityType = 'vehicle' | 'driver'
@@ -36,6 +37,7 @@ const labelClass = 'mb-1 block text-sm font-medium text-white/55'
 
 export function DocumentForm() {
   const { t } = useTranslation()
+  const { currentUser } = useCurrentUser()
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
@@ -140,7 +142,16 @@ export function DocumentForm() {
       setSubmitting(true)
       setError(null)
 
-      const fileUrl = file ? await uploadDocumentFile(file, entityId) : undefined
+      // O caminho do anexo começa pela empresa: é o que permite às políticas
+      // do bucket recortarem o acesso aos arquivos como o banco já recorta as
+      // linhas.
+      if (file && !currentUser?.companyId) {
+        throw new Error(t('documents.upload.noCompany'))
+      }
+
+      const fileUrl = file
+        ? await uploadDocumentFile(file, entityId, currentUser!.companyId!)
+        : undefined
       const token = await getToken()
 
       if (isEditing && id) {

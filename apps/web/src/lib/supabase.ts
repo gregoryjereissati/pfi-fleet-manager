@@ -67,16 +67,56 @@ export async function updatePassword(password: string): Promise<void> {
   if (error) throw error
 }
 
-export async function uploadDocumentFile(file: File, entityId: string): Promise<string> {
-  const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase()
-  const path = `documents/${entityId}/${crypto.randomUUID()}.${ext}`
+const BUCKET_DOCUMENTOS = 'documents'
 
-  const { error } = await supabase.storage.from('documents').upload(path, file)
+/** Validade da URL assinada de leitura, em segundos. */
+const VALIDADE_DA_URL = 60
+
+/**
+ * Envia o anexo e devolve o **caminho** dele no bucket.
+ *
+ * O caminho começa pelo identificador da empresa, e é isso que torna possível
+ * recortar o acesso aos arquivos: as políticas do bucket comparam esse primeiro
+ * segmento com a empresa de quem pede. Sem ele, não havia como uma política
+ * distinguir o anexo de uma empresa do de outra — e não distinguia: qualquer
+ * pessoa autenticada alcançava o arquivo de qualquer empresa.
+ *
+ * O retorno deixou de ser uma URL pública. O bucket é privado, e o endereço de
+ * leitura é gerado na hora de exibir, com validade curta.
+ */
+export async function uploadDocumentFile(
+  file: File,
+  entityId: string,
+  companyId: string,
+): Promise<string> {
+  const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase()
+  const path = `${companyId}/${entityId}/${crypto.randomUUID()}.${ext}`
+
+  const { error } = await supabase.storage.from(BUCKET_DOCUMENTOS).upload(path, file)
 
   if (error) {
     throw new Error(error.message)
   }
 
-  const { data } = supabase.storage.from('documents').getPublicUrl(path)
-  return data.publicUrl
+  return path
+}
+
+/**
+ * Endereço temporário para ler um anexo.
+ *
+ * Só é emitido se as políticas do bucket autorizarem quem está pedindo — a
+ * mesma verificação que barra o acesso ao arquivo de outra empresa. Uma URL
+ * assinada expira; uma URL pública valeria para sempre, para qualquer pessoa
+ * que a tivesse visto uma vez.
+ */
+export async function signedDocumentUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET_DOCUMENTOS)
+    .createSignedUrl(path, VALIDADE_DA_URL)
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Não foi possível abrir o arquivo.')
+  }
+
+  return data.signedUrl
 }

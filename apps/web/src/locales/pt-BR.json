@@ -130,6 +130,7 @@
   "documents.types.SEGURO": "Seguro",
   "documents.upload.current": "Arquivo atual",
   "documents.upload.label": "Arquivo do documento",
+  "documents.upload.noCompany": "Não foi possível identificar a empresa para enviar o arquivo. Recarregue a página.",
   "documents.upload.placeholder": "Selecionar imagem ou PDF",
   "documents.upload.uploading": "Enviando arquivo...",
   "documents.validation.entity": "Selecione um veículo ou motorista.",
