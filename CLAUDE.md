@@ -40,7 +40,7 @@ Sistema web de gestão de frotas: veículos, motoristas, despesas, manutenções
 | Controle de acesso | RBAC **por empresa** | ADMIN, MANAGER, OPERATOR, sempre dentro de uma `Company`. Acima delas, o super administrador da plataforma |
 | Deploy | **Vercel, projeto único** | Frontend estático e API serverless no mesmo domínio — sem CORS |
 | Monorepo | **npm workspaces** | Sem Turborepo nem Nx |
-| Testes | Vitest | 217 testes: regras do backend e integração com o banco |
+| Testes | Vitest | 220 testes: regras do backend e integração com o banco |
 
 > Material anterior a agosto de 2026 pode citar Auth0, autenticação própria com `bcryptjs`, Turborepo, Railway, Redis ou AWS. **Nada disso está no projeto.** A tabela acima prevalece.
 
@@ -151,7 +151,7 @@ Serão revisitados em etapa própria. Se uma tarefa parecer pedir isso, confirme
 
 ### 4. Antes de concluir
 
-Rode os checks da seção [Validação](README.md#validação) do README. O erro do ESLint e o aviso de tamanho do pacote são pré-existentes e estão descritos lá — não os confunda com regressão introduzida por você.
+Rode os checks da seção [Validação](README.md#validação) do README. **Não há erro nem aviso pré-existente**: tudo passa limpo, lint inclusive. Se algo aparecer, é regressão.
 
 Depois: atualize a documentação afetada editando o arquivo existente, e **pare sem commitar**.
 

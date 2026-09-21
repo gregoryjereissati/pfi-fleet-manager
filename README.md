@@ -191,32 +191,66 @@ conta de acesso**. A pessoa se cadastra pela tela normal com o mesmo e-mail e o
 código da empresa, e assume o perfil. Os demais membros usam o mesmo código e
 ficam pendentes até que esse administrador os aprove.
 
-> Desenho mínimo, aguardando confirmação — ver a seção 0.4 de
-> [`docs/revisao-operacional.md`](docs/revisao-operacional.md).
-
 ### Perfis de demonstração
 
-O seed cria uma empresa de demonstração e nove perfis já aprovados (`ACTIVE`),
-todos **sem conta de acesso vinculada** — ele não cria contas no Supabase Auth:
+`npm run db:seed` cria **duas empresas**, para que o isolamento entre elas seja
+observável, e o super administrador da plataforma. Diferente do provisionamento
+acima, o seed **cria também as contas no Supabase Auth** — as pessoas entram
+direto, sem passar pela tela de cadastro.
 
 | Empresa | Código de acesso |
 |---|---|
-| Transportes Demonstração | `DEMO-0001` |
+| Transportes Litoral Norte | `LITORAL2026` |
+| Frota Sertão Central | `SERTAO2026` |
 
-| Perfil | E-mail | Papel |
+**Transportes Litoral Norte**
+
+| E-mail | Papel | Situação |
 |---|---|---|
-| Administrador | `admin@fleet-manager.com` | ADMIN |
-| Gestor | `gerente@fleet-manager.com` | MANAGER |
-| Motorista | `operador@fleet-manager.com` | OPERATOR |
-| Mais 6 motoristas | `joao.silva@…`, `maria.santos@…`, `carlos.oliveira@…`, `ana.ferreira@…`, `roberto.mendes@…`, `fernanda.costa@…` | OPERATOR |
+| `helena.admin@example.com` | ADMIN | ACTIVE |
+| `rogerio.gerente@example.com` | MANAGER | ACTIVE |
+| `claudia.motorista@example.com` | OPERATOR | ACTIVE |
+| `iranildo.motorista@example.com` | OPERATOR | ACTIVE |
+| `marcos.pendente@example.com` | OPERATOR | PENDING |
+| `vanda.recusada@example.com` | OPERATOR | REJECTED |
 
-Cada perfil OPERATOR já tem a **ficha de motorista** correspondente: motorista e
-usuário são a mesma pessoa, e a ficha guarda só o que é operacional.
+**Frota Sertão Central**
 
-Para entrar com qualquer um deles, **cadastre o mesmo e-mail pela tela de
-cadastro**, escolhendo a senha e informando o código `DEMO-0001`. A API detecta
-o perfil existente sem vínculo e o associa à conta nova, preservando o papel e a
-situação `ACTIVE` — o acesso fica liberado de imediato, sem aprovação.
+| E-mail | Papel | Situação |
+|---|---|---|
+| `otavio.admin@example.com` | ADMIN | ACTIVE |
+| `sandra.gerente@example.com` | MANAGER | ACTIVE |
+| `debora.motorista@example.com` | OPERATOR | ACTIVE |
+| `aldair.motorista@example.com` | OPERATOR | ACTIVE |
+| `juliana.pendente@example.com` | OPERATOR | PENDING |
+
+**Plataforma:** `plataforma.super@example.com` — super administrador, não
+pertence a empresa alguma.
+
+Os perfis PENDING e REJECTED existem de propósito: são eles que permitem ver a
+recusa de acesso, que acontece **depois** da autenticação — a conta existe, o
+token é válido, e ainda assim a API nega.
+
+Cada perfil OPERATOR ativo tem a **ficha de motorista** correspondente:
+motorista e usuário são a mesma pessoa, e a ficha guarda só o que é operacional.
+
+### A senha das contas de demonstração
+
+Todas compartilham a mesma senha, que vem de `SEED_PASSWORD`. **Sem essa
+variável, o seed gera uma senha aleatória e a mostra uma única vez, ao final da
+execução.** Ela não fica gravada em lugar nenhum: o Supabase Auth guarda apenas
+o hash.
+
+Para escolher a senha — recomendado, se a base vai ser recriada mais de uma vez:
+
+```bash
+SEED_PASSWORD=<senha> npm run db:seed
+```
+
+Se a senha se perder, o painel do Supabase não oferece campo para definir outra,
+só envio de recuperação por e-mail — que não funciona, porque o projeto não tem
+serviço de e-mail. As saídas são a Admin API (`PUT /auth/v1/admin/users/<id>`
+com a `service_role`) ou recriar a base com `SEED_PASSWORD` definida.
 
 > Uso restrito a desenvolvimento e demonstração.
 
@@ -320,28 +354,32 @@ deixaram de depender da política de INSERT e são conferidas pela API.
 `@supabase/supabase-js`: fala com o Storage por `fetch`, como os scripts de
 manutenção da base.
 
-As políticas são apagadas **pelo painel** (Storage > Policies), não por
+As políticas foram apagadas **pelo painel** (Storage > Policies), não por
 migration: `storage.objects` pertence ao papel `supabase_storage_admin`, e o
-`postgres` não pode criar nem apagar política sobre ela. O passo a passo está
-em [`supabase-fleet/storage-setup.sql`](supabase-fleet/storage-setup.sql).
+`postgres` não pode criar nem apagar política sobre ela. O histórico completo
+dessas políticas — as que existiram e por que saíram — está em
+[`supabase-fleet/storage-setup.sql`](supabase-fleet/storage-setup.sql).
 
-### O que ainda falta nos anexos
+A migration `0006` removeu `public.pode_acessar_documentos()`, que existia
+apenas para aquelas políticas. Ela saiu depois delas, e não junto: apagá-la
+antes derrubaria as políticas que ainda a chamavam.
 
-- **Apagar as políticas no painel.** O código já está pronto, mas enquanto as
-  políticas existirem o atalho pelo Storage continua aberto. A troca é feita
-  depois da publicação, para não derrubar a versão anterior do frontend, que
-  ainda fala com o Storage.
-- **Remover `public.pode_acessar_documentos()`.** Ela fica sem uso quando as
-  políticas saírem, e só então é removida, em migration própria — migrations
-  são somente-adição, e apagar a função antes derrubaria as políticas que ainda
-  a chamam. Com isso desaparece também a última diferença de alcance do super
-  administrador: a função o autoriza em qualquer empresa, porque o Storage não
-  tem como saber qual empresa ele escolheu na sessão — isso é um conceito da
-  API.
-- **Recolher o arquivo antigo quando o anexo é substituído.** Trocar o anexo de
-  um documento grava o caminho novo e deixa o anterior no bucket. Ninguém o
-  alcança — nenhuma tela o referencia e o Storage só responde à API —, mas ele
-  ocupa espaço.
+**Trocar o anexo recolhe o anterior.** Gravar um anexo novo em um documento que
+já tinha um, ou remover o documento, apaga o arquivo antigo do bucket. A
+remoção acontece depois da transação e não derruba a operação se falhar: o
+documento já foi gravado, e um arquivo órfão não justifica devolver erro a
+quem salvou.
+
+### O alcance do super administrador
+
+Enquanto as políticas existiam, o super administrador alcançava, pelo Storage,
+os arquivos de qualquer empresa — mais largo do que o recorte da sessão dele,
+porque o Storage não tinha como saber qual empresa ele havia escolhido. Isso
+era um conceito da API, transmitido em cabeçalho.
+
+Com os anexos servidos pela API, essa diferença desapareceu: ele passa pelo
+mesmo `getDocument` que todo mundo, já recortado pela empresa em que está
+operando.
 
 ---
 
@@ -359,20 +397,15 @@ Verificação rápida: `curl http://localhost:3000/health`
 ## Validação
 
 ```bash
-npm run test:api                    # 217 testes
+npm run test:api                    # 220 testes
 cd apps/api && npx tsc --noEmit     # sem erros
 cd apps/web && npx tsc --noEmit     # sem erros
 cd apps/web && npm run build        # gera o pacote de produção
 npm run lint                        # sem erros
 ```
 
-Tudo deve passar limpo. Os dois avisos que o README descrevia como esperados
-**não ocorrem mais**:
-
-- o erro do ESLint (`NextFunction` importado e não utilizado) foi corrigido;
-- o build do frontend deixou de emitir o aviso de pacote acima de 500 kB, porque as telas passaram a ser carregadas por rota.
-
-Se algum dos dois reaparecer, é regressão.
+Tudo deve passar limpo — **não há erro nem aviso pré-existente**. Se algum
+aparecer, é regressão.
 
 ### Demais comandos
 

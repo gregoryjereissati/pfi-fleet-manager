@@ -1,21 +1,120 @@
 -- ---------------------------------------------------------------------------
 -- Fleet Manager — Configuração do Supabase Storage
 -- ---------------------------------------------------------------------------
--- Cria o bucket usado para armazenar os arquivos anexados aos documentos.
+-- Os arquivos anexados aos documentos ficam no bucket `documents`.
+--
+-- O estado correto do bucket é: PRIVADO e SEM POLÍTICA ALGUMA. Não é
+-- configuração pela metade — é o desenho. Com RLS habilitada (padrão do
+-- Supabase) e nenhuma política, `anon` e `authenticated` não alcançam nada, e
+-- só a `service_role` passa. Quem usa a `service_role` é a API, que aplica o
+-- recorte de acesso antes de assinar qualquer URL.
 --
 -- Como executar: painel do Supabase > SQL Editor > New query > colar > Run.
+-- ---------------------------------------------------------------------------
+
+
+-- ===========================================================================
+-- Configuração — projeto novo
+-- ===========================================================================
+-- Único comando necessário. Nenhuma política é criada depois dele.
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do update set public = false;
+
+
+-- ===========================================================================
+-- Conferência
+-- ===========================================================================
+--   select id, public from storage.buckets where id = 'documents';
+--   -- public deve ser false
 --
--- ATENÇÃO — a configuração do Storage tem DUAS ETAPAS:
---   Etapa 1 (este arquivo)  — criação do bucket, por SQL.
---   Etapa 2 (painel)        — criação das políticas de acesso, pela interface
---                             Storage > Policies. As instruções completas
---                             estão no final deste arquivo.
+--   select policyname, cmd, roles
+--   from pg_policies
+--   where schemaname = 'storage' and tablename = 'objects';
+--   -- nenhuma linha para o bucket `documents`
 --
--- Por que as políticas não estão neste script:
---   A tabela `storage.objects` pertence ao papel `supabase_storage_admin`. O
---   PostgreSQL exige ser dono da tabela para criar políticas sobre ela, e o
---   papel `postgres` — usado pelo SQL Editor — não é dono nem pode assumir
---   aquele papel. As duas tentativas por SQL falham:
+-- Na aplicação, com o token de uma motorista:
+--
+--   POST /storage/v1/object/sign/documents/<caminho>   -> 400 NoSuchKey
+--   GET  /api/documents/<id dela>/arquivo              -> 200 { url }
+--   GET  /api/documents/<id de um colega>/arquivo      -> 404
+--
+-- O 400 vale inclusive para o anexo dela própria: o navegador não alcança o
+-- bucket, e é isso que se espera. Todo anexo passa pela API.
+
+
+-- ===========================================================================
+-- Por que nenhuma política — o histórico
+-- ===========================================================================
+-- Duas configurações anteriores foram abandonadas. Ficam registradas porque a
+-- ausência de política parece, à primeira vista, um passo esquecido.
+--
+-- ---------------------------------------------------------------------------
+-- 1ª — bucket público, políticas só para `authenticated`  (INSEGURA)
+-- ---------------------------------------------------------------------------
+-- A única condição era `bucket_id = 'documents'`. Nenhuma menção a empresa,
+-- dono ou caminho:
+--
+--     SELECT / UPDATE / DELETE  ->  using (bucket_id = 'documents')
+--     INSERT                    ->  with check (bucket_id = 'documents' and
+--                                   storage.extension(name) in (...))
+--
+-- Qualquer usuário do sistema listava, baixava, sobrescrevia e apagava anexo
+-- de QUALQUER empresa, falando direto com a API do Storage. E o bucket era
+-- público, o que permitia leitura anônima de posse da URL.
+--
+-- ---------------------------------------------------------------------------
+-- 2ª — bucket privado, políticas recortando por empresa  (INSUFICIENTE)
+-- ---------------------------------------------------------------------------
+-- O caminho passou a começar pelo identificador da empresa
+-- (`<companyId>/<entityId>/<uuid>.<ext>`) e as políticas chamavam
+-- `public.pode_acessar_documentos()`, da migration 0005:
+--
+--     bucket_id = 'documents'
+--     and public.pode_acessar_documentos((storage.foldername(name))[1])
+--
+-- Fechou o buraco maior, mas o recorte era POR EMPRESA — e a regra da
+-- aplicação é mais estreita: o motorista alcança os próprios documentos
+-- pessoais e os dos veículos a que está vinculado, não a CNH de um colega da
+-- mesma empresa. Um motorista contornava a API e a política deixava passar.
+--
+-- Reproduzir a regra inteira em RLS significaria reescrevê-la em SQL, em
+-- duplicata com o serviço que já a aplica. Duas cópias divergem.
+--
+-- ---------------------------------------------------------------------------
+-- 3ª — a atual: o Storage sai do alcance do navegador
+-- ---------------------------------------------------------------------------
+-- As seis políticas que existiam foram apagadas pelo painel:
+--
+--     documentos_alterar_da_propria_empresa flreew_0    (UPDATE)
+--     documentos_alterar_da_propria_empresa flreew_1    (SELECT)
+--     documentos_enviar_para_a_propria_empresa flreew_0 (INSERT)
+--     documentos_ler_da_propria_empresa flreew_0        (SELECT)
+--     documentos_remover_da_propria_empresa flreew_0    (DELETE)
+--     documentos_remover_da_propria_empresa flreew_1    (SELECT)
+--
+-- No lugar delas, a API:
+--
+--     GET  /documents/:id/arquivo           -> { url } de leitura, 60s
+--     POST /documents/arquivo/url-de-envio  -> { url, caminho } de envio
+--
+-- A leitura reaproveita o mesmo `getDocument` da consulta — o que está fora do
+-- alcance de quem pede devolve 404 e nunca chega a ser assinado. A regra não é
+-- reescrita em lugar nenhum. No envio, a empresa do caminho vem do recorte de
+-- acesso, nunca do corpo da requisição, e as extensões aceitas passaram a ser
+-- conferidas pela API.
+--
+-- `public.pode_acessar_documentos()` ficou sem uso e foi removida pela
+-- migration 0006 — depois das políticas, não junto: apagá-la antes derrubaria
+-- as políticas que ainda a chamavam.
+--
+-- ---------------------------------------------------------------------------
+-- Por que as políticas são mexidas pelo painel, e não por SQL
+-- ---------------------------------------------------------------------------
+-- `storage.objects` pertence ao papel `supabase_storage_admin`. O PostgreSQL
+-- exige ser dono da tabela para criar ou apagar política sobre ela, e o papel
+-- `postgres` — usado pelo SQL Editor — não é dono nem pode assumir aquele
+-- papel:
 --
 --     ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 --       -> ERROR: 42501: must be owner of table objects
@@ -23,213 +122,6 @@
 --     SET ROLE supabase_storage_admin;
 --       -> ERROR: 42501: permission denied to set role "supabase_storage_admin"
 --
---   O caminho suportado pela plataforma é a interface Storage > Policies, que
---   executa a criação com o papel adequado. O SQL equivalente está registrado
---   ao final, em comentário, para servir de referência.
---
---   Observação: não é necessário habilitar o RLS em `storage.objects` — ele já
---   vem habilitado por padrão nos projetos Supabase.
--- ---------------------------------------------------------------------------
-
--- Etapa 1 — Bucket público de documentos ------------------------------------
--- Público: os arquivos são exibidos na aplicação por URL direta
--- (getPublicUrl), sem necessidade de assinatura.
-insert into storage.buckets (id, name, public)
-values ('documents', 'documents', true)
-on conflict (id) do update set public = true;
-
-
--- ===========================================================================
--- Etapa 2 — Políticas de acesso (criar pelo painel)
--- ===========================================================================
--- Caminho: Storage > Policies > bucket `documents` > New policy
---          > "For full customization"
---
--- A interface permite marcar várias operações em uma mesma política, de modo
--- que duas políticas cobrem todo o uso do sistema.
---
--- Observação da interface: ao marcar UPDATE ou DELETE, o Supabase marca
--- SELECT automaticamente e informa que "UPDATE and DELETE require it". Isso
--- está correto e deve ser mantido — ambas as operações precisam localizar o
--- objeto antes de alterá-lo ou removê-lo. Desmarcar o SELECT depois de criar
--- a política faz a remoção de arquivos falhar.
---
--- ATENÇÃO — a interface cria UMA POLÍTICA POR OPERAÇÃO marcada, acrescentando
--- um sufixo ao nome informado (`_0`, `_1`, `_2`). Por isso, marque TODAS as
--- operações da política 2 numa mesma submissão.
---
--- Criar UPDATE e depois DELETE em submissões separadas falha, porque cada
--- submissão tenta gerar novamente a política de SELECT com o mesmo nome:
---
---     ERROR: 42710: policy "<nome>_0" for table "objects" already exists
---
--- Se isso ocorrer, apague as políticas já criadas para o bucket e recomece,
--- marcando as três operações de uma vez.
---
--- ---------------------------------------------------------------------------
--- POLÍTICA 1 — Envio de arquivos
---   Nome              : Allow authenticated document uploads
---   Allowed operation : INSERT   (apenas esta)
---   Target roles      : authenticated
---   WITH CHECK        :
---
---       bucket_id = 'documents'
---       and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')
---
---   Fica isolada porque é a única que carrega a restrição de extensões, que
---   não faria sentido nas demais operações.
---
---   Essa restrição é a ÚNICA validação de tipo de arquivo do sistema, já que
---   o upload não passa pela API. Se for omitida, o sistema continua
---   funcionando, porém aceitará qualquer tipo de arquivo.
---
--- ---------------------------------------------------------------------------
--- POLÍTICA 2 — Leitura, substituição e remoção
---   Nome              : Allow authenticated document management
---   Allowed operation : SELECT, UPDATE, DELETE
---   Target roles      : authenticated
---   USING             : bucket_id = 'documents'
---   WITH CHECK        : bucket_id = 'documents'
---
--- ---------------------------------------------------------------------------
--- Leitura anônima não requer política: o bucket é público, portanto os
--- arquivos exibidos por getPublicUrl são servidos sem passar por RLS.
---
--- ===========================================================================
--- SQL equivalente (referência — não executável pelo SQL Editor)
--- ===========================================================================
--- Registrado para documentar exatamente o que a interface cria. Só funciona
--- em uma conexão com privilégios de `supabase_storage_admin`.
---
---   create policy "Allow authenticated document uploads"
---   on storage.objects for insert to authenticated
---   with check (
---     bucket_id = 'documents'
---     and storage.extension(name) in ('jpg','jpeg','png','webp','pdf')
---   );
---
---   create policy "Allow authenticated document management"
---   on storage.objects for all to authenticated
---   using (bucket_id = 'documents')
---   with check (bucket_id = 'documents');
--- ===========================================================================
-
--- ===========================================================================
--- ATUALIZAÇÃO — recorte por empresa
--- ===========================================================================
--- As políticas registradas acima estão OBSOLETAS e eram inseguras: a única
--- condição era `bucket_id = 'documents'`, sem nenhuma menção a empresa, dono ou
--- caminho. Qualquer usuário autenticado alcançava, listava, sobrescrevia e
--- apagava anexo de qualquer empresa, falando direto com a API do Storage.
---
--- O que mudou:
---
---   1. O caminho do arquivo passou a começar pelo identificador da empresa:
---      `<companyId>/<entityId>/<uuid>.<ext>`. Sem isso, nenhuma política teria
---      de onde tirar a empresa dona do arquivo.
---
---   2. O bucket passou a ser PRIVADO. A leitura usa URL assinada de validade
---      curta (`createSignedUrl`), gerada na abertura do anexo.
---
---   3. A autorização passou a ser decidida por `public.pode_acessar_documentos`,
---      criada na migration 0005. Ela é `security definer` porque uma política do
---      Storage é avaliada como o papel `authenticated`, que não tem privilégio
---      algum sobre `public.users` — uma consulta direta falharia antes da RLS.
---
--- Passo a passo no painel
--- -----------------------
---   Storage > documents > Edit bucket  -> desmarcar "Public bucket"
---   Storage > Policies                 -> apagar as políticas antigas e criar
---                                         as quatro abaixo, com target role
---                                         `authenticated`
---
--- SELECT / UPDATE / DELETE  — expressão USING:
---
---   bucket_id = 'documents'
---   and public.pode_acessar_documentos((storage.foldername(name))[1])
---
--- INSERT — expressão WITH CHECK:
---
---   bucket_id = 'documents'
---   and public.pode_acessar_documentos((storage.foldername(name))[1])
---   and storage.extension(name) = any (array['jpg','jpeg','png','webp','pdf'])
---
--- No UPDATE, o painel grava apenas o USING. Não é problema: sem WITH CHECK, o
--- PostgreSQL aplica a expressão do USING também à linha nova — mover um arquivo
--- para o prefixo de outra empresa continua barrado.
---
--- Conferência
--- -----------
--- Simulando um usuário autenticado, sem precisar da interface:
---
---   begin;
---     set local role authenticated;
---     set local request.jwt.claims = '{"sub":"<auth_user_id>","role":"authenticated"}';
---     select public.pode_acessar_documentos('<company_id da propria empresa>');  -- true
---     select public.pode_acessar_documentos('<company_id de outra empresa>');    -- false
---   rollback;
--- ===========================================================================
-
--- ===========================================================================
--- ATUALIZAÇÃO — os anexos passam a ser servidos pela API
--- ===========================================================================
--- O recorte descrito acima é POR EMPRESA, e a regra da aplicação é mais
--- estreita: o motorista alcança os próprios documentos pessoais e os dos
--- veículos a que está vinculado agora — não a CNH de um colega da mesma
--- empresa. Falando direto com o Storage, um motorista contornava a API e a
--- política deixava passar, porque o colega é da mesma empresa.
---
--- Reproduzir a regra inteira em RLS significaria reescrevê-la em SQL, em
--- duplicata com o serviço que já a aplica — e duas cópias divergem. A saída é
--- a contrária: tirar o Storage do alcance do navegador.
---
--- O que mudou no código
--- ---------------------
---   · O frontend não importa mais `supabase.storage` em lugar nenhum.
---   · `GET /documents/:id/arquivo` devolve uma URL assinada de leitura,
---     válida por 60s, depois de aplicar o mesmo recorte da consulta ao
---     documento — quem não alcança a linha recebe 404 e não chega a assinar.
---   · `POST /documents/arquivo/url-de-envio` devolve a URL de envio e o
---     caminho, que começa pela empresa do RECORTE DE ACESSO, nunca pela do
---     corpo da requisição. As extensões aceitas passaram a ser conferidas
---     pela API (Zod), e não mais só pela política de INSERT.
---   · A API assina com a `service_role`, que atravessa a RLS.
---
--- Passo a passo no painel
--- -----------------------
--- Faça isto DEPOIS de publicar o código acima. Enquanto a versão antiga do
--- frontend estiver no ar, ela ainda fala com o Storage e para de funcionar
--- assim que as políticas saírem.
---
---   Storage > Policies > bucket `documents`  -> APAGAR todas as políticas:
---
---       documentos_alterar_da_propria_empresa flreew_0   (UPDATE)
---       documentos_alterar_da_propria_empresa flreew_1   (SELECT)
---       documentos_enviar_para_a_propria_empresa flreew_0 (INSERT)
---       documentos_ler_da_propria_empresa flreew_0       (SELECT)
---       documentos_remover_da_propria_empresa flreew_0   (DELETE)
---       documentos_remover_da_propria_empresa flreew_1   (SELECT)
---
--- Nenhuma política nova entra no lugar. Com a RLS habilitada — como já vem por
--- padrão — e nenhuma política, o acesso é NEGADO a `anon` e a `authenticated`,
--- e a `service_role` continua passando. É o mesmo critério já aplicado às
--- tabelas da aplicação.
---
--- O bucket permanece PRIVADO. Torná-lo público serviria os arquivos sem passar
--- por RLS, e desfaria a mudança inteira.
---
--- Conferência
--- -----------
---   select policyname, cmd, roles
---   from pg_policies
---   where schemaname = 'storage' and tablename = 'objects';
---   -- não deve sobrar nenhuma linha para o bucket `documents`
---
--- Na aplicação: abrir um anexo continua funcionando (a API assina), e uma
--- chamada direta ao Storage com o token de um usuário passa a receber 400/403.
---
--- A função `public.pode_acessar_documentos()` fica sem uso, mas NÃO é removida
--- aqui: ela só sai em migration própria, depois que estas políticas estiverem
--- trocadas e validadas. Removê-la antes derrubaria as políticas que ainda a
--- chamam.
+-- Por isso a etapa de políticas nunca virou migration. Hoje isso não pesa:
+-- não há política a criar.
 -- ===========================================================================

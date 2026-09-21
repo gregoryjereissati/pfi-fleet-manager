@@ -51,7 +51,7 @@ Pule esta etapa apenas em correções triviais.
 ## Antes de declarar pronto
 
 ```bash
-npm run test:api                    # 193 testes devem passar
+npm run test:api                    # 220 testes devem passar
 cd apps/api && npx tsc --noEmit     # sem erros
 cd apps/web && npx tsc --noEmit     # sem erros
 cd apps/web && npm run build        # deve gerar o pacote
