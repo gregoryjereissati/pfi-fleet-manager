@@ -35,7 +35,7 @@ export function DocumentList() {
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<DocumentType | ''>('')
   const [status, setStatus] = useState<DocumentStatus | ''>('')
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null)
   const [dialog, setDialog] = useState<{
     title: string
     message: string
@@ -183,7 +183,7 @@ export function DocumentList() {
                           {document.fileUrl && (
                             <button
                               type="button"
-                              onClick={() => setPreviewUrl(document.fileUrl)}
+                              onClick={() => setPreviewDocumentId(document.id)}
                               className="text-gold hover:underline"
                             >
                               {t('documents.preview.viewFile')}
@@ -232,11 +232,11 @@ export function DocumentList() {
         />
       )}
 
-      {previewUrl && (
+      {previewDocumentId && (
         <FilePreviewModal
           isOpen
-          fileUrl={previewUrl}
-          onClose={() => setPreviewUrl(null)}
+          documentId={previewDocumentId}
+          onClose={() => setPreviewDocumentId(null)}
         />
       )}
     </div>

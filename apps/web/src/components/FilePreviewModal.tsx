@@ -1,34 +1,38 @@
 import { useEffect, useState } from 'react'
 import { ExternalLink, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { signedDocumentUrl } from '@/lib/supabase'
+import { urlDeLeitura } from '@/lib/anexos'
+import { useToken } from '@/hooks/useToken'
 
 interface FilePreviewModalProps {
   isOpen: boolean
   /**
-   * Caminho do anexo dentro do bucket — não uma URL.
+   * Identificador do documento — não o caminho do anexo.
    *
-   * O bucket é privado: o endereço de leitura é gerado aqui, na abertura, e
-   * expira em pouco tempo. Guardar uma URL pública daria acesso permanente a
-   * quem a tivesse visto uma vez, inclusive depois de perder acesso à empresa.
+   * Quem abre o arquivo é a API: ela aplica o mesmo recorte da consulta ao
+   * documento e só então assina um endereço de leitura, de validade curta. O
+   * navegador não alcança o Storage, e por isso pedir o anexo de um documento
+   * fora do alcance devolve 404, como a consulta devolveria.
    */
-  fileUrl: string
+  documentId: string
   onClose: () => void
 }
 
-export function FilePreviewModal({ isOpen, fileUrl, onClose }: FilePreviewModalProps) {
+export function FilePreviewModal({ isOpen, documentId, onClose }: FilePreviewModalProps) {
   const { t } = useTranslation()
+  const getToken = useToken()
   const [url, setUrl] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isOpen || !fileUrl) return
+    if (!isOpen || !documentId) return
 
     let cancelado = false
     setUrl(null)
     setErro(null)
 
-    signedDocumentUrl(fileUrl)
+    getToken()
+      .then((token) => urlDeLeitura(documentId, token))
       .then((assinada) => {
         if (!cancelado) setUrl(assinada)
       })
@@ -39,11 +43,13 @@ export function FilePreviewModal({ isOpen, fileUrl, onClose }: FilePreviewModalP
     return () => {
       cancelado = true
     }
-  }, [isOpen, fileUrl])
+  }, [documentId, getToken, isOpen])
 
   if (!isOpen) return null
 
-  const isPdf = fileUrl.toLowerCase().includes('.pdf')
+  // A extensão vem no caminho embutido na URL assinada: o cliente não precisa
+  // saber o nome do arquivo para decidir como exibi-lo.
+  const isPdf = (url ?? '').split('?')[0].toLowerCase().endsWith('.pdf')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">

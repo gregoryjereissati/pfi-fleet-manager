@@ -6,8 +6,8 @@ import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useDrivers } from '@/hooks/useDrivers'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
-import { uploadDocumentFile } from '@/lib/supabase'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { enviarAnexo, extensaoAceita } from '@/lib/anexos'
+import { FilePreviewModal } from '@/components/FilePreviewModal'
 import type { DocumentItem } from '@/hooks/useDocuments'
 
 type EntityType = 'vehicle' | 'driver'
@@ -37,7 +37,6 @@ const labelClass = 'mb-1 block text-sm font-medium text-white/55'
 
 export function DocumentForm() {
   const { t } = useTranslation()
-  const { currentUser } = useCurrentUser()
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
@@ -59,6 +58,7 @@ export function DocumentForm() {
   }))
   const [file, setFile] = useState<File | null>(null)
   const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [loadingDocument, setLoadingDocument] = useState(isEditing)
   const [error, setError] = useState<string | null>(null)
@@ -142,17 +142,17 @@ export function DocumentForm() {
       setSubmitting(true)
       setError(null)
 
-      // O caminho do anexo começa pela empresa: é o que permite às políticas
-      // do bucket recortarem o acesso aos arquivos como o banco já recorta as
-      // linhas.
-      if (file && !currentUser?.companyId) {
-        throw new Error(t('documents.upload.noCompany'))
+      if (file && !extensaoAceita(file)) {
+        throw new Error(t('documents.upload.invalidType'))
       }
 
-      const fileUrl = file
-        ? await uploadDocumentFile(file, entityId, currentUser!.companyId!)
-        : undefined
       const token = await getToken()
+
+      // Quem decide o caminho do anexo é a API, a partir do recorte de acesso:
+      // a empresa do caminho não vem do navegador. O envio vai para uma URL
+      // assinada, e o que volta — e fica em `fileUrl` — é o caminho.
+      const alvo = form.entityType === 'vehicle' ? { vehicleId: entityId } : { driverId: entityId }
+      const fileUrl = file ? await enviarAnexo(file, alvo, token) : undefined
 
       if (isEditing && id) {
         await apiFetch(`/documents/${id}`, token, {
@@ -291,22 +291,21 @@ export function DocumentForm() {
 
           <div className="md:col-span-2">
             <label className={labelClass}>{t('documents.upload.label')}</label>
-            {existingFileUrl && !file && (
+            {existingFileUrl && !file && id && (
               <p className="mb-1 text-xs text-white/40">
                 {t('documents.upload.current')}:{' '}
-                <a
-                  href={existingFileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(true)}
                   className="text-gold underline"
                 >
                   {t('documents.preview.viewFile')}
-                </a>
+                </button>
               </p>
             )}
             <input
               type="file"
-              accept="image/*,application/pdf"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               className={inputClass}
             />
@@ -337,6 +336,10 @@ export function DocumentForm() {
           </button>
         </div>
       </form>
+
+      {previewOpen && id && (
+        <FilePreviewModal isOpen documentId={id} onClose={() => setPreviewOpen(false)} />
+      )}
     </div>
   )
 }

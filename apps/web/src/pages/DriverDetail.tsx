@@ -25,7 +25,7 @@ export function DriverDetail() {
   const { currentUser } = useCurrentUser()
   const { driver, loading, error } = useDriver(id)
   const canMutate = canManageFleet(currentUser?.role)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null)
   const { documents, loading: loadingDocuments } = useDocuments({
     driverId: id,
     orderBy: 'expiryDate',
@@ -191,7 +191,7 @@ export function DriverDetail() {
                       {doc.fileUrl ? (
                         <button
                           type="button"
-                          onClick={() => setPreviewUrl(doc.fileUrl)}
+                          onClick={() => setPreviewDocumentId(doc.id)}
                           className="text-gold hover:underline"
                         >
                           {t('documents.preview.viewFile')}
@@ -208,11 +208,11 @@ export function DriverDetail() {
         )}
       </section>
 
-      {previewUrl && (
+      {previewDocumentId && (
         <FilePreviewModal
           isOpen
-          fileUrl={previewUrl}
-          onClose={() => setPreviewUrl(null)}
+          documentId={previewDocumentId}
+          onClose={() => setPreviewDocumentId(null)}
         />
       )}
     </div>
