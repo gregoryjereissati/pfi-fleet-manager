@@ -5,7 +5,7 @@ import { documentRepository } from '../../repositories/document.repository';
 import { vehicleRepository } from '../../repositories/vehicle.repository';
 import { driverRepository } from '../../repositories/driver.repository';
 import { assignmentRepository } from '../../repositories/assignment.repository';
-import { assinarEnvio, assinarLeitura } from '../../lib/storage';
+import { assinarEnvio, assinarLeitura, removerArquivo } from '../../lib/storage';
 import {
   makeDriverScope,
   makeScope,
@@ -61,6 +61,7 @@ vi.mock('../../lib/storage', async (importOriginal) => {
     ...actual,
     assinarLeitura: vi.fn().mockResolvedValue('https://storage/assinada'),
     assinarEnvio: vi.fn().mockResolvedValue('https://storage/envio'),
+    removerArquivo: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -333,6 +334,46 @@ describe('documentService — alteração e remoção', () => {
 
     const [, , payload] = vi.mocked(documentRepository.update).mock.calls[0];
     expect(payload).toEqual({ type: DocumentType.IPVA });
+  });
+
+  it('recolhe o arquivo anterior quando o anexo é trocado', async () => {
+    vi.mocked(documentRepository.findById).mockResolvedValue({
+      ...vehicleDocument,
+      fileUrl: 'empresa/veiculo/antigo.pdf',
+    } as never);
+    vi.mocked(documentRepository.update).mockResolvedValue(vehicleDocument as never);
+
+    await documentService.updateDocument(makeScope(), 'document-1', {
+      fileUrl: 'empresa/veiculo/novo.pdf',
+    });
+
+    expect(removerArquivo).toHaveBeenCalledWith('empresa/veiculo/antigo.pdf');
+  });
+
+  it('não recolhe nada quando a alteração não toca no anexo', async () => {
+    vi.mocked(documentRepository.findById).mockResolvedValue({
+      ...vehicleDocument,
+      fileUrl: 'empresa/veiculo/antigo.pdf',
+    } as never);
+    vi.mocked(documentRepository.update).mockResolvedValue(vehicleDocument as never);
+
+    await documentService.updateDocument(makeScope(), 'document-1', {
+      expiryDate: '2028-01-01',
+    });
+
+    expect(removerArquivo).not.toHaveBeenCalled();
+  });
+
+  it('recolhe o arquivo do documento removido', async () => {
+    vi.mocked(documentRepository.findById).mockResolvedValue({
+      ...vehicleDocument,
+      fileUrl: 'empresa/veiculo/antigo.pdf',
+    } as never);
+    vi.mocked(documentRepository.delete).mockResolvedValue(vehicleDocument as never);
+
+    await documentService.deleteDocument(makeScope(), 'document-1');
+
+    expect(removerArquivo).toHaveBeenCalledWith('empresa/veiculo/antigo.pdf');
   });
 
   it('remove apenas documento da própria empresa', async () => {

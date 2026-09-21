@@ -11,7 +11,7 @@ import { vehicleRepository } from '../repositories/vehicle.repository';
 import { driverRepository } from '../repositories/driver.repository';
 import { assignmentService } from './assignment.service';
 import { diffFields, pickFields, recordChange } from '../lib/audit';
-import { assinarEnvio, assinarLeitura } from '../lib/storage';
+import { assinarEnvio, assinarLeitura, removerArquivo } from '../lib/storage';
 import { caminhoDoAnexo, type ExtensaoDeAnexo } from '../lib/anexos';
 import type { AccessScope } from '../lib/access-scope';
 
@@ -133,8 +133,8 @@ export const documentService = {
       AUDITED_FIELDS,
     );
 
-    return emTransacao(async (tx) => {
-      const updated = await documentRepository.update(tx, id, payload, scope.userId);
+    const updated = await emTransacao(async (tx) => {
+      const alterado = await documentRepository.update(tx, id, payload, scope.userId);
 
       if (changes) {
         await recordChange(tx, {
@@ -146,15 +146,24 @@ export const documentService = {
         });
       }
 
-      return updated;
+      return alterado;
     });
+
+    // Trocar o anexo grava o caminho novo; o anterior deixa de ser alcançável
+    // por qualquer tela. A remoção vem **depois** da transação: se ela tivesse
+    // sido revertida, o documento ainda apontaria para o arquivo antigo.
+    if (payload.fileUrl && document.fileUrl && payload.fileUrl !== document.fileUrl) {
+      await removerArquivo(document.fileUrl);
+    }
+
+    return updated;
   },
 
   async deleteDocument(scope: AccessScope, id: string) {
     const document = await documentRepository.findById(id, scope.companyId);
     if (!document) throw new AppError(404, 'Document not found');
 
-    return emTransacao(async (tx) => {
+    const removido = await emTransacao(async (tx) => {
       await recordChange(tx, {
         entityType: AuditEntity.DOCUMENT,
         entityId: id,
@@ -165,6 +174,12 @@ export const documentService = {
 
       return documentRepository.delete(tx, id);
     });
+
+    // Sem a linha, o arquivo não tem mais como ser pedido: só a API alcança o
+    // bucket, e ela parte sempre do documento.
+    if (document.fileUrl) await removerArquivo(document.fileUrl);
+
+    return removido;
   },
 
   /**

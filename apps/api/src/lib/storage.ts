@@ -77,3 +77,32 @@ export async function assinarEnvio(caminho: string): Promise<string> {
 
   return `${env.SUPABASE_URL}/storage/v1${url}`;
 }
+
+/**
+ * Remove um anexo do bucket.
+ *
+ * Usada quando o anexo de um documento é trocado ou o documento é removido: o
+ * arquivo anterior deixa de ser alcançável por qualquer tela, e manter o
+ * objeto no bucket só acumularia lixo.
+ *
+ * **Não lança.** A remoção é faxina, não parte do resultado da operação: se o
+ * Storage recusar, o documento já foi gravado e a resposta não deve virar erro
+ * por causa de um arquivo órfão. A falha vai para o log.
+ */
+export async function removerArquivo(caminho: string): Promise<void> {
+  try {
+    const resposta = await fetch(
+      `${env.SUPABASE_URL}/storage/v1/object/${BUCKET}/${caminho}`,
+      { method: 'DELETE', headers: autenticacao() },
+    );
+
+    if (!resposta.ok) {
+      console.error(
+        `[Storage] remoção de "${caminho}" falhou (${resposta.status}): ` +
+          (await resposta.text().catch(() => '')),
+      );
+    }
+  } catch (erro) {
+    console.error(`[Storage] remoção de "${caminho}" falhou:`, erro);
+  }
+}
