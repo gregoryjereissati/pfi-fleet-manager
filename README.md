@@ -4,63 +4,23 @@
 
 **Sistema de Gestão Inteligente de Frotas**
 
-Projeto Final Integrador I (PFI I) · Universidade de Fortaleza — UNIFOR
-Centro de Ciências Tecnológicas · Curso de Ciência da Computação · 2026
-
-`FM-PFI-2026`
+Universidade de Fortaleza — UNIFOR · Ciência da Computação · 2026
 
 </div>
 
 ---
 
-## Sobre o projeto
+## O que é
 
-O Fleet Manager é uma aplicação web que centraliza o controle **operacional, financeiro e documental** de frotas de veículos. O sistema reúne, em uma base de dados única, informações que normalmente ficam dispersas entre planilhas e registros paralelos, organizando-as em torno da entidade que efetivamente as conecta: o veículo.
+Aplicação web que centraliza o controle **operacional, financeiro e documental** de uma frota de veículos. Organizações que operam frotas pequenas e médias costumam dividir esse controle entre planilhas isoladas, e perdem a visão consolidada de custo, manutenção e regularidade documental de cada veículo.
 
-📄 **Documento principal da entrega:** [`docs/01-descricao-do-problema-e-escopo.md`](docs/01-descricao-do-problema-e-escopo.md)
+O Fleet Manager reúne essas informações em uma base única, organizada em torno do veículo: toda despesa, manutenção e documento é obrigatoriamente vinculada a um. Sobre essa base, o sistema classifica vencimentos, consolida alertas e apura indicadores de custo.
 
----
+**Em produção:** https://pfi-fleet-manager-api.vercel.app
 
-## Problema
+### Módulos
 
-Organizações que operam frotas de pequeno e médio porte — tipicamente de 5 a 50 veículos — administram o controle de custos, manutenções e documentação de forma descentralizada, distribuída entre planilhas isoladas e controles manuais.
-
-Como consequência, a organização não dispõe de uma visão consolidada do custo, da condição operacional e da regularidade documental de cada veículo, e passa a agir de forma reativa diante de eventos previsíveis: multas por documentação vencida, manutenções preventivas esquecidas e custo operacional que nunca é apurado por veículo.
-
-O problema não está na ausência de informação, mas na sua **fragmentação** e na **ausência de acompanhamento ativo de prazos**.
-
----
-
-## Solução proposta
-
-O Fleet Manager ataca o problema por quatro mecanismos:
-
-1. **Centralização em torno do veículo** — toda despesa, manutenção e documento é obrigatoriamente vinculado a um veículo, garantido por integridade referencial no banco.
-2. **Acompanhamento ativo de prazos** — o sistema classifica automaticamente a situação de vencimento de documentos e manutenções e os consolida em uma central de alertas.
-3. **Consolidação analítica** — um painel apura custo total, custo médio, custo por veículo, evolução mensal e distribuição por categoria, com filtros.
-4. **Controle de acesso por perfil** — três perfis distintos separam o registro operacional da decisão gerencial.
-
----
-
-## Funcionalidades
-
-| Módulo | Situação |
-|---|---|
-| Autenticação por e-mail e senha (Supabase Auth) | ✅ Implementado |
-| Controle de acesso por perfil (ADMIN, MANAGER, OPERATOR) | ✅ Implementado |
-| Aprovação e bloqueio de contas de usuário | ✅ Implementado |
-| Cadastro de veículos, com desativação e exclusão permanente | ✅ Implementado |
-| Cadastro de motoristas e vínculo com veículos | ✅ Implementado |
-| Registro de despesas em 6 categorias, com filtros | ✅ Implementado |
-| Manutenções preventivas e corretivas | ✅ Implementado |
-| Documentos com vencimento e anexo de arquivo | ✅ Implementado |
-| Central de alertas de vencimento | ✅ Implementado |
-| Painel de indicadores com filtros e gráficos | ✅ Implementado |
-| Gestão de usuários e perfil próprio | ✅ Implementado |
-| Interface em português e inglês | ✅ Implementado |
-| **Publicação em produção** | ✅ [https://pfi-fleet-manager-api.vercel.app](https://pfi-fleet-manager-api.vercel.app) |
-
-O detalhamento por funcionalidade, com evidência no código, está em [`docs/06-status-de-desenvolvimento.md`](docs/06-status-de-desenvolvimento.md).
+Autenticação e controle de acesso por perfil · Veículos · Motoristas · Despesas em 6 categorias · Manutenções preventivas e corretivas · Documentos com vencimento e anexo · Central de alertas · Painel de indicadores · Gestão de usuários · Interface em português e inglês.
 
 ---
 
@@ -71,57 +31,47 @@ O detalhamento por funcionalidade, com evidência no código, está em [`docs/06
 | Linguagem | TypeScript |
 | Frontend | React 18 · Vite · React Router · TailwindCSS · Recharts · i18next |
 | Backend | Node.js · Express 4 |
-| ORM | Prisma 6 |
+| Acesso ao banco | postgres.js — SQL parametrizado, sem ORM |
 | Banco de dados | PostgreSQL (Supabase) |
 | Armazenamento de arquivos | Supabase Storage |
-| Autenticação | Supabase Auth · tokens ES256 verificados por JWKS (`jose`) |
+| Autenticação | Supabase Auth — tokens ES256 verificados por JWKS (`jose`) |
 | Validação | Zod |
-| Agendamento | node-cron |
+| Agendamento | node-cron (local) · Vercel Cron (produção) |
 | Testes | Vitest |
 | Monorepo | npm workspaces |
+| Publicação | Vercel — projeto único, frontend estático e API serverless no mesmo domínio |
 
----
-
-## Arquitetura
-
-Arquitetura **cliente-servidor**, com backend em **camadas** e dependência unidirecional:
+Backend em camadas, com dependência unidirecional:
 
 ```text
 routes → middlewares → controllers → services → repositories → PostgreSQL
 ```
 
-A camada de serviços não conhece Express, e apenas a camada de repositórios importa o Prisma. Esse isolamento é o que viabiliza os testes unitários das regras de negócio.
-
-```mermaid
-flowchart LR
-    W["SPA React<br/>apps/web"] -->|"login"| AU["Supabase Auth"]
-    W -->|"HTTP/JSON + Bearer JWT"| A["API REST Express<br/>apps/api"]
-    W -->|"upload de arquivo"| ST["Supabase Storage"]
-    A -->|"Prisma"| DB[("PostgreSQL<br/>Supabase")]
-    A -.->|"JWKS"| AU
-```
-
-Detalhamento em [`docs/04-arquitetura.md`](docs/04-arquitetura.md).
+A camada de serviços não conhece Express, e o SQL vive apenas na de repositórios. É esse isolamento que torna as regras de negócio testáveis sem banco.
 
 ---
 
-## Estrutura do projeto
+## Mapa do projeto
 
 ```text
 fleet-manager/
 ├── apps/
-│   ├── api/                 Backend — Node.js, Express, Prisma
-│   │   ├── prisma/          Schema, migrations e seed
+│   ├── api/                 Backend — a aplicação Express
+│   │   ├── db/             Migrations SQL, executor, seed e limpeza
 │   │   └── src/             config · routes · middlewares · controllers
 │   │                        services · repositories · jobs · lib
-│   └── web/                 Frontend — React, Vite
+│   └── web/                 Frontend React
 │       └── src/             pages · components · hooks · lib · locales
 ├── packages/
 │   └── shared/              Enumerações e DTOs compartilhados
-├── docs/                    Documentação do projeto
-├── supabase/                Scripts SQL — schema completo e Storage
+├── api/index.ts             Entrada serverless da Vercel
+├── scripts/                 Build do pacote shared e geração do documento técnico
+├── docs/academico/          Documento Técnico (PDF) — referência acadêmica
+├── vercel.json              Build, reescritas e agendamento em produção
 └── package.json             Definição dos workspaces
 ```
+
+> `api/` **não duplica** `apps/api/`. A Vercel expõe cada arquivo em `api/` como função serverless, e `api/index.ts` apenas reexporta o mesmo app Express. Em desenvolvimento quem sobe o servidor é `apps/api/src/server.ts`.
 
 ---
 
@@ -140,6 +90,8 @@ cd pfi-fleet-manager
 npm install
 ```
 
+`npm install` na raiz instala os três workspaces (`apps/api`, `apps/web`, `packages/shared`).
+
 ---
 
 ## Configuração
@@ -151,8 +103,8 @@ npm install
 ```env
 PORT=3000
 NODE_ENV=development
-DATABASE_URL="postgresql://postgres.<ref>:<SENHA>@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.<ref>:<SENHA>@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://postgres.<ref>:<SENHA>@<host>.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.<ref>:<SENHA>@<host>.pooler.supabase.com:5432/postgres"
 SUPABASE_URL=https://<ref>.supabase.co
 ```
 
@@ -164,40 +116,177 @@ VITE_SUPABASE_URL=https://<ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<chave-publica>
 ```
 
-> O Vite só expõe variáveis com o prefixo `VITE_`. Outros prefixos são ignorados silenciosamente.
+As credenciais ficam em *Project Settings → Database* (connection strings) e *Project Settings → API Keys* (URL e chave pública). O Vite só expõe variáveis com o prefixo `VITE_`; outros prefixos são ignorados em silêncio. Nenhum arquivo `.env` é versionado.
 
-Nenhum arquivo `.env` é versionado — o `.gitignore` os exclui.
+### ⚠️ Desativar a confirmação de e-mail no Supabase
+
+No painel do Supabase, em **Authentication → Sign In / Providers → Email**, desative **"Confirm email"**.
+
+Sem isso **o cadastro não se completa**: o projeto não tem serviço de envio de e-mail configurado, então a conta nunca é confirmada e o perfil não chega a ser criado. O risco é mitigado pela aprovação manual do administrador, exigida antes de qualquer acesso.
 
 ---
 
 ## Banco de dados
 
+As migrations são arquivos SQL em [`apps/api/db/migrations/`](apps/api/db/migrations/),
+aplicados por um executor próprio. Não há ORM, não há geração de cliente e não é
+preciso Docker nem PostgreSQL local: tudo roda contra o Supabase hospedado.
+
 ```bash
-cd apps/api
-npx prisma migrate deploy   # cria toda a estrutura
-npx prisma generate         # gera o cliente tipado
-npx prisma db seed          # popula com dados de demonstração
+npm run db:migrate   # aplica o que estiver pendente
+npm run db:status    # mostra o que já foi aplicado, sem alterar nada
+npm run db:seed      # popula a base fictícia de desenvolvimento
 ```
 
-**Alternativa sem configurar a connection string:** colar [`supabase/schema-completo.sql`](supabase/schema-completo.sql) no **SQL Editor** do Supabase. O script cria toda a estrutura e registra as migrations como aplicadas.
+O executor registra cada migration aplicada em `schema_migrations`, com uma soma
+de verificação do conteúdo. Alterar um arquivo já aplicado passa a ser um erro:
+o banco e o histórico teriam divergido em silêncio. Cada migration roda dentro de
+uma transação junto com o próprio registro — ou os dois efeitos existem, ou
+nenhum existe. Um arquivo que precise de DDL não transacional declara
+`-- migrate: no-transaction` na primeira linha.
 
-Para o anexo de arquivos, executar também [`supabase/storage-setup.sql`](supabase/storage-setup.sql) no SQL Editor.
+### Recriar a base do zero
+
+```bash
+npm run db:reset -- --confirmar=<project_ref>   # apaga dados, contas e arquivos
+npm run db:migrate                              # recria a estrutura
+npm run db:seed                                 # popula
+```
+
+O `db:reset` exige que o identificador do projeto seja digitado e confira com o
+configurado: um comando destrutivo não deve depender apenas de uma variável de
+ambiente que pode estar apontando para o lugar errado. Ele remove **somente** o
+que pertence à aplicação — as tabelas e tipos do Fleet Manager, as contas do
+Supabase Auth e os arquivos do bucket `documents`. Não apaga o projeto nem toca
+em schemas internos do Supabase.
+
+O seed nunca apaga nada: se as empresas fictícias já existirem, ele recusa e
+orienta a executar o `db:reset` antes.
+
+### Provisionar uma empresa
+
+Criar empresa é o único ato que não pode depender de aprovação — ainda não
+existe quem aprove. Por isso ele fica **fora da aplicação**, ao alcance de quem
+já tem acesso ao banco:
+
+```bash
+npm run provisionar --workspace=apps/api -- \
+  --empresa "Transportes Silva" \
+  --codigo TSILVA-01 \
+  --admin-nome "Maria Silva" \
+  --admin-email maria@transportessilva.com.br \
+  --admin-cpf 12345678900 \
+  --admin-telefone "(85) 99999-0000"
+```
+
+O script cria a empresa e o perfil do primeiro administrador, já ativo e **sem
+conta de acesso**. A pessoa se cadastra pela tela normal com o mesmo e-mail e o
+código da empresa, e assume o perfil. Os demais membros usam o mesmo código e
+ficam pendentes até que esse administrador os aprove.
+
+> Desenho mínimo, aguardando confirmação — ver a seção 0.4 de
+> [`docs/revisao-operacional.md`](docs/revisao-operacional.md).
 
 ### Perfis de demonstração
 
-A rotina de povoamento cria três perfis já aprovados (`ACTIVE`), **sem conta de acesso vinculada** — ela não cria contas no Supabase Auth:
+O seed cria uma empresa de demonstração e nove perfis já aprovados (`ACTIVE`),
+todos **sem conta de acesso vinculada** — ele não cria contas no Supabase Auth:
+
+| Empresa | Código de acesso |
+|---|---|
+| Transportes Demonstração | `DEMO-0001` |
 
 | Perfil | E-mail | Papel |
 |---|---|---|
 | Administrador | `admin@fleet-manager.com` | ADMIN |
 | Gestor | `gerente@fleet-manager.com` | MANAGER |
-| Operador | `operador@fleet-manager.com` | OPERATOR |
+| Motorista | `operador@fleet-manager.com` | OPERATOR |
+| Mais 6 motoristas | `joao.silva@…`, `maria.santos@…`, `carlos.oliveira@…`, `ana.ferreira@…`, `roberto.mendes@…`, `fernanda.costa@…` | OPERATOR |
 
-Para acessar com qualquer um deles, **cadastre o mesmo e-mail pela tela de cadastro da aplicação**, escolhendo a senha desejada. A API detecta o perfil existente sem vínculo e o associa à conta recém-criada, preservando o papel e a situação `ACTIVE` — o acesso fica liberado de imediato, sem necessidade de aprovação.
+Cada perfil OPERATOR já tem a **ficha de motorista** correspondente: motorista e
+usuário são a mesma pessoa, e a ficha guarda só o que é operacional.
 
-> Uso exclusivo em ambiente de desenvolvimento e demonstração acadêmica.
+Para entrar com qualquer um deles, **cadastre o mesmo e-mail pela tela de
+cadastro**, escolhendo a senha e informando o código `DEMO-0001`. A API detecta
+o perfil existente sem vínculo e o associa à conta nova, preservando o papel e a
+situação `ACTIVE` — o acesso fica liberado de imediato, sem aprovação.
 
-O modelo de dados completo está em [`docs/05-banco-de-dados.md`](docs/05-banco-de-dados.md).
+> Uso restrito a desenvolvimento e demonstração.
+
+---
+
+## Super administrador da plataforma
+
+Existe um perfil **acima** das empresas. Ele não pertence a nenhuma e escolhe,
+a cada sessão, em qual vai trabalhar — passando a agir ali com os poderes de
+administrador daquela empresa.
+
+Duas decisões sustentam isso:
+
+**Não é um papel.** A condição vive em `users.is_super_admin`, coluna própria, e
+não em `user_role`. O papel é dado de entrada em dois pontos — o cadastro grava
+o papel pedido, a aprovação grava o efetivo — e um valor a mais no enum tornaria
+possível pedir ou conceder a condição por esses caminhos. Uma coluna à parte não
+tem caminho ligando entrada do usuário a ela.
+
+**A empresa escolhida viaja no cabeçalho `X-Company-Id`.** Isso parece contrariar
+a regra de que o recorte nunca se apoia em dado do cliente, mas a regra continua
+valendo: o servidor só considera esse cabeçalho **depois** de confirmar no banco
+que o perfil autenticado tem a condição. Para qualquer outro perfil o cabeçalho é
+ignorado por completo — e há teste garantindo exatamente isso.
+
+Dentro da empresa escolhida o recorte nasce com `role: ADMIN`. Serviços,
+repositórios e testes não sabem que existe um super administrador: para eles é
+um administrador comum, e o isolamento por empresa continua o mesmo de sempre.
+
+```bash
+npm run provisionar-super-admin --workspace @fleet-manager/api --   --nome "Nome Completo" --email pessoa@exemplo.com   --cpf 12345678900 --telefone "(85) 99999-0000"
+```
+
+O script cria também a conta no Supabase Auth, diferente do provisionamento de
+empresa: o super administrador não tem código de empresa para apresentar na tela
+de cadastro, e abrir uma exceção ali seria abrir caminho justamente onde não se
+deve.
+
+Na interface ele vê um seletor de empresa no cabeçalho e uma tela **Empresas**,
+onde cria, ativa e desativa. Desativar suspende o acesso de quem pertence à
+empresa; não apaga nada e é reversível.
+
+---
+
+## Isolamento e anexos
+
+O isolamento entre empresas é feito pela aplicação: `company_id` participa da
+condição de **toda** consulta, montado a partir do perfil reconsultado no banco
+— nunca de um identificador vindo do cliente.
+
+As tabelas ficam com *row level security* habilitada e **sem política alguma**.
+Isso não implementa o isolamento por empresa; serve para negar acesso a `anon` e
+`authenticated`, que é o que a chave pública do frontend alcança. Na prática,
+ninguém chega às tabelas por fora da API, via PostgREST. A aplicação conecta com
+um papel que contorna a RLS, e por isso continua operando normalmente.
+
+### Pendência conhecida: o bucket de anexos é público
+
+O bucket `documents` do Supabase Storage está configurado como **público**.
+Qualquer pessoa de posse da URL lê o arquivo — CNH, CRLV, apólice — sem passar
+pela API e sem pertencer à empresa dona do documento. **O isolamento por empresa
+não vale para os arquivos.**
+
+O frontend envia direto para o bucket e guarda a URL pública
+(`apps/web/src/lib/supabase.ts`), e a API apenas devolve essa URL em
+`documents.file_url`.
+
+Corrigir exige três passos coordenados, que mexem em frontend e API:
+
+1. Tornar o bucket privado.
+2. Gravar em `file_url` o **caminho** do objeto, não uma URL pública.
+3. A API passa a emitir uma URL assinada de curta duração ao devolver o
+   documento, já dentro do recorte de empresa e papel que ela hoje aplica às
+   linhas — e o envio passa a usar URL de upload assinada, emitida pela API.
+
+Enquanto isso não for feito, o sistema **não** pode ser descrito como
+isolado ponto a ponto: as linhas estão isoladas, os arquivos não.
 
 ---
 
@@ -208,70 +297,76 @@ npm run dev:api    # API em http://localhost:3000
 npm run dev:web    # Interface em http://localhost:5173
 ```
 
-Verificação: `curl http://localhost:3000/health`
+Verificação rápida: `curl http://localhost:3000/health`
 
-### Demais scripts
+---
+
+## Validação
+
+```bash
+npm run test:api                    # 193 testes
+cd apps/api && npx tsc --noEmit     # sem erros
+cd apps/web && npx tsc --noEmit     # sem erros
+cd apps/web && npm run build        # gera o pacote de produção
+npm run lint                        # sem erros
+```
+
+Tudo deve passar limpo. Os dois avisos que o README descrevia como esperados
+**não ocorrem mais**:
+
+- o erro do ESLint (`NextFunction` importado e não utilizado) foi corrigido;
+- o build do frontend deixou de emitir o aviso de pacote acima de 500 kB, porque as telas passaram a ser carregadas por rota.
+
+Se algum dos dois reaparecer, é regressão.
+
+### Demais comandos
 
 | Comando | Ação |
 |---|---|
-| `npm run test:api` | Executa os testes da API |
-| `npm run lint` | Análise estática |
 | `npm run build:api` | Compila a API |
+| `npm run build:shared` | Compila o pacote compartilhado (CJS e ESM) |
 | `npm run format` | Formata o código |
 
 ---
 
-## Status
+## Perfis de acesso
 
-Produto mínimo viável **funcionalmente completo e publicado em produção**.
+Os três papéis existem **dentro de uma empresa**. O ADMIN é o administrador da
+empresa cliente: ele controla a própria empresa e não alcança outra. Não existe
+administrador de todas as empresas.
 
-🔗 **https://pfi-fleet-manager-api.vercel.app**
+| Recurso | ADMIN | MANAGER | OPERATOR (motorista) |
+|---|:---:|:---:|:---:|
+| Consultar veículos e motoristas | empresa | empresa | só os vinculados a si |
+| Consultar lançamentos e painel | empresa | empresa | **só os próprios** |
+| Registrar despesas e manutenções | empresa | empresa | só em veículo vinculado |
+| Corrigir e cancelar lançamento | qualquer | qualquer | **só os próprios** |
+| Cadastrar e editar veículos, motoristas e documentos | ✅ | ✅ | ❌ |
+| Atribuir e encerrar vínculos com veículos | ✅ | ✅ | ❌ |
+| Excluir lançamento em definitivo | ✅ | ✅ | ❌ |
+| Excluir veículo ou motorista em definitivo | ✅ | ❌ | ❌ |
+| Aprovar, recusar e bloquear acessos | ✅ | ❌ | ❌ |
+| Listar usuários da empresa | ✅ | ✅ | ❌ |
 
-| Verificação | Resultado |
-|---|---|
-| TypeScript (backend e frontend) | ✅ Sem erros |
-| ESLint | ✅ Sem erros |
-| Testes automatizados | ✅ 100 aprovados / 13 arquivos |
-| Build de produção do frontend | ✅ Gerado |
-| Publicação em produção | ✅ Concluída |
+Dois pontos que a tabela não mostra e o código garante:
 
-**Pendências declaradas:** o sistema não foi aplicado em uma organização real — a validação usou base de dados fictícia. O acompanhamento de vencimentos ocorre dentro da aplicação; a notificação por canais externos está fora do escopo por decisão de projeto.
+- **o recorte é do servidor.** A empresa vem sempre do perfil consultado no
+  banco a cada requisição; um identificador de empresa enviado pelo cliente
+  nunca decide acesso;
+- **um identificador de fora do recorte responde como inexistente**, para que a
+  resposta não revele que o registro existe.
+
+O comportamento efetivo é o definido nas rotas em `apps/api/src/routes/` e nos
+serviços em `apps/api/src/services/`.
 
 ---
 
 ## Documentação
 
-| Documento | Conteúdo |
-|---|---|
-| [01 — Descrição do problema e escopo](docs/01-descricao-do-problema-e-escopo.md) | **Documento principal da entrega** |
-| [02 — Visão geral do projeto](docs/02-visao-geral-do-projeto.md) | Módulos e organização |
-| [03 — Requisitos](docs/03-requisitos.md) | RF, RNF, regras de negócio e matriz RBAC |
-| [04 — Arquitetura](docs/04-arquitetura.md) | Arquitetura e fluxo de dados |
-| [05 — Banco de dados](docs/05-banco-de-dados.md) | Modelo de dados e dicionário |
-| [06 — Status de desenvolvimento](docs/06-status-de-desenvolvimento.md) | Matriz de status por funcionalidade |
-| [07 — Configuração e execução](docs/07-configuracao-e-execucao.md) | Instalação detalhada |
-| [08 — Próximas etapas](docs/08-proximas-etapas.md) | Trabalho restante |
+O **Documento Técnico** em [`docs/academico/Documento Tecnico - Fleet Manager.pdf`](docs/academico/Documento%20Tecnico%20-%20Fleet%20Manager.pdf) é a referência acadêmica do projeto: fundamentação, arquitetura, modelo de dados e requisitos.
 
-**Documentos acadêmicos:** `docs/academico/`
-**Registro histórico do desenvolvimento:** `docs/historico-desenvolvimento/`
+> Ele descreve o sistema no momento em que foi escrito. Onde divergir do código, **o código é a referência do comportamento atual** — a divergência não autoriza, por si só, alterar a aplicação.
 
----
+Para quem for trabalhar no repositório: [`CLAUDE.md`](CLAUDE.md) e [`AGENTS.md`](AGENTS.md).
 
-## Equipe
-
-| Integrante |
-|---|
-| Gregory Jereissati |
-| Luiz Eduardo Pacheco |
-| André Luiz Cavalcante |
-
-**Orientador:** Prof. Me. Ronaldo Gonçalves Junior
-**Instituição:** Universidade de Fortaleza — UNIFOR
-
----
-
-## Fora do escopo
-
-Rastreamento por GPS em tempo real · Telemetria avançada · Planejamento e otimização de rotas · Integração automática com o DETRAN · Aplicativo móvel nativo · Emissão de documentos fiscais · Notificação de vencimentos por e-mail, SMS ou mensagem · Recuperação autônoma de senha
-
-Justificativa de cada exclusão em [`docs/01-descricao-do-problema-e-escopo.md`](docs/01-descricao-do-problema-e-escopo.md#10-fora-do-escopo).
+Os scripts em `scripts/` regeneram o documento técnico (`gerar-diagramas.py` → `gerar-documento.py` → `gerar-pdf.py`).

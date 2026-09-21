@@ -26,7 +26,7 @@ import {
   YAxis,
 } from 'recharts'
 import { useDashboard, type DashboardFilters } from '@/hooks/useDashboard'
-import { useVehicles } from '@/hooks/useVehicles'
+import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 
 const PIE_COLORS = ['#C4A35A', '#4ADE80', '#F87171', '#60A5FA', '#A78BFA', '#94A3B8']
 
@@ -110,7 +110,7 @@ export function Dashboard() {
   const { t, i18n } = useTranslation()
   const [period, setPeriod] = useState<PeriodOption>('last180')
   const [filters, setFilters] = useState<DashboardFilters>(() => getPresetRange('last180'))
-  const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
+  const { vehicles } = useVehicleOptions()
   const { data, loading, error } = useDashboard(filters)
 
   const monthFormatter = useMemo(

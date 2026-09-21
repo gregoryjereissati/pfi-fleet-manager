@@ -10,6 +10,7 @@ import {
   FileText,
   Bell,
   UserCog,
+  Building2,
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -32,6 +33,14 @@ export function Sidebar() {
     { to: '/documents', icon: FileText, labelKey: 'nav.documents', enabled: true },
     { to: '/alerts', icon: Bell, labelKey: 'nav.alerts', enabled: true },
     { to: '/users', icon: UserCog, labelKey: 'nav.users', enabled: isAdmin },
+    // Tela de plataforma: existe acima das empresas, e só o super
+    // administrador tem o que fazer nela.
+    {
+      to: '/companies',
+      icon: Building2,
+      labelKey: 'nav.companies',
+      enabled: Boolean(currentUser?.isSuperAdmin),
+    },
   ]
 
   function handleLogout() {

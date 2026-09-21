@@ -17,6 +17,7 @@ export function Register() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
+    companyJoinCode: '',
     name: '',
     cpf: '',
     phone: '',
@@ -101,6 +102,10 @@ export function Register() {
         setError(t('register.error.emailTaken'))
       } else if (msg.includes('CPF_TAKEN')) {
         setError(t('register.error.cpfTaken'))
+      } else if (msg.includes('COMPANY_NOT_FOUND')) {
+        setError(t('register.error.companyNotFound'))
+      } else if (msg.includes('COMPANY_MISMATCH')) {
+        setError(t('register.error.companyMismatch'))
       } else if (msg.includes('Invalid data')) {
         setError(t('register.error.invalidData'))
       } else if (msg.toLowerCase().includes('password')) {
@@ -132,6 +137,21 @@ export function Register() {
         )}
 
         <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-5">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-white/55">
+              {t('register.companyJoinCode')}
+            </label>
+            <input
+              type="text"
+              required
+              value={form.companyJoinCode}
+              onChange={(e) => set('companyJoinCode', e.target.value.toUpperCase())}
+              className={inputClass}
+              placeholder={t('register.companyJoinCodePlaceholder')}
+            />
+            <p className="text-xs text-white/35">{t('register.companyJoinCodeHelp')}</p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1">
               <label className="text-sm font-medium text-white/55">{t('register.name')}</label>
@@ -191,6 +211,7 @@ export function Register() {
 
           <div className="space-y-2">
             <p className="text-sm font-semibold text-white/55">{t('register.role')}</p>
+            <p className="text-xs text-white/35">{t('register.roleHelp')}</p>
             <div className="flex gap-6">
               {[UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR].map((role) => (
                 <label key={role} className="flex items-center gap-2 cursor-pointer">

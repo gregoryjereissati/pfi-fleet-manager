@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DocumentType, type DocumentStatus } from '@fleet-manager/shared'
 import { useDocuments } from '@/hooks/useDocuments'
-import { useVehicles } from '@/hooks/useVehicles'
+import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { FilePreviewModal } from '@/components/FilePreviewModal'
+import { formatDate } from '@/lib/utils'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
@@ -30,7 +31,7 @@ export function DocumentList() {
   const { t } = useTranslation()
   const getToken = useToken()
   const { currentUser } = useCurrentUser()
-  const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
+  const { vehicles } = useVehicleOptions()
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<DocumentType | ''>('')
   const [status, setStatus] = useState<DocumentStatus | ''>('')
@@ -168,7 +169,7 @@ export function DocumentList() {
                         {t(`documents.types.${document.type}`)}
                       </td>
                       <td className="px-4 py-3 text-white/70">
-                        {new Date(document.expiryDate).toLocaleDateString('pt-BR')}
+                        {formatDate(document.expiryDate)}
                       </td>
                       <td className="px-4 py-3">
                         <span

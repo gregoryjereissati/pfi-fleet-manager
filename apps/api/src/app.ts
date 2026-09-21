@@ -27,7 +27,11 @@ app.use((req, res, next) => {
     res.header('Vary', 'Origin');
   }
 
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // `X-Company-Id` é onde o super administrador informa em qual empresa está
+  // operando. Sem constar aqui, o navegador barraria a requisição antes de ela
+  // chegar à API — e a falha apareceria como erro de CORS, não como falta de
+  // permissão, o que despista.
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Company-Id');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
 
   if (req.method === 'OPTIONS') {

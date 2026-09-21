@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { MaintenanceStatus, MaintenanceType } from '@fleet-manager/shared'
 import { useMaintenances } from '@/hooks/useMaintenances'
-import { useVehicles } from '@/hooks/useVehicles'
+import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { CancelEntryDialog } from '@/components/CancelEntryDialog'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
@@ -25,7 +26,7 @@ export function MaintenanceList() {
   const { t } = useTranslation()
   const getToken = useToken()
   const { currentUser } = useCurrentUser()
-  const { vehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
+  const { vehicles } = useVehicleOptions()
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<MaintenanceType | ''>('')
   const [status, setStatus] = useState<MaintenanceStatus | ''>('')
@@ -38,6 +39,8 @@ export function MaintenanceList() {
   } | null>(null)
 
   const canDelete = canManageFleet(currentUser?.role)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const { maintenances, loading, error, reload } = useMaintenances({
     vehicleId: vehicleId || undefined,
@@ -64,6 +67,46 @@ export function MaintenanceList() {
         } catch (err) {
           window.alert((err as Error).message)
         }
+      },
+    })
+  }
+
+  async function executar(acao: (token: string) => Promise<unknown>) {
+    try {
+      setActionError(null)
+      const token = await getToken()
+      await acao(token)
+      reload()
+    } catch (err) {
+      setActionError((err as Error).message)
+    }
+  }
+
+  /**
+   * Cancelar preserva o registro, com o motivo e quem cancelou — ao contrário
+   * de excluir, que o faz desaparecer.
+   */
+  function handleCancel(id: string, reason: string) {
+    setCancellingId(null)
+    void executar((token) =>
+      apiFetch(`/maintenances/${id}/cancel`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+      }),
+    )
+  }
+
+  function handleRestore(id: string) {
+    setDialog({
+      title: t('actions.restoreEntry'),
+      message: t('entries.restoreConfirm'),
+      confirmLabel: t('actions.restoreEntry'),
+      variant: 'default',
+      onConfirm: () => {
+        closeDialog()
+        void executar((token) =>
+          apiFetch(`/maintenances/${id}/uncancel`, token, { method: 'PATCH' }),
+        )
       },
     })
   }
@@ -135,6 +178,8 @@ export function MaintenanceList() {
         </select>
       </div>
 
+      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+
       {loading ? (
         <p className="text-sm text-white/40">{t('common.loading')}</p>
       ) : error ? (
@@ -188,28 +233,66 @@ export function MaintenanceList() {
                           ? new Date(maintenance.completedDate).toLocaleDateString('pt-BR')
                           : '-'}
                       </td>
-                      <td className="px-4 py-3 text-white/50">{maintenance.description}</td>
+                      <td className="px-4 py-3 text-white/50">
+                        {maintenance.description}
+                        {maintenance.cancelReason && (
+                          <div className="text-xs text-amber-400/70">
+                            {maintenance.cancelReason}
+                          </div>
+                        )}
+                        {!maintenance.createdById && (
+                          <div className="text-xs text-white/25">
+                            {t('entries.authorUnknown')}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-3">
-                          {maintenance.status !== MaintenanceStatus.DONE && (
+                          {maintenance.status === MaintenanceStatus.CANCELLED ? (
                             <button
-                              onClick={() =>
-                                handleStatusChange(maintenance.id, MaintenanceStatus.DONE)
-                              }
+                              onClick={() => handleRestore(maintenance.id)}
                               className="text-gold hover:underline"
                             >
-                              {t('maintenances.actions.complete')}
+                              {t('actions.restoreEntry')}
                             </button>
-                          )}
-                          {maintenance.status === MaintenanceStatus.DONE && (
-                            <button
-                              onClick={() =>
-                                handleStatusChange(maintenance.id, MaintenanceStatus.SCHEDULED)
-                              }
-                              className="text-white/55 hover:underline"
-                            >
-                              {t('maintenances.actions.reopen')}
-                            </button>
+                          ) : (
+                            <>
+                              {maintenance.status !== MaintenanceStatus.DONE && (
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(maintenance.id, MaintenanceStatus.DONE)
+                                  }
+                                  className="text-gold hover:underline"
+                                >
+                                  {t('maintenances.actions.complete')}
+                                </button>
+                              )}
+                              {maintenance.status === MaintenanceStatus.DONE && (
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(
+                                      maintenance.id,
+                                      MaintenanceStatus.SCHEDULED,
+                                    )
+                                  }
+                                  className="text-white/55 hover:underline"
+                                >
+                                  {t('maintenances.actions.reopen')}
+                                </button>
+                              )}
+                              <Link
+                                to={`/maintenances/${maintenance.id}/edit`}
+                                className="text-white/55 hover:underline"
+                              >
+                                {t('actions.edit')}
+                              </Link>
+                              <button
+                                onClick={() => setCancellingId(maintenance.id)}
+                                className="text-amber-400 hover:underline"
+                              >
+                                {t('actions.cancelEntry')}
+                              </button>
+                            </>
                           )}
                           {canDelete && (
                             <button
@@ -228,6 +311,13 @@ export function MaintenanceList() {
             </table>
           </div>
         </div>
+      )}
+
+      {cancellingId && (
+        <CancelEntryDialog
+          onConfirm={(reason) => handleCancel(cancellingId, reason)}
+          onClose={() => setCancellingId(null)}
+        />
       )}
 
       {dialog && (

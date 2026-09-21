@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { VehicleDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
+import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 
 interface VehicleFormState {
@@ -35,6 +36,7 @@ const labelClass = 'mb-1 block text-sm font-medium text-white/55'
 export function VehicleForm() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+  const { invalidate: invalidateVehicles } = useVehicleOptions()
   const navigate = useNavigate()
   const getToken = useToken()
   const isEdit = Boolean(id)
@@ -119,6 +121,9 @@ export function VehicleForm() {
         })
       }
 
+      // O seletor compartilhado precisa refletir o novo veículo sem que a
+      // pessoa recarregue a página.
+      invalidateVehicles()
       navigate('/vehicles')
     } catch (err) {
       setError((err as Error).message)

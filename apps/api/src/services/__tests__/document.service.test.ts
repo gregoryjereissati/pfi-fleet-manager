@@ -1,278 +1,242 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  DocumentType,
-  DriverStatus,
-  VehicleStatus,
-  type DocumentStatus,
-} from '@fleet-manager/shared';
+import { DocumentType } from '@fleet-manager/shared';
 import { documentService } from '../document.service';
 import { documentRepository } from '../../repositories/document.repository';
 import { vehicleRepository } from '../../repositories/vehicle.repository';
 import { driverRepository } from '../../repositories/driver.repository';
-import { AppError } from '../../middlewares/error-handler';
+import { assignmentRepository } from '../../repositories/assignment.repository';
+import {
+  makeDriverScope,
+  makeScope,
+  registrosDeAuditoria,
+  resetDbMock,
+} from '../../test-helpers/db-mock';
 
-vi.mock('../../repositories/document.repository', () => ({
-  documentRepository: {
-    findMany: vi.fn(),
-    findById: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    countAlertsActive: vi.fn(),
-  },
-}));
+vi.mock('../../config/database', async () => {
+  const { sqlMock, emTransacaoMock } = await import('../../test-helpers/db-mock');
+  return { sql: sqlMock, emTransacao: emTransacaoMock };
+});
+
+vi.mock('../../lib/audit', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/audit')>();
+  const { recordChangeMock } = await import('../../test-helpers/db-mock');
+  return { ...actual, recordChange: recordChangeMock };
+});
+
+vi.mock('../../repositories/document.repository', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../repositories/document.repository')>();
+
+  return {
+    ...actual,
+    documentRepository: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      countAlertsActive: vi.fn().mockResolvedValue(0),
+    },
+  };
+});
 
 vi.mock('../../repositories/vehicle.repository', () => ({
-  vehicleRepository: {
-    findById: vi.fn(),
-  },
+  vehicleRepository: { findSummaryById: vi.fn() },
 }));
 
 vi.mock('../../repositories/driver.repository', () => ({
-  driverRepository: {
-    findById: vi.fn(),
-  },
+  driverRepository: { findById: vi.fn() },
 }));
 
-const mockVehicle = {
-  id: 'vehicle-1',
-  plate: 'ABC-1234',
-  brand: 'Toyota',
-  model: 'Corolla',
-  year: 2022,
-  color: 'Prata',
-  status: VehicleStatus.ACTIVE,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  drivers: [],
-  expenses: [],
-  maintenances: [],
-};
+vi.mock('../../repositories/assignment.repository', () => ({
+  assignmentRepository: { activeVehicleIds: vi.fn().mockResolvedValue([]) },
+}));
 
-const mockDriver = {
-  id: 'driver-1',
-  name: 'Joao Silva',
-  cpf: '12345678901',
-  cnh: 'CNH123',
-  cnhExpiry: new Date('2027-01-01'),
-  phone: null,
-  status: DriverStatus.ACTIVE,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  vehicles: [],
-};
-
-const mockDocument = {
-  id: 'doc-1',
+const vehicleDocument = {
+  id: 'document-1',
   vehicleId: 'vehicle-1',
   vehiclePlate: 'ABC-1234',
   driverId: null,
   driverName: null,
   type: DocumentType.CRLV,
-  expiryDate: '2027-01-01T00:00:00.000Z',
+  expiryDate: '2027-01-01',
   fileUrl: null,
   alertSent: false,
-  status: 'OK' as DocumentStatus,
-  createdAt: '2026-04-17T00:00:00.000Z',
+  status: 'OK' as const,
+  createdById: 'user-1',
+  createdAt: '2026-09-01T00:00:00.000Z',
 };
 
-describe('documentService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetDbMock();
+});
 
-  describe('listDocuments', () => {
-    it('returns the document list from repository', async () => {
-      vi.mocked(documentRepository.findMany).mockResolvedValue([mockDocument]);
+describe('documentService — recorte por empresa', () => {
+  it('lista dentro da empresa', async () => {
+    await documentService.listDocuments(makeScope(), { type: DocumentType.CRLV });
 
-      const result = await documentService.listDocuments({ vehicleId: 'vehicle-1' });
-
-      expect(result).toEqual([mockDocument]);
-      expect(documentRepository.findMany).toHaveBeenCalledWith({ vehicleId: 'vehicle-1' });
-    });
-
-    it('returns documents filtered by status EXPIRING_SOON', async () => {
-      vi.mocked(documentRepository.findMany).mockResolvedValue([
-        { ...mockDocument, status: 'EXPIRING_SOON' },
-      ]);
-
-      const result = await documentService.listDocuments({ status: 'EXPIRING_SOON' });
-
-      expect(result[0].status).toBe('EXPIRING_SOON');
-      expect(documentRepository.findMany).toHaveBeenCalledWith({ status: 'EXPIRING_SOON' });
-    });
-  });
-
-  describe('getDocument', () => {
-    it('throws AppError 404 when document does not exist', async () => {
-      vi.mocked(documentRepository.findById).mockResolvedValue(null);
-
-      await expect(documentService.getDocument('missing')).rejects.toThrow(
-        new AppError(404, 'Document not found'),
-      );
-    });
-
-    it('returns the document when found', async () => {
-      vi.mocked(documentRepository.findById).mockResolvedValue(mockDocument);
-
-      const result = await documentService.getDocument('doc-1');
-
-      expect(result).toEqual(mockDocument);
-      expect(documentRepository.findById).toHaveBeenCalledWith('doc-1');
-    });
-  });
-
-  describe('createDocument', () => {
-    it('throws AppError 400 when neither vehicleId nor driverId is provided', async () => {
-      await expect(
-        documentService.createDocument({
-          type: DocumentType.CRLV,
-          expiryDate: new Date('2027-01-01'),
-        }),
-      ).rejects.toThrow(new AppError(400, 'vehicleId or driverId is required'));
-
-      expect(documentRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('throws AppError 400 when both vehicleId and driverId are provided', async () => {
-      await expect(
-        documentService.createDocument({
-          vehicleId: 'vehicle-1',
-          driverId: 'driver-1',
-          type: DocumentType.CRLV,
-          expiryDate: new Date('2027-01-01'),
-        }),
-      ).rejects.toThrow(new AppError(400, 'Document must belong to either a vehicle or a driver'));
-
-      expect(documentRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('throws AppError 404 when vehicle does not exist', async () => {
-      vi.mocked(vehicleRepository.findById).mockResolvedValue(null);
-
-      await expect(
-        documentService.createDocument({
-          vehicleId: 'vehicle-1',
-          type: DocumentType.CRLV,
-          expiryDate: new Date('2027-01-01'),
-        }),
-      ).rejects.toThrow(new AppError(404, 'Vehicle not found'));
-
-      expect(documentRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('throws AppError 404 when driver does not exist', async () => {
-      vi.mocked(driverRepository.findById).mockResolvedValue(null);
-
-      await expect(
-        documentService.createDocument({
-          driverId: 'driver-1',
-          type: DocumentType.CNH,
-          expiryDate: new Date('2027-01-01'),
-        }),
-      ).rejects.toThrow(new AppError(404, 'Driver not found'));
-
-      expect(documentRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('creates and returns the document when vehicle exists', async () => {
-      vi.mocked(vehicleRepository.findById).mockResolvedValue(mockVehicle);
-      vi.mocked(documentRepository.create).mockResolvedValue(mockDocument);
-
-      const result = await documentService.createDocument({
-        vehicleId: 'vehicle-1',
+    expect(documentRepository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: 'company-a',
         type: DocumentType.CRLV,
-        expiryDate: new Date('2027-01-01'),
-      });
+        driverScope: undefined,
+      }),
+    );
+  });
 
-      expect(result).toEqual(mockDocument);
-      expect(documentRepository.create).toHaveBeenCalledWith({
-        vehicleId: 'vehicle-1',
+  it('não encontra documento de outra empresa', async () => {
+    vi.mocked(documentRepository.findById).mockResolvedValue(null);
+
+    await expect(
+      documentService.getDocument(makeScope({ companyId: 'company-b' }), 'document-1'),
+    ).rejects.toMatchObject({ statusCode: 404 });
+
+    expect(documentRepository.findById).toHaveBeenCalledWith(
+      'document-1',
+      'company-b',
+      undefined,
+    );
+  });
+
+  it('recusa anexar documento a veículo de outra empresa', async () => {
+    vi.mocked(vehicleRepository.findSummaryById).mockResolvedValue(null);
+
+    await expect(
+      documentService.createDocument(makeScope(), {
+        vehicleId: 'vehicle-de-fora',
         type: DocumentType.CRLV,
-        expiryDate: new Date('2027-01-01'),
-      });
-    });
+        expiryDate: '2027-06-30',
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
 
-    it('creates and returns the document when driver exists', async () => {
-      const driverDocument = {
-        ...mockDocument,
-        vehicleId: null,
-        vehiclePlate: null,
-        driverId: 'driver-1',
-        driverName: 'Joao Silva',
+    expect(documentRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('recusa anexar documento a motorista de outra empresa', async () => {
+    vi.mocked(driverRepository.findById).mockResolvedValue(null);
+
+    await expect(
+      documentService.createDocument(makeScope(), {
+        driverId: 'driver-de-fora',
         type: DocumentType.CNH,
-      };
+        expiryDate: '2027-06-30',
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
 
-      vi.mocked(driverRepository.findById).mockResolvedValue(mockDriver);
-      vi.mocked(documentRepository.create).mockResolvedValue(driverDocument);
+describe('documentService — recorte do motorista', () => {
+  it('alcança a própria ficha e os veículos vinculados', async () => {
+    vi.mocked(assignmentRepository.activeVehicleIds).mockResolvedValue(['vehicle-1']);
 
-      const result = await documentService.createDocument({
-        driverId: 'driver-1',
-        type: DocumentType.CNH,
-        expiryDate: new Date('2027-01-01'),
-      });
+    await documentService.listDocuments(makeDriverScope(), {});
 
-      expect(result).toEqual(driverDocument);
-      expect(documentRepository.create).toHaveBeenCalledWith({
-        driverId: 'driver-1',
-        type: DocumentType.CNH,
-        expiryDate: new Date('2027-01-01'),
-      });
+    expect(documentRepository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        driverScope: { driverId: 'driver-1', vehicleIds: ['vehicle-1'] },
+      }),
+    );
+  });
+
+  it('a contagem de alertas usa o mesmo recorte da central', async () => {
+    vi.mocked(assignmentRepository.activeVehicleIds).mockResolvedValue(['vehicle-1']);
+
+    await documentService.getAlertsCount(makeDriverScope());
+
+    expect(documentRepository.countAlertsActive).toHaveBeenCalledWith('company-a', {
+      driverId: 'driver-1',
+      vehicleIds: ['vehicle-1'],
     });
   });
 
-  describe('updateDocument', () => {
-    it('throws AppError 404 when document does not exist', async () => {
-      vi.mocked(documentRepository.findById).mockResolvedValue(null);
+  it('a contagem do gerente cobre a empresa, sem recorte adicional', async () => {
+    await documentService.getAlertsCount(makeScope());
 
-      await expect(
-        documentService.updateDocument('missing', { type: DocumentType.IPVA }),
-      ).rejects.toThrow(new AppError(404, 'Document not found'));
-    });
+    expect(documentRepository.countAlertsActive).toHaveBeenCalledWith('company-a', undefined);
+  });
+});
 
-    it('updates and returns the document', async () => {
-      const updatedDocument = { ...mockDocument, type: DocumentType.IPVA };
-
-      vi.mocked(documentRepository.findById).mockResolvedValue(mockDocument);
-      vi.mocked(documentRepository.update).mockResolvedValue(updatedDocument);
-
-      const result = await documentService.updateDocument('doc-1', { type: DocumentType.IPVA });
-
-      expect(result).toEqual(updatedDocument);
-      expect(documentRepository.update).toHaveBeenCalledWith('doc-1', {
-        type: DocumentType.IPVA,
-      });
-    });
+describe('documentService — vínculo do documento', () => {
+  it('exige veículo ou motorista', async () => {
+    await expect(
+      documentService.createDocument(makeScope(), {
+        type: DocumentType.CRLV,
+        expiryDate: '2027-06-30',
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 
-  describe('deleteDocument', () => {
-    it('throws AppError 404 when document does not exist', async () => {
-      vi.mocked(documentRepository.findById).mockResolvedValue(null);
-
-      await expect(documentService.deleteDocument('missing')).rejects.toThrow(
-        new AppError(404, 'Document not found'),
-      );
-    });
-
-    it('deletes the document', async () => {
-      vi.mocked(documentRepository.findById).mockResolvedValue(mockDocument);
-      vi.mocked(documentRepository.delete).mockResolvedValue(mockDocument);
-
-      const result = await documentService.deleteDocument('doc-1');
-
-      expect(result).toEqual(mockDocument);
-      expect(documentRepository.delete).toHaveBeenCalledWith('doc-1');
-    });
+  it('recusa documento vinculado aos dois ao mesmo tempo', async () => {
+    await expect(
+      documentService.createDocument(makeScope(), {
+        vehicleId: 'vehicle-1',
+        driverId: 'driver-1',
+        type: DocumentType.CRLV,
+        expiryDate: '2027-06-30',
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 
-  describe('getAlertsCount', () => {
-    it('returns count from repository', async () => {
-      vi.mocked(documentRepository.countAlertsActive).mockResolvedValue(5);
+  it('grava a empresa e o autor a partir do recorte', async () => {
+    vi.mocked(vehicleRepository.findSummaryById).mockResolvedValue({
+      id: 'vehicle-1',
+      companyId: 'company-a',
+    } as never);
+    vi.mocked(documentRepository.create).mockResolvedValue(vehicleDocument as never);
 
-      const result = await documentService.getAlertsCount();
-
-      expect(result).toBe(5);
-      expect(documentRepository.countAlertsActive).toHaveBeenCalled();
+    await documentService.createDocument(makeScope(), {
+      vehicleId: 'vehicle-1',
+      type: DocumentType.CRLV,
+      expiryDate: '2027-01-01',
     });
+
+    expect(documentRepository.create).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ companyId: 'company-a', createdById: 'user-1' }),
+    );
+  });
+});
+
+describe('documentService — alteração e remoção', () => {
+  it('registra no histórico o que mudou', async () => {
+    vi.mocked(documentRepository.findById).mockResolvedValue(vehicleDocument as never);
+    vi.mocked(documentRepository.update).mockResolvedValue(vehicleDocument as never);
+
+    await documentService.updateDocument(makeScope(), 'document-1', {
+      expiryDate: '2028-01-01',
+    });
+
+    expect(registrosDeAuditoria()).toContainEqual(expect.objectContaining({
+        entityType: 'DOCUMENT',
+        changes: {
+          // Data civil: o histórico guarda o dia, sem hora nem fuso.
+          expiryDate: { de: '2027-01-01', para: '2028-01-01' },
+        },
+      }),
+    );
+  });
+
+  it('não deixa o cliente trocar a entidade dona do documento', async () => {
+    vi.mocked(documentRepository.findById).mockResolvedValue(vehicleDocument as never);
+    vi.mocked(documentRepository.update).mockResolvedValue(vehicleDocument as never);
+
+    await documentService.updateDocument(makeScope(), 'document-1', {
+      type: DocumentType.IPVA,
+      vehicleId: 'vehicle-9',
+      driverId: 'driver-9',
+    } as never);
+
+    const [, , payload] = vi.mocked(documentRepository.update).mock.calls[0];
+    expect(payload).toEqual({ type: DocumentType.IPVA });
+  });
+
+  it('remove apenas documento da própria empresa', async () => {
+    vi.mocked(documentRepository.findById).mockResolvedValue(null);
+
+    await expect(
+      documentService.deleteDocument(makeScope({ companyId: 'company-b' }), 'document-1'),
+    ).rejects.toMatchObject({ statusCode: 404 });
+
+    expect(documentRepository.delete).not.toHaveBeenCalled();
   });
 });

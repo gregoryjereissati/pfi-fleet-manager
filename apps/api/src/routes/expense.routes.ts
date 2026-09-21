@@ -14,8 +14,15 @@ const createExpenseSchema = z.object({
   description: z.string().trim().optional(),
 });
 
+/**
+ * O veículo passa a ser corrigível: um lançamento feito no veículo errado
+ * desloca custo de um para outro, e a correção precisa ser possível sem
+ * excluir e relançar. O serviço reaplica ao destino as mesmas verificações
+ * de empresa e de vínculo.
+ */
 const updateExpenseSchema = z
   .object({
+    vehicleId: z.string().trim().min(1).optional(),
     type: z.nativeEnum(ExpenseType).optional(),
     amount: z.number().positive().optional(),
     date: z.coerce.date().optional(),
@@ -25,32 +32,32 @@ const updateExpenseSchema = z
     message: 'At least one field is required',
   });
 
+/** Cancelar exige motivo: o registro permanece, e o porquê fica junto dele. */
+const cancelSchema = z.object({
+  reason: z.string().trim().min(3).max(500),
+});
+
 export const expenseRouter = Router();
 
 expenseRouter.use(authenticate);
 
-expenseRouter.get(
-  '/',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
-  expenseController.list,
+const anyRole = authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR);
+
+expenseRouter.get('/', anyRole, expenseController.list);
+expenseRouter.get('/:id', anyRole, expenseController.getById);
+expenseRouter.get('/:id/history', anyRole, expenseController.history);
+expenseRouter.post('/', anyRole, validate(createExpenseSchema), expenseController.create);
+expenseRouter.put('/:id', anyRole, validate(updateExpenseSchema), expenseController.update);
+expenseRouter.patch(
+  '/:id/cancel',
+  anyRole,
+  validate(cancelSchema),
+  expenseController.cancel,
 );
-expenseRouter.get(
-  '/:id',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
-  expenseController.getById,
-);
-expenseRouter.post(
-  '/',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
-  validate(createExpenseSchema),
-  expenseController.create,
-);
-expenseRouter.put(
-  '/:id',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
-  validate(updateExpenseSchema),
-  expenseController.update,
-);
+expenseRouter.patch('/:id/uncancel', anyRole, expenseController.uncancel);
+
+// A exclusão física permanece restrita e distinta do cancelamento: aqui o
+// registro deixa de existir.
 expenseRouter.delete(
   '/:id',
   authorize(UserRole.ADMIN, UserRole.MANAGER),

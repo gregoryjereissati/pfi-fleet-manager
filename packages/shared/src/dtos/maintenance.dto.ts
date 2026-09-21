@@ -8,7 +8,13 @@ export interface MaintenanceDto {
   description: string;
   scheduledDate: string;
   completedDate?: string;
+  createdById: string | null;
+  updatedById: string | null;
+  cancelledAt: string | null;
+  cancelledById: string | null;
+  cancelReason: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateMaintenanceDto {

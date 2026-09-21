@@ -1,3 +1,4 @@
+export * from './company.dto';
 export * from './user.dto';
 export * from './vehicle.dto';
 export * from './driver.dto';

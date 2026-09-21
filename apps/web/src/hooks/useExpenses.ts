@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExpenseType } from '@fleet-manager/shared'
+import { EntryStatus, ExpenseType } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { useToken } from '@/hooks/useToken'
 
@@ -17,6 +17,11 @@ export interface ExpenseItem {
   amount: string
   date: string
   description: string | null
+  /** Cancelado sai dos totais e continua na lista, marcado. */
+  status: EntryStatus
+  /** Nulo nos lançamentos anteriores ao registro de autoria. */
+  createdById: string | null
+  cancelReason: string | null
   createdAt: string
   vehicle: ExpenseVehicleSummary
 }
@@ -24,6 +29,7 @@ export interface ExpenseItem {
 export interface ExpenseFilters {
   vehicleId?: string
   type?: ExpenseType | ''
+  status?: EntryStatus | ''
   startDate?: string
   endDate?: string
   orderBy?: 'date' | 'amount' | 'createdAt'

@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
-import { ExpenseType } from '@fleet-manager/shared'
-import { useVehicles } from '@/hooks/useVehicles'
+import { useNavigate, useParams } from 'react-router-dom'
+import { EntryStatus, ExpenseType } from '@fleet-manager/shared'
+import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
 
@@ -12,6 +12,16 @@ interface ExpenseFormState {
   amount: string
   date: string
   description: string
+}
+
+interface ExpenseResponse {
+  id: string
+  vehicleId: string
+  type: ExpenseType
+  amount: string
+  date: string
+  description: string | null
+  status: EntryStatus
 }
 
 const initialForm: ExpenseFormState = {
@@ -27,15 +37,63 @@ const inputClass =
 
 const labelClass = 'mb-1 block text-sm font-medium text-white/55'
 
+/**
+ * Registro e correção de uma despesa.
+ *
+ * Quem registrou pode corrigir o que registrou, sem depender de outra pessoa —
+ * e toda correção fica no histórico do lançamento, com autor, momento e os
+ * valores anterior e novo.
+ *
+ * O seletor de veículos traz apenas os veículos autorizados: para o motorista,
+ * aqueles a que ele está vinculado. É a mesma lista que a API aceita, de modo
+ * que a tela não ofereça o que o servidor recusaria.
+ */
 export function ExpenseForm() {
+  const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const getToken = useToken()
-  const { vehicles, loading } = useVehicles({ orderBy: 'plate', order: 'asc' })
+  const { vehicles, loading: loadingVehicles } = useVehicleOptions()
+  const isEdit = Boolean(id)
 
   const [form, setForm] = useState<ExpenseFormState>(initialForm)
+  const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) return
+
+    let cancelled = false
+
+    async function load() {
+      try {
+        setLoading(true)
+        const token = await getToken()
+        const expense = await apiFetch<ExpenseResponse>(`/expenses/${id}`, token)
+
+        if (cancelled) return
+
+        setForm({
+          vehicleId: expense.vehicleId,
+          type: expense.type,
+          amount: String(expense.amount),
+          date: expense.date.split('T')[0],
+          description: expense.description ?? '',
+        })
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [getToken, id])
 
   function updateField<Key extends keyof ExpenseFormState>(key: Key, value: ExpenseFormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -60,29 +118,45 @@ export function ExpenseForm() {
       setError(null)
 
       const token = await getToken()
-      await apiFetch('/expenses', token, {
-        method: 'POST',
-        body: JSON.stringify({
-          vehicleId: form.vehicleId,
-          type: form.type,
-          amount,
-          date: form.date,
-          description: form.description.trim() || undefined,
-        }),
+      const payload = {
+        vehicleId: form.vehicleId,
+        type: form.type,
+        amount,
+        date: form.date,
+        description: form.description.trim() || undefined,
+      }
+
+      await apiFetch(isEdit ? `/expenses/${id}` : '/expenses', token, {
+        method: isEdit ? 'PUT' : 'POST',
+        body: JSON.stringify(payload),
       })
 
       navigate('/expenses')
     } catch (err) {
-      setError((err as Error).message)
+      const message = (err as Error).message
+
+      if (message.includes('VEHICLE_NOT_ASSIGNED')) {
+        setError(t('expenses.error.vehicleNotAssigned'))
+      } else if (message.includes('EXPENSE_CANCELLED')) {
+        setError(t('expenses.error.cancelled'))
+      } else {
+        setError(message)
+      }
     } finally {
       setSubmitting(false)
     }
   }
 
+  if (loading) {
+    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+  }
+
   return (
     <div className="max-w-2xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-white">{t('expenses.new')}</h1>
+        <h1 className="text-2xl font-bold text-white">
+          {isEdit ? t('expenses.edit') : t('expenses.new')}
+        </h1>
         <p className="text-sm text-white/40">{t('expenses.formSubtitle')}</p>
       </div>
 
@@ -95,7 +169,7 @@ export function ExpenseForm() {
             <label className={labelClass}>{t('expenses.columns.vehicle')}</label>
             <select
               required
-              disabled={loading}
+              disabled={loadingVehicles}
               value={form.vehicleId}
               onChange={(event) => updateField('vehicleId', event.target.value)}
               className={inputClass}
@@ -107,6 +181,9 @@ export function ExpenseForm() {
                 </option>
               ))}
             </select>
+            {isEdit && (
+              <p className="mt-1 text-xs text-white/35">{t('expenses.changeVehicleHint')}</p>
+            )}
           </div>
           <div>
             <label className={labelClass}>{t('expenses.columns.type')}</label>

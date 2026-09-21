@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { dataCivil } from '../lib/validators';
 import { DocumentType, UserRole } from '@fleet-manager/shared';
 import { documentController } from '../controllers/document.controller';
 import { authenticate } from '../middlewares/authenticate';
@@ -11,7 +12,7 @@ const createDocumentSchema = z
     vehicleId: z.string().trim().min(1).optional(),
     driverId: z.string().trim().min(1).optional(),
     type: z.nativeEnum(DocumentType),
-    expiryDate: z.coerce.date(),
+    expiryDate: dataCivil,
     fileUrl: z.string().trim().url().optional(),
   })
   .refine((data) => Boolean(data.vehicleId) !== Boolean(data.driverId), {
@@ -21,7 +22,7 @@ const createDocumentSchema = z
 const updateDocumentSchema = z
   .object({
     type: z.nativeEnum(DocumentType).optional(),
-    expiryDate: z.coerce.date().optional(),
+    expiryDate: dataCivil.optional(),
     fileUrl: z.string().trim().url().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {

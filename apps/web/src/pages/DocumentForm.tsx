@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { DocumentType } from '@fleet-manager/shared'
-import { useVehicles } from '@/hooks/useVehicles'
+import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useDrivers } from '@/hooks/useDrivers'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
@@ -45,7 +45,7 @@ export function DocumentForm() {
   const prefilledVehicleId = searchParams.get('vehicleId') ?? ''
   const prefilledDriverId = searchParams.get('driverId') ?? ''
 
-  const { vehicles, loading: loadingVehicles } = useVehicles({ orderBy: 'plate', order: 'asc' })
+  const { vehicles, loading: loadingVehicles } = useVehicleOptions()
   const { drivers, loading: loadingDrivers } = useDrivers()
 
   const [form, setForm] = useState<DocumentFormState>(() => ({

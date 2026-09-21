@@ -2,19 +2,21 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { DocumentStatus } from '@fleet-manager/shared'
 import { useDocuments, type DocumentItem } from '@/hooks/useDocuments'
+import { formatDate, hojeCivil } from '@/lib/utils'
 
 function getDaysLabel(
   expiryDate: string,
   status: DocumentStatus,
   t: (key: string, options?: { count: number }) => string,
 ) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // Ambas as pontas viram meia-noite UTC do dia civil correspondente, de modo
+  // que a diferença seja em dias de calendário — e não dependa da hora em que a
+  // tela foi aberta nem do fuso de quem a abriu.
+  const emUtc = (dataCivil: string) => Date.parse(`${dataCivil}T00:00:00Z`)
 
-  const expiry = new Date(expiryDate)
-  expiry.setHours(0, 0, 0, 0)
-
-  const diffDays = Math.round((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const diffDays = Math.round(
+    (emUtc(expiryDate) - emUtc(hojeCivil())) / (1000 * 60 * 60 * 24),
+  )
 
   if (status === 'EXPIRED') {
     return t('alerts.daysOverdue', { count: Math.abs(diffDays) })
@@ -46,7 +48,7 @@ function DocumentAlertRow({
           {entityLabel} - {t(`documents.types.${document.type}`)}
         </p>
         <p className="text-xs text-white/40">
-          {new Date(document.expiryDate).toLocaleDateString('pt-BR')} -{' '}
+          {formatDate(document.expiryDate)} -{' '}
           {getDaysLabel(document.expiryDate, document.status, t)}
         </p>
       </div>

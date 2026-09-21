@@ -18,6 +18,9 @@ export interface MaintenanceItem {
   description: string
   scheduledDate: string
   completedDate: string | null
+  /** Nulo nos lançamentos anteriores ao registro de autoria. */
+  createdById: string | null
+  cancelReason: string | null
   createdAt: string
   vehicle: MaintenanceVehicleSummary
 }

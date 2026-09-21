@@ -1,207 +1,218 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MaintenanceStatus, MaintenanceType, VehicleStatus } from '@fleet-manager/shared';
+import { MaintenanceStatus, MaintenanceType } from '@fleet-manager/shared';
 import { maintenanceService } from '../maintenance.service';
 import { maintenanceRepository } from '../../repositories/maintenance.repository';
 import { vehicleRepository } from '../../repositories/vehicle.repository';
-import { AppError } from '../../middlewares/error-handler';
+import { assignmentRepository } from '../../repositories/assignment.repository';
+import {
+  makeDriverScope,
+  makeScope,
+  registrosDeAuditoria,
+  resetDbMock,
+} from '../../test-helpers/db-mock';
 
-vi.mock('../../repositories/maintenance.repository', () => ({
-  maintenanceRepository: {
-    findMany: vi.fn(),
-    findById: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-  },
-}));
+vi.mock('../../config/database', async () => {
+  const { sqlMock, emTransacaoMock } = await import('../../test-helpers/db-mock');
+  return { sql: sqlMock, emTransacao: emTransacaoMock };
+});
+
+vi.mock('../../lib/audit', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/audit')>();
+  const { recordChangeMock } = await import('../../test-helpers/db-mock');
+  return { ...actual, recordChange: recordChangeMock };
+});
+
+vi.mock('../../repositories/maintenance.repository', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../repositories/maintenance.repository')>();
+
+  return {
+    ...actual,
+    maintenanceRepository: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      cancel: vi.fn(),
+      uncancel: vi.fn(),
+      delete: vi.fn(),
+    },
+  };
+});
 
 vi.mock('../../repositories/vehicle.repository', () => ({
-  vehicleRepository: {
-    findById: vi.fn(),
-  },
+  vehicleRepository: { findSummaryById: vi.fn() },
 }));
 
-const mockVehicle = {
-  id: 'vehicle-1',
-  plate: 'ABC-1234',
-  brand: 'Toyota',
-  model: 'Corolla',
-};
+vi.mock('../../repositories/assignment.repository', () => ({
+  assignmentRepository: { activeVehicleIds: vi.fn().mockResolvedValue([]) },
+}));
 
-const mockVehicleWithRelations = {
-  ...mockVehicle,
-  year: 2022,
-  color: 'Prata',
-  status: VehicleStatus.ACTIVE,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  drivers: [],
-  expenses: [],
-  maintenances: [],
-};
+const vehicle = { id: 'vehicle-1', companyId: 'company-a', plate: 'ABC-1234', status: 'ACTIVE' };
 
-const mockMaintenance = {
+const maintenance = {
   id: 'maintenance-1',
+  companyId: 'company-a',
   vehicleId: 'vehicle-1',
   type: MaintenanceType.PREVENTIVE,
   status: MaintenanceStatus.SCHEDULED,
-  description: 'Troca de óleo',
-  scheduledDate: new Date('2026-04-25T00:00:00.000Z'),
+  description: 'Revisão 50.000 km',
+  scheduledDate: new Date('2026-09-20'),
   completedDate: null,
-  createdAt: new Date('2026-04-10T10:00:00.000Z'),
-  vehicle: mockVehicle,
+  createdById: 'driver-user-1',
+  updatedById: null,
+  cancelledAt: null,
+  cancelledById: null,
+  cancelReason: null,
 };
 
-describe('maintenanceService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetDbMock();
+});
+
+describe('maintenanceService — recorte', () => {
+  it('lista dentro da empresa', async () => {
+    await maintenanceService.listMaintenances(makeScope(), {});
+
+    expect(maintenanceRepository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ companyId: 'company-a', createdById: undefined }),
+    );
   });
 
-  describe('listMaintenances', () => {
-    it('returns the maintenance list with filters', async () => {
-      vi.mocked(maintenanceRepository.findMany).mockResolvedValue([mockMaintenance]);
+  it('o motorista lista apenas as manutenções que registrou', async () => {
+    await maintenanceService.listMaintenances(makeDriverScope(), {});
 
-      const result = await maintenanceService.listMaintenances({
-        vehicleId: 'vehicle-1',
-        status: MaintenanceStatus.SCHEDULED,
-      });
-
-      expect(result).toEqual([mockMaintenance]);
-      expect(maintenanceRepository.findMany).toHaveBeenCalledWith({
-        vehicleId: 'vehicle-1',
-        status: MaintenanceStatus.SCHEDULED,
-      });
-    });
+    expect(maintenanceRepository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ createdById: 'driver-user-1' }),
+    );
   });
 
-  describe('getMaintenance', () => {
-    it('throws AppError 404 when maintenance does not exist', async () => {
-      vi.mocked(maintenanceRepository.findById).mockResolvedValue(null);
+  it('não encontra manutenção de outra empresa', async () => {
+    vi.mocked(maintenanceRepository.findById).mockResolvedValue(null);
 
-      await expect(maintenanceService.getMaintenance('missing')).rejects.toThrow(
-        new AppError(404, 'Maintenance not found'),
-      );
+    await expect(
+      maintenanceService.getMaintenance(makeScope({ companyId: 'company-b' }), 'maintenance-1'),
+    ).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
+
+describe('maintenanceService — registro pelo motorista', () => {
+  it('o motorista registra manutenção do veículo vinculado', async () => {
+    vi.mocked(vehicleRepository.findSummaryById).mockResolvedValue(vehicle as never);
+    vi.mocked(assignmentRepository.activeVehicleIds).mockResolvedValue(['vehicle-1']);
+    vi.mocked(maintenanceRepository.create).mockResolvedValue(maintenance as never);
+
+    await maintenanceService.createMaintenance(makeDriverScope(), {
+      vehicleId: 'vehicle-1',
+      type: MaintenanceType.CORRECTIVE,
+      description: 'Pneu furado na estrada',
+      scheduledDate: new Date('2026-09-21'),
     });
 
-    it('returns the maintenance when found', async () => {
-      vi.mocked(maintenanceRepository.findById).mockResolvedValue(mockMaintenance);
-
-      const result = await maintenanceService.getMaintenance('maintenance-1');
-
-      expect(result).toEqual(mockMaintenance);
-      expect(maintenanceRepository.findById).toHaveBeenCalledWith('maintenance-1');
-    });
+    expect(maintenanceRepository.create).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: 'company-a',
+        createdById: 'driver-user-1',
+        type: MaintenanceType.CORRECTIVE,
+      }),
+    );
   });
 
-  describe('createMaintenance', () => {
-    it('throws AppError 404 when vehicle does not exist', async () => {
-      vi.mocked(vehicleRepository.findById).mockResolvedValue(null);
+  it('recusa registrar em veículo sem vínculo', async () => {
+    vi.mocked(vehicleRepository.findSummaryById).mockResolvedValue(vehicle as never);
+    vi.mocked(assignmentRepository.activeVehicleIds).mockResolvedValue([]);
 
-      await expect(
-        maintenanceService.createMaintenance({
-          vehicleId: 'vehicle-1',
-          type: MaintenanceType.PREVENTIVE,
-          description: 'Troca de óleo',
-          scheduledDate: new Date('2026-04-25T00:00:00.000Z'),
-        }),
-      ).rejects.toThrow(new AppError(404, 'Vehicle not found'));
-
-      expect(maintenanceRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('creates and returns the maintenance', async () => {
-      vi.mocked(vehicleRepository.findById).mockResolvedValue(mockVehicleWithRelations);
-      vi.mocked(maintenanceRepository.create).mockResolvedValue(mockMaintenance);
-
-      const result = await maintenanceService.createMaintenance({
+    await expect(
+      maintenanceService.createMaintenance(makeDriverScope(), {
         vehicleId: 'vehicle-1',
         type: MaintenanceType.PREVENTIVE,
-        description: 'Troca de óleo',
-        scheduledDate: new Date('2026-04-25T00:00:00.000Z'),
-      });
+        description: 'Revisão',
+        scheduledDate: new Date(),
+      }),
+    ).rejects.toMatchObject({ statusCode: 403, message: 'VEHICLE_NOT_ASSIGNED' });
+  });
+});
 
-      expect(result).toEqual(mockMaintenance);
-      expect(maintenanceRepository.create).toHaveBeenCalledWith({
-        vehicleId: 'vehicle-1',
-        type: MaintenanceType.PREVENTIVE,
-        description: 'Troca de óleo',
-        scheduledDate: new Date('2026-04-25T00:00:00.000Z'),
-      });
+describe('maintenanceService — conclusão e cancelamento', () => {
+  it('concluir sem informar data usa a data do momento', async () => {
+    vi.mocked(maintenanceRepository.findById).mockResolvedValue(maintenance as never);
+    vi.mocked(maintenanceRepository.update).mockResolvedValue(maintenance as never);
+
+    await maintenanceService.updateMaintenance(makeScope(), 'maintenance-1', {
+      status: MaintenanceStatus.DONE,
     });
+
+    const [, , payload] = vi.mocked(maintenanceRepository.update).mock.calls[0];
+    expect(payload.completedDate).toBeInstanceOf(Date);
   });
 
-  describe('updateMaintenance', () => {
-    it('throws AppError 404 when maintenance does not exist', async () => {
-      vi.mocked(maintenanceRepository.findById).mockResolvedValue(null);
+  it('reabrir limpa a data de conclusão', async () => {
+    vi.mocked(maintenanceRepository.findById).mockResolvedValue({
+      ...maintenance,
+      status: MaintenanceStatus.DONE,
+      completedDate: new Date('2026-09-10'),
+    } as never);
+    vi.mocked(maintenanceRepository.update).mockResolvedValue(maintenance as never);
 
-      await expect(
-        maintenanceService.updateMaintenance('missing', { description: 'Atualizada' }),
-      ).rejects.toThrow(new AppError(404, 'Maintenance not found'));
+    await maintenanceService.updateMaintenance(makeScope(), 'maintenance-1', {
+      status: MaintenanceStatus.SCHEDULED,
     });
 
-    it('sets completedDate automatically when status changes to DONE', async () => {
-      const completedMaintenance = {
-        ...mockMaintenance,
-        status: MaintenanceStatus.DONE,
-        completedDate: new Date('2026-04-26T00:00:00.000Z'),
-      };
-
-      vi.mocked(maintenanceRepository.findById).mockResolvedValue(mockMaintenance);
-      vi.mocked(maintenanceRepository.update).mockResolvedValue(completedMaintenance);
-
-      const result = await maintenanceService.updateMaintenance('maintenance-1', {
-        status: MaintenanceStatus.DONE,
-      });
-
-      expect(result).toEqual(completedMaintenance);
-      expect(maintenanceRepository.update).toHaveBeenCalledWith(
-        'maintenance-1',
-        expect.objectContaining({
-          status: MaintenanceStatus.DONE,
-          completedDate: expect.any(Date),
-        }),
-      );
-    });
-
-    it('clears completedDate when status returns to SCHEDULED', async () => {
-      const doneMaintenance = {
-        ...mockMaintenance,
-        status: MaintenanceStatus.DONE,
-        completedDate: new Date('2026-04-26T00:00:00.000Z'),
-      };
-
-      vi.mocked(maintenanceRepository.findById).mockResolvedValue(doneMaintenance);
-      vi.mocked(maintenanceRepository.update).mockResolvedValue(mockMaintenance);
-
-      const result = await maintenanceService.updateMaintenance('maintenance-1', {
-        status: MaintenanceStatus.SCHEDULED,
-      });
-
-      expect(result).toEqual(mockMaintenance);
-      expect(maintenanceRepository.update).toHaveBeenCalledWith('maintenance-1', {
-        status: MaintenanceStatus.SCHEDULED,
-        completedDate: null,
-      });
-    });
+    const [, , payload] = vi.mocked(maintenanceRepository.update).mock.calls[0];
+    expect(payload.completedDate).toBeNull();
   });
 
-  describe('deleteMaintenance', () => {
-    it('throws AppError 404 when maintenance does not exist', async () => {
-      vi.mocked(maintenanceRepository.findById).mockResolvedValue(null);
+  it('o cancelamento não passa pela edição, porque exige motivo', async () => {
+    vi.mocked(maintenanceRepository.findById).mockResolvedValue(maintenance as never);
 
-      await expect(maintenanceService.deleteMaintenance('missing')).rejects.toThrow(
-        new AppError(404, 'Maintenance not found'),
-      );
-    });
+    await expect(
+      maintenanceService.updateMaintenance(makeScope(), 'maintenance-1', {
+        status: MaintenanceStatus.CANCELLED,
+      }),
+    ).rejects.toMatchObject({ statusCode: 400, message: 'USE_CANCEL_ENDPOINT' });
 
-    it('deletes the maintenance', async () => {
-      vi.mocked(maintenanceRepository.findById).mockResolvedValue(mockMaintenance);
-      vi.mocked(maintenanceRepository.delete).mockResolvedValue(mockMaintenance);
+    expect(maintenanceRepository.update).not.toHaveBeenCalled();
+  });
 
-      const result = await maintenanceService.deleteMaintenance('maintenance-1');
+  it('cancelar preserva o registro e guarda o motivo', async () => {
+    vi.mocked(maintenanceRepository.findById).mockResolvedValue(maintenance as never);
+    vi.mocked(maintenanceRepository.cancel).mockResolvedValue(maintenance as never);
 
-      expect(result).toEqual(mockMaintenance);
-      expect(maintenanceRepository.delete).toHaveBeenCalledWith('maintenance-1');
-    });
+    await maintenanceService.cancelMaintenance(
+      makeScope(),
+      'maintenance-1',
+      'serviço feito em outra oficina',
+    );
+
+    expect(maintenanceRepository.cancel).toHaveBeenCalledWith(
+      expect.anything(),
+      'maintenance-1',
+      'user-1',
+      'serviço feito em outra oficina',
+    );
+    expect(maintenanceRepository.delete).not.toHaveBeenCalled();
+    expect(registrosDeAuditoria()).toContainEqual(expect.objectContaining({ action: 'CANCEL' }),
+    );
+  });
+
+  it('recusa editar uma manutenção cancelada', async () => {
+    vi.mocked(maintenanceRepository.findById).mockResolvedValue({
+      ...maintenance,
+      status: MaintenanceStatus.CANCELLED,
+    } as never);
+
+    await expect(
+      maintenanceService.updateMaintenance(makeScope(), 'maintenance-1', {
+        description: 'outra coisa',
+      }),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'MAINTENANCE_CANCELLED' });
+  });
+
+  it('a exclusão física continua fora do alcance do motorista', async () => {
+    await expect(
+      maintenanceService.deleteMaintenance(makeDriverScope(), 'maintenance-1'),
+    ).rejects.toMatchObject({ statusCode: 403 });
   });
 });

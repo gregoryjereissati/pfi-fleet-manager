@@ -12,6 +12,7 @@ const statusColors: Record<UserStatus, string> = {
   [UserStatus.ACTIVE]: 'bg-green-500/10 text-green-400',
   [UserStatus.PENDING]: 'bg-amber-500/10 text-amber-400',
   [UserStatus.BLOCKED]: 'bg-red-500/10 text-red-400',
+  [UserStatus.REJECTED]: 'bg-white/5 text-white/40',
 }
 
 export function UserList() {
@@ -44,6 +45,7 @@ export function UserList() {
                 <th className="px-4 py-3 font-medium">{t('users.columns.name')}</th>
                 <th className="px-4 py-3 font-medium">{t('users.columns.email')}</th>
                 <th className="px-4 py-3 font-medium">{t('users.columns.status')}</th>
+                <th className="px-4 py-3 font-medium">{t('users.columns.requestedRole')}</th>
                 <th className="px-4 py-3 font-medium">{t('users.columns.role')}</th>
                 <th className="px-4 py-3 font-medium">{t('users.columns.createdAt')}</th>
                 <th className="px-4 py-3 font-medium">{t('users.columns.actions')}</th>
@@ -52,7 +54,7 @@ export function UserList() {
             <tbody className="divide-y divide-white/[0.05]">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-white/30">
+                  <td colSpan={7} className="px-4 py-8 text-center text-white/30">
                     {t('users.empty')}
                   </td>
                 </tr>
@@ -63,7 +65,14 @@ export function UserList() {
 
                   return (
                     <tr key={user.id} className="hover:bg-white/[0.025]">
-                      <td className="px-4 py-3 font-medium text-white">{user.name}</td>
+                      <td className="px-4 py-3 font-medium text-white">
+                        {user.name}
+                        {user.driverId && (
+                          <span className="ml-2 rounded-full bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">
+                            {t('users.driverBadge')}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-white/60">{user.email}</td>
                       <td className="px-4 py-3">
                         <span
@@ -71,6 +80,14 @@ export function UserList() {
                         >
                           {t(`users.statuses.${user.status}`)}
                         </span>
+                      </td>
+                      {/*
+                        O papel pedido no cadastro fica visível ao lado do papel
+                        efetivo: um pedido não vira permissão sozinho, e quem
+                        aprova precisa ver os dois para decidir.
+                      */}
+                      <td className="px-4 py-3 text-white/45">
+                        {t(`users.roles.${user.requestedRole}`)}
                       </td>
                       <td className="px-4 py-3">
                         {isProtectedAdmin ? (
@@ -132,7 +149,29 @@ export function UserList() {
                                 >
                                   {t('users.actions.approve')}
                                 </button>
+                                <button
+                                  disabled={isSaving}
+                                  onClick={() => {
+                                    if (window.confirm(t('users.rejectConfirm'))) {
+                                      void updateStatus(user.id, UserStatus.REJECTED)
+                                    }
+                                  }}
+                                  className="rounded bg-white/10 px-2 py-1 text-xs font-medium text-white/70 hover:bg-white/15 disabled:opacity-50"
+                                >
+                                  {t('users.actions.reject')}
+                                </button>
                               </div>
+                            )}
+                            {user.status === UserStatus.REJECTED && (
+                              <button
+                                disabled={isSaving}
+                                onClick={() =>
+                                  void updateStatus(user.id, UserStatus.PENDING)
+                                }
+                                className="rounded bg-white/10 px-2 py-1 text-xs font-medium text-white/70 hover:bg-white/15 disabled:opacity-50"
+                              >
+                                {t('users.actions.unblock')}
+                              </button>
                             )}
                             {user.status === UserStatus.ACTIVE && (
                               <button

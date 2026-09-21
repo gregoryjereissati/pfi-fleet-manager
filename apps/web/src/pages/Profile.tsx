@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { CurrentUserDto, UpdateCurrentUserDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { updatePassword } from '@/lib/supabase'
-import { notifyCurrentUserUpdated } from '@/lib/current-user'
+import { useSessionData } from '@/lib/session-data'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useToken } from '@/hooks/useToken'
 
@@ -61,6 +61,7 @@ const labelClass = 'mb-1 block text-sm font-medium text-white/55'
 
 export function Profile() {
   const { t } = useTranslation()
+  const { applyCurrentUser } = useSessionData()
   const getToken = useToken()
   const { currentUser, loading, error: currentUserError } = useCurrentUser()
   const [form, setForm] = useState<ProfileFormState>(emptyForm)
@@ -119,7 +120,7 @@ export function Profile() {
         await updatePassword(form.password)
       }
 
-      notifyCurrentUserUpdated(updatedUser)
+      applyCurrentUser(updatedUser)
       setForm(mapUserToForm(updatedUser))
       setSuccess(t('profile.success'))
     } catch (err) {

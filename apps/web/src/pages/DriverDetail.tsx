@@ -6,11 +6,8 @@ import { useDriver } from '@/hooks/useDriver'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { canManageFleet } from '@/lib/roles'
+import { formatCpf, formatDate } from '@/lib/utils'
 import { FilePreviewModal } from '@/components/FilePreviewModal'
-
-function formatCpf(cpf: string) {
-  return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-}
 
 function getDocStatusClasses(status: DocumentStatus) {
   if (status === 'EXPIRED') return 'bg-red-500/10 text-red-400'
@@ -47,6 +44,9 @@ export function DriverDetail() {
     return <p className="text-sm text-white/40">{t('common.notFound')}</p>
   }
 
+  const activeAssignments = driver.assignments.filter((assignment) => !assignment.endDate)
+  const endedAssignments = driver.assignments.filter((assignment) => assignment.endDate)
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -57,8 +57,9 @@ export function DriverDetail() {
           <div>
             <h1 className="text-2xl font-bold text-white">{driver.name}</h1>
             <p className="text-white/45">
-              CPF {formatCpf(driver.cpf)} • CNH {driver.cnh}
+              CPF {formatCpf(driver.cpf)} • CNH {driver.cnh ?? t('drivers.cnhMissing')}
             </p>
+            {driver.email && <p className="text-sm text-white/40">{driver.email}</p>}
             {driver.phone && <p className="text-sm text-white/40">{driver.phone}</p>}
           </div>
           <span
@@ -84,28 +85,64 @@ export function DriverDetail() {
 
       <section className={sectionClass}>
         <h2 className="mb-3 text-sm font-semibold text-white/50">
-          {t('drivers.detail.vehicles')} ({driver.vehicles.length})
+          {t('drivers.detail.vehicles')} ({activeAssignments.length})
         </h2>
-        {driver.vehicles.length === 0 ? (
+        {activeAssignments.length === 0 ? (
           <p className="text-sm text-white/30">{t('drivers.detail.noVehicles')}</p>
         ) : (
           <ul className="divide-y divide-white/[0.05]">
-            {driver.vehicles.map((vehicle) => (
-              <li key={vehicle.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                <Link
-                  to={`/vehicles/${vehicle.id}`}
-                  className="font-medium text-gold hover:underline"
-                >
-                  {vehicle.plate}
-                </Link>
-                <span className="text-right text-white/40">
-                  {vehicle.brand} {vehicle.model}
+            {activeAssignments.map((assignment) => (
+              <li
+                key={assignment.id}
+                className="flex items-center justify-between gap-3 py-3 text-sm"
+              >
+                <span className="min-w-0">
+                  <Link
+                    to={`/vehicles/${assignment.vehicleId}`}
+                    className="font-medium text-gold hover:underline"
+                  >
+                    {assignment.vehiclePlate}
+                  </Link>
+                  <span className="block text-xs text-white/35">
+                    {t('vehicles.assignmentSince', {
+                      date: formatDate(assignment.startDate),
+                    })}
+                    {assignment.startEstimated && (
+                      <span className="ml-1 text-amber-400/80">
+                        {t('vehicles.assignmentEstimated')}
+                      </span>
+                    )}
+                  </span>
+                </span>
+                <span className="shrink-0 text-right text-white/40">
+                  {assignment.vehicleLabel}
                 </span>
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {endedAssignments.length > 0 && (
+        <section className={sectionClass}>
+          <h2 className="mb-3 text-sm font-semibold text-white/50">
+            {t('vehicles.assignmentHistory')}
+          </h2>
+          <ul className="divide-y divide-white/[0.05]">
+            {endedAssignments.map((assignment) => (
+              <li key={assignment.id} className="py-3 text-sm">
+                <span className="font-medium text-white/70">{assignment.vehiclePlate}</span>
+                <span className="block text-xs text-white/35">
+                  {t('vehicles.assignmentPeriod', {
+                    start: formatDate(assignment.startDate),
+                    end: formatDate(assignment.endDate as string),
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className={sectionClass}>
         <div className="mb-3 flex items-center justify-between">
@@ -141,7 +178,7 @@ export function DriverDetail() {
                   <tr key={doc.id}>
                     <td className={tdClass}>{t(`documents.types.${doc.type}`)}</td>
                     <td className={tdClass}>
-                      {new Date(doc.expiryDate).toLocaleDateString('pt-BR')}
+                      {formatDate(doc.expiryDate)}
                     </td>
                     <td className="py-2 pr-4">
                       <span

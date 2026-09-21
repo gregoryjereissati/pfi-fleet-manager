@@ -9,8 +9,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
 
   /**
-   * Conexão direta, exigida pelo Prisma para aplicar migrations.
-   * O pooler em modo de transação não aceita comandos DDL.
+   * Conexão direta (porta 5432), usada para aplicar migrations e para os
+   * scripts de manutenção da base. O pooler em modo de transação não sustenta
+   * DDL longo nem lock consultivo entre comandos.
    */
   DIRECT_URL: z.string().min(1),
 

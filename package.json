@@ -14,9 +14,13 @@
     "test:api": "npm run test --workspace=apps/api",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "vercel-build": "npm run build:shared && prisma generate --schema=apps/api/prisma/schema.prisma && npm run build --workspace=apps/web",
-    "postinstall": "npm run build:shared && prisma generate --schema=apps/api/prisma/schema.prisma",
-    "build:shared": "npm run build --workspace=packages/shared"
+    "vercel-build": "npm run build:shared && npm run build --workspace=apps/web",
+    "postinstall": "npm run build:shared",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "db:migrate": "npm run db:migrate --workspace @fleet-manager/api --",
+    "db:status": "npm run db:status --workspace @fleet-manager/api --",
+    "db:seed": "npm run db:seed --workspace @fleet-manager/api --",
+    "db:reset": "npm run db:reset --workspace @fleet-manager/api --"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",

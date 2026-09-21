@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { ExpenseType } from '@fleet-manager/shared';
 import { dashboardService } from '../services/dashboard.service';
+import { getScope } from '../lib/request-scope';
 
 const dashboardQuerySchema = z.object({
   vehicleId: z.string().trim().min(1).optional(),
@@ -11,11 +12,7 @@ const dashboardQuerySchema = z.object({
 });
 
 export const dashboardController = {
-  async getIndicators(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  async getIndicators(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const parsed = dashboardQuerySchema.safeParse(req.query);
       if (!parsed.success) {
@@ -23,7 +20,7 @@ export const dashboardController = {
         return;
       }
 
-      const indicators = await dashboardService.getIndicators(parsed.data);
+      const indicators = await dashboardService.getIndicators(getScope(req), parsed.data);
       res.json(indicators);
     } catch (error) {
       next(error);

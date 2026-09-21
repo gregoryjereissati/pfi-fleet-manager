@@ -22,9 +22,19 @@ const updateCurrentUserSchema = z.object({
 });
 
 userRouter.use(authenticate);
+
 userRouter.get('/me', userController.getCurrentUser);
 userRouter.put('/me', validate(updateCurrentUserSchema), userController.updateCurrentUser);
-userRouter.get('/', authorize(UserRole.ADMIN), userController.listUsers);
+
+/**
+ * Administração de acessos. O administrador é o da **empresa cliente**: todas
+ * estas rotas operam dentro da própria empresa, e um identificador de fora
+ * responde como inexistente.
+ *
+ * O gerente também lista os usuários da empresa, porque precisa saber quem
+ * pode virar motorista — mas não aprova, não muda papel e não remove.
+ */
+userRouter.get('/', authorize(UserRole.ADMIN, UserRole.MANAGER), userController.listUsers);
 userRouter.patch('/:id/role', authorize(UserRole.ADMIN), userController.updateRole);
 userRouter.patch('/:id/status', authorize(UserRole.ADMIN), userController.updateStatus);
 userRouter.delete('/:id', authorize(UserRole.ADMIN), userController.deleteUser);

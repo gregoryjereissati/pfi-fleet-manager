@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { VehicleStatus } from '@fleet-manager/shared'
 import { useVehicles, type VehicleFilters } from '@/hooks/useVehicles'
+import { useVehicleOptions } from '@/hooks/useVehicleOptions'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
@@ -21,6 +23,7 @@ function getVehicleStatusLabel(status: VehicleStatus, t: (key: string) => string
 
 export function VehicleList() {
   const { t } = useTranslation()
+  const { invalidate: invalidateVehicles } = useVehicleOptions()
   const getToken = useToken()
   const { currentUser } = useCurrentUser()
   const [search, setSearch] = useState('')
@@ -39,11 +42,17 @@ export function VehicleList() {
 
   const canMutate = canManageFleet(currentUser?.role)
 
+  // Digitar uma placa disparava uma requisição por tecla; agora a consulta
+  // espera a pausa. O campo continua respondendo de imediato ao que se digita.
+  const debouncedSearch = useDebouncedValue(search)
+  const debouncedYearMin = useDebouncedValue(yearMin)
+  const debouncedYearMax = useDebouncedValue(yearMax)
+
   const filters: VehicleFilters = {
-    plate: search || undefined,
+    plate: debouncedSearch || undefined,
     status: status || undefined,
-    yearMin: yearMin || undefined,
-    yearMax: yearMax || undefined,
+    yearMin: debouncedYearMin || undefined,
+    yearMax: debouncedYearMax || undefined,
     orderBy: sortField,
     order: sortOrder,
   }
@@ -66,6 +75,7 @@ export function VehicleList() {
           const token = await getToken()
           await apiFetch(`/vehicles/${id}`, token, { method: 'DELETE' })
           reload()
+          invalidateVehicles()
         } catch (err) {
           window.alert((err as Error).message)
         }
@@ -85,6 +95,7 @@ export function VehicleList() {
           const token = await getToken()
           await apiFetch(`/vehicles/${id}/permanent`, token, { method: 'DELETE' })
           reload()
+          invalidateVehicles()
         } catch (err) {
           window.alert((err as Error).message)
         }
@@ -107,6 +118,7 @@ export function VehicleList() {
             body: JSON.stringify({ status: VehicleStatus.ACTIVE }),
           })
           reload()
+          invalidateVehicles()
         } catch (err) {
           window.alert((err as Error).message)
         }

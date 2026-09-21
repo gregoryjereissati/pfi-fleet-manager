@@ -13,6 +13,7 @@ export interface DocumentDto {
   fileUrl: string | null;
   alertSent: boolean;
   status: DocumentStatus;
+  createdById: string | null;
   createdAt: string;
 }
 

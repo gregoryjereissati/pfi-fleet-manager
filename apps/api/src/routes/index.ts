@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authRouter } from './auth.routes';
 import { userRouter } from './user.routes';
+import { companyRouter } from './company.routes';
 import { vehicleRouter } from './vehicle.routes';
 import { driverRouter } from './driver.routes';
 import { expenseRouter } from './expense.routes';
@@ -13,6 +14,7 @@ export const router = Router();
 
 router.use('/auth', authRouter);
 router.use('/users', userRouter);
+router.use('/companies', companyRouter);
 router.use('/vehicles', vehicleRouter);
 router.use('/drivers', driverRouter);
 router.use('/expenses', expenseRouter);

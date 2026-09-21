@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { UserRole, UserStatus } from '@fleet-manager/shared';
+import { UserRole } from '@fleet-manager/shared';
 import { authService } from '../services/auth.service';
 import { toCurrentUserDto } from '../lib/user-dto';
 
@@ -9,6 +9,8 @@ const registerProfileSchema = z.object({
   cpf: z.string().trim().min(11).max(18),
   phone: z.string().trim().min(8).max(20),
   email: z.string().trim().email(),
+  /** Código da empresa em que se pede acesso. */
+  companyJoinCode: z.string().trim().min(1).max(40),
   requestedRole: z.nativeEnum(UserRole).default(UserRole.OPERATOR),
   addressStreet: z.string().trim().min(1),
   addressNumber: z.string().trim().min(1),
@@ -20,8 +22,12 @@ const registerProfileSchema = z.object({
 
 export const authController = {
   /**
-   * Cria o perfil da aplicação para uma conta já autenticada no Supabase Auth.
-   * A rota exige um token válido, mas não exige perfil preexistente.
+   * Registra a solicitação de acesso de uma conta já autenticada no Supabase
+   * Auth. A rota exige um token válido, mas não exige perfil preexistente.
+   *
+   * O resultado é sempre uma solicitação pendente, salvo quando o perfil já
+   * existia e já estava aprovado — caso dos perfis provisionados antes da
+   * conta de acesso.
    */
   async registerProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -38,12 +44,10 @@ export const authController = {
 
       const user = await authService.registerProfile(req.authUser, parsed.data);
 
-      // O perfil pode ter sido criado como PENDING ou vinculado a um perfil
-      // preexistente já aprovado. A mensagem reflete o caso ocorrido.
       const message =
-        user.status === UserStatus.ACTIVE
+        user.status === 'ACTIVE'
           ? 'Cadastro concluído. Seu acesso já está liberado.'
-          : 'Cadastro recebido. Aguarde a aprovação de um administrador.';
+          : 'Solicitação recebida. Aguarde a aprovação do administrador da empresa.';
 
       res.status(201).json({ message, user: toCurrentUserDto(user) });
     } catch (err) {

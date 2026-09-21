@@ -1,17 +1,24 @@
-import { useEffect, useState } from 'react'
-import type { DriverDto, VehicleDto } from '@fleet-manager/shared'
+import { useCallback, useEffect, useState } from 'react'
+import type { AssignmentDto, DriverDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { useToken } from '@/hooks/useToken'
 
-export interface DriverWithVehicles extends DriverDto {
-  vehicles: VehicleDto[]
+/**
+ * Ficha do motorista com o histórico de vínculos.
+ *
+ * Os vínculos vêm com período: os vigentes têm `endDate` nulo, e os encerrados
+ * permanecem na resposta — a relação anterior não desaparece.
+ */
+export interface DriverWithAssignments extends DriverDto {
+  assignments: AssignmentDto[]
 }
 
 export function useDriver(id?: string) {
   const getToken = useToken()
-  const [driver, setDriver] = useState<DriverWithVehicles | null>(null)
+  const [driver, setDriver] = useState<DriverWithAssignments | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
     if (!id) {
@@ -28,7 +35,7 @@ export function useDriver(id?: string) {
         setError(null)
 
         const token = await getToken()
-        const data = await apiFetch<DriverWithVehicles>(`/drivers/${id}`, token)
+        const data = await apiFetch<DriverWithAssignments>(`/drivers/${id}`, token)
 
         if (!cancelled) setDriver(data)
       } catch (err) {
@@ -38,12 +45,14 @@ export function useDriver(id?: string) {
       }
     }
 
-    load()
+    void load()
 
     return () => {
       cancelled = true
     }
-  }, [getToken, id])
+  }, [getToken, id, reloadToken])
 
-  return { driver, loading, error }
+  const reload = useCallback(() => setReloadToken((token) => token + 1), [])
+
+  return { driver, loading, error, reload }
 }

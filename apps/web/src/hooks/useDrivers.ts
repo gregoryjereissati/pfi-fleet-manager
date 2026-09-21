@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { DriverDto } from '@fleet-manager/shared'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, isAbortError } from '@/lib/api'
 import { useToken } from '@/hooks/useToken'
 
 export interface DriverFilters {
-  name?: string
+  /** Busca por nome ou CPF, na ficha ou no usuário vinculado. */
+  search?: string
   status?: string
 }
 
@@ -19,6 +20,9 @@ export function useDrivers(filters: DriverFilters = {}) {
 
   useEffect(() => {
     let cancelled = false
+    // A requisição anterior é cancelada de fato quando outra começa, em vez de
+    // seguir até o fim para ter o resultado descartado.
+    const controller = new AbortController()
 
     async function load() {
       try {
@@ -37,20 +41,23 @@ export function useDrivers(filters: DriverFilters = {}) {
         const data = await apiFetch<DriverDto[]>(
           `/drivers${queryString ? `?${queryString}` : ''}`,
           token,
+          { signal: controller.signal },
         )
 
         if (!cancelled) setDrivers(data)
       } catch (err) {
-        if (!cancelled) setError((err as Error).message)
+        if (cancelled || isAbortError(err)) return
+        setError((err as Error).message)
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
-    load()
+    void load()
 
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [filterKey, getToken, reloadToken])
 

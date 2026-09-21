@@ -1,3 +1,5 @@
+import { empresaAtiva } from './empresa-ativa'
+
 /**
  * URL base da API.
  *
@@ -6,6 +8,15 @@
  * caminho relativo e não há requisição entre origens diferentes.
  */
 const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+
+/**
+ * Cabeçalho em que o super administrador informa a empresa que está operando.
+ *
+ * Enviado sempre que houver uma escolha registrada. Para qualquer perfil que
+ * não seja super administrador o servidor o ignora — a empresa dele vem do
+ * cadastro, e nada que o navegador mande altera isso.
+ */
+const CABECALHO_EMPRESA = 'X-Company-Id'
 
 export async function apiFetch<T>(
   path: string,
@@ -19,6 +30,7 @@ export async function apiFetch<T>(
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      ...(empresaAtiva() ? { [CABECALHO_EMPRESA]: empresaAtiva() as string } : {}),
       ...options?.headers,
     },
   })
@@ -47,4 +59,14 @@ export async function apiFetch<T>(
   }
 
   return (payload ?? ({ raw: text } as T)) as T
+}
+
+/**
+ * Indica que a requisição foi cancelada porque outra a substituiu.
+ *
+ * Um pedido cancelado não é uma falha: quem digita rápido troca o que pediu, e
+ * a tela não deve exibir erro por isso.
+ */
+export function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError'
 }

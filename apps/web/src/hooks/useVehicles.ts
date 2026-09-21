@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { VehicleDto } from '@fleet-manager/shared'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, isAbortError } from '@/lib/api'
 import { useToken } from '@/hooks/useToken'
 
 export interface VehicleFilters {
@@ -12,6 +12,13 @@ export interface VehicleFilters {
   order?: 'asc' | 'desc'
 }
 
+/**
+ * Listagem de veículos com filtros do servidor.
+ *
+ * Para **seletores e filtros** de outras telas, use `useVehicleOptions`: a
+ * lista é a mesma e é buscada uma vez por sessão. Este gancho serve à tela de
+ * veículos, que de fato consulta com filtros próprios.
+ */
 export function useVehicles(filters: VehicleFilters = {}) {
   const getToken = useToken()
   const [vehicles, setVehicles] = useState<VehicleDto[]>([])
@@ -23,6 +30,7 @@ export function useVehicles(filters: VehicleFilters = {}) {
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
 
     async function load() {
       try {
@@ -41,20 +49,23 @@ export function useVehicles(filters: VehicleFilters = {}) {
         const data = await apiFetch<VehicleDto[]>(
           `/vehicles${queryString ? `?${queryString}` : ''}`,
           token,
+          { signal: controller.signal },
         )
 
         if (!cancelled) setVehicles(data)
       } catch (err) {
-        if (!cancelled) setError((err as Error).message)
+        if (cancelled || isAbortError(err)) return
+        setError((err as Error).message)
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
-    load()
+    void load()
 
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [filterKey, getToken, reloadToken])
 

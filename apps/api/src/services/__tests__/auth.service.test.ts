@@ -1,127 +1,160 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserRole, UserStatus } from '@fleet-manager/shared';
+import { authService } from '../auth.service';
+import { userRepository } from '../../repositories/user.repository';
+import { companyRepository } from '../../repositories/company.repository';
+import { resetDbMock } from '../../test-helpers/db-mock';
+
+vi.mock('../../config/database', async () => {
+  const { sqlMock, emTransacaoMock } = await import('../../test-helpers/db-mock');
+  return { sql: sqlMock, emTransacao: emTransacaoMock };
+});
+
+vi.mock('../../lib/audit', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/audit')>();
+  const { recordChangeMock } = await import('../../test-helpers/db-mock');
+  return { ...actual, recordChange: recordChangeMock };
+});
 
 vi.mock('../../repositories/user.repository', () => ({
   userRepository: {
+    setCompany: vi.fn(),
+    findByAuthUserId: vi.fn(),
     findByEmail: vi.fn(),
     findByCpf: vi.fn(),
-    findByAuthUserId: vi.fn(),
-    createUser: vi.fn(),
     linkAuthUser: vi.fn(),
+    createUser: vi.fn(),
   },
 }));
 
-import { authService } from '../auth.service';
-import { userRepository } from '../../repositories/user.repository';
+vi.mock('../../repositories/company.repository', () => ({
+  companyRepository: { findByJoinCode: vi.fn() },
+}));
 
-const authUser = {
-  authUserId: 'auth-uuid-1',
-  email: 'joao@test.com',
-};
+const authUser = { authUserId: 'auth-uuid-1', email: 'novo@empresa.com' };
+const company = { id: 'company-a', name: 'Empresa A', joinCode: 'EMPRESA-A' };
 
-const profileData = {
-  name: 'João Silva',
+const registerData = {
+  name: 'Novo Usuário',
   cpf: '123.456.789-00',
-  phone: '(85) 99999-0001',
-  email: 'joao@test.com',
-  requestedRole: UserRole.OPERATOR,
+  phone: '(85) 90000-0000',
+  email: 'novo@empresa.com',
+  companyJoinCode: 'EMPRESA-A',
+  requestedRole: UserRole.MANAGER,
   addressStreet: 'Rua A',
-  addressNumber: '10',
+  addressNumber: '1',
   addressDistrict: 'Centro',
   addressCity: 'Fortaleza',
   addressState: 'ce',
   addressZip: '60000-000',
 };
 
-const mockUser = {
+const createdUser = {
   id: 'user-1',
-  name: 'João Silva',
-  email: 'joao@test.com',
+  companyId: 'company-a',
+  name: 'Novo Usuário',
+  email: 'novo@empresa.com',
   cpf: '12345678900',
-  phone: '(85) 99999-0001',
+  phone: '(85) 90000-0000',
   authUserId: 'auth-uuid-1',
   role: UserRole.OPERATOR,
+  requestedRole: UserRole.MANAGER,
   status: UserStatus.PENDING,
-  addressStreet: 'Rua A',
-  addressNumber: '10',
-  addressDistrict: 'Centro',
-  addressCity: 'Fortaleza',
-  addressState: 'CE',
-  addressZip: '60000-000',
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
-describe('authService.registerProfile', () => {
-  beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetDbMock();
+  vi.mocked(companyRepository.findByJoinCode).mockResolvedValue(company as never);
+  vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
+  vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
+  vi.mocked(userRepository.findByCpf).mockResolvedValue(null);
+  vi.mocked(userRepository.createUser).mockResolvedValue(createdUser as never);
+});
 
-  it('cria o perfil com situação PENDING e vincula a conta do Supabase', async () => {
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
-    vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
-    vi.mocked(userRepository.findByCpf).mockResolvedValue(null);
-    vi.mocked(userRepository.createUser).mockResolvedValue(mockUser);
+describe('authService — cadastro é solicitação, não concessão', () => {
+  it('cria o perfil na empresa identificada pelo código', async () => {
+    await authService.registerProfile(authUser, registerData);
 
-    const result = await authService.registerProfile(authUser, profileData);
-
+    expect(companyRepository.findByJoinCode).toHaveBeenCalledWith('EMPRESA-A');
     expect(userRepository.createUser).toHaveBeenCalledWith(
       expect.objectContaining({
-        authUserId: 'auth-uuid-1',
-        email: 'joao@test.com',
-        role: UserRole.OPERATOR,
+        companyId: 'company-a',
+        cpf: '12345678900',
+        email: 'novo@empresa.com',
+        addressState: 'CE',
       }),
     );
-    expect(result).toEqual(mockUser);
   });
 
-  it('normaliza o CPF removendo pontuação e a UF em maiúsculas', async () => {
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
-    vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
-    vi.mocked(userRepository.findByCpf).mockResolvedValue(null);
-    vi.mocked(userRepository.createUser).mockResolvedValue(mockUser);
+  it('guarda o papel pedido sem convertê-lo em papel efetivo', async () => {
+    await authService.registerProfile(authUser, registerData);
 
-    await authService.registerProfile(authUser, profileData);
-
-    expect(userRepository.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ cpf: '12345678900', addressState: 'CE' }),
-    );
+    const [payload] = vi.mocked(userRepository.createUser).mock.calls[0];
+    expect(payload.requestedRole).toBe(UserRole.MANAGER);
+    // O papel efetivo e a situação são decididos pelo repositório, sempre no
+    // mínimo e sempre pendentes — o cadastro não os escolhe.
+    expect(payload).not.toHaveProperty('role');
+    expect(payload).not.toHaveProperty('status');
   });
 
-  it('rejeita quando a conta do Supabase já possui perfil', async () => {
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(mockUser);
+  it('recusa um código de empresa inexistente ou inativo', async () => {
+    vi.mocked(companyRepository.findByJoinCode).mockResolvedValue(null);
 
-    await expect(authService.registerProfile(authUser, profileData)).rejects.toThrow(
-      'PROFILE_ALREADY_EXISTS',
-    );
+    await expect(
+      authService.registerProfile(authUser, registerData),
+    ).rejects.toMatchObject({ statusCode: 404, message: 'COMPANY_NOT_FOUND' });
+
     expect(userRepository.createUser).not.toHaveBeenCalled();
   });
 
-  it('rejeita quando o e-mail já pertence a outro perfil vinculado', async () => {
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
+  it('recusa quando a conta já tem perfil', async () => {
+    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(createdUser as never);
+
+    await expect(
+      authService.registerProfile(authUser, registerData),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'PROFILE_ALREADY_EXISTS' });
+  });
+
+  it('recusa e-mail que já pertence a outra conta de acesso', async () => {
     vi.mocked(userRepository.findByEmail).mockResolvedValue({
-      ...mockUser,
+      ...createdUser,
       authUserId: 'outra-conta',
-    });
+    } as never);
 
-    await expect(authService.registerProfile(authUser, profileData)).rejects.toThrow('EMAIL_TAKEN');
-    expect(userRepository.createUser).not.toHaveBeenCalled();
+    await expect(
+      authService.registerProfile(authUser, registerData),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'EMAIL_TAKEN' });
   });
 
-  it('vincula perfil preexistente sem conta, preservando papel e situação', async () => {
+  it('recusa CPF já cadastrado', async () => {
+    vi.mocked(userRepository.findByCpf).mockResolvedValue({ id: 'outro' } as never);
+
+    await expect(
+      authService.registerProfile(authUser, registerData),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'CPF_TAKEN' });
+
+    expect(userRepository.createUser).not.toHaveBeenCalled();
+  });
+});
+
+describe('authService — perfis criados antes da conta de acesso', () => {
+  it('vincula o perfil existente preservando papel e situação', async () => {
     const seeded = {
-      ...mockUser,
+      ...createdUser,
       id: 'user-seed',
       authUserId: null,
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
     };
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
-    vi.mocked(userRepository.findByEmail).mockResolvedValue(seeded);
+
+    vi.mocked(userRepository.findByEmail).mockResolvedValue(seeded as never);
     vi.mocked(userRepository.linkAuthUser).mockResolvedValue({
       ...seeded,
       authUserId: 'auth-uuid-1',
-    });
+    } as never);
 
-    const result = await authService.registerProfile(authUser, profileData);
+    const result = await authService.registerProfile(authUser, registerData);
 
     expect(userRepository.linkAuthUser).toHaveBeenCalledWith('user-seed', 'auth-uuid-1');
     expect(userRepository.createUser).not.toHaveBeenCalled();
@@ -129,42 +162,32 @@ describe('authService.registerProfile', () => {
     expect(result.status).toBe(UserStatus.ACTIVE);
   });
 
-  it('rejeita quando o CPF já está em uso por outro perfil', async () => {
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
-    vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
-    vi.mocked(userRepository.findByCpf).mockResolvedValue({ ...mockUser, id: 'outro' });
+  it('preenche a empresa do perfil que ainda não tinha uma', async () => {
+    vi.mocked(userRepository.findByEmail).mockResolvedValue({
+      ...createdUser,
+      id: 'user-seed',
+      authUserId: null,
+      companyId: null,
+    } as never);
+    vi.mocked(userRepository.linkAuthUser).mockResolvedValue(createdUser as never);
 
-    await expect(authService.registerProfile(authUser, profileData)).rejects.toThrow('CPF_TAKEN');
-    expect(userRepository.createUser).not.toHaveBeenCalled();
+    await authService.registerProfile(authUser, registerData);
+
+    expect(userRepository.setCompany).toHaveBeenCalledWith('user-seed', 'company-a');
   });
 
-  it('prefere o e-mail verificado pelo Supabase ao informado no formulário', async () => {
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
-    vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
-    vi.mocked(userRepository.findByCpf).mockResolvedValue(null);
-    vi.mocked(userRepository.createUser).mockResolvedValue(mockUser);
+  it('recusa transferir de empresa um perfil que já pertence a outra', async () => {
+    vi.mocked(userRepository.findByEmail).mockResolvedValue({
+      ...createdUser,
+      id: 'user-seed',
+      authUserId: null,
+      companyId: 'company-b',
+    } as never);
 
-    await authService.registerProfile(
-      { authUserId: 'auth-uuid-1', email: 'verificado@test.com' },
-      { ...profileData, email: 'digitado@test.com' },
-    );
+    await expect(
+      authService.registerProfile(authUser, registerData),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'COMPANY_MISMATCH' });
 
-    expect(userRepository.findByEmail).toHaveBeenCalledWith('verificado@test.com');
-    expect(userRepository.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'verificado@test.com' }),
-    );
-  });
-
-  it('usa o e-mail do formulário quando o token não traz e-mail', async () => {
-    vi.mocked(userRepository.findByAuthUserId).mockResolvedValue(null);
-    vi.mocked(userRepository.findByEmail).mockResolvedValue(null);
-    vi.mocked(userRepository.findByCpf).mockResolvedValue(null);
-    vi.mocked(userRepository.createUser).mockResolvedValue(mockUser);
-
-    await authService.registerProfile({ authUserId: 'auth-uuid-1', email: '' }, profileData);
-
-    expect(userRepository.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'joao@test.com' }),
-    );
+    expect(userRepository.linkAuthUser).not.toHaveBeenCalled();
   });
 });

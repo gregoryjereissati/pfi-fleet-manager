@@ -16,3 +16,6 @@ skills-lock.json
 PITCH PFI/
 __pycache__/
 *.pyc
+
+# Configuração local de servidores MCP (aponta para o projeto Supabase do autor)
+.mcp.json

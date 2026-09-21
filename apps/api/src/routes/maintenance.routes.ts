@@ -24,32 +24,39 @@ const updateMaintenanceSchema = z
     message: 'At least one field is required',
   });
 
+const cancelSchema = z.object({
+  reason: z.string().trim().min(3).max(500),
+});
+
 export const maintenanceRouter = Router();
 
 maintenanceRouter.use(authenticate);
 
-maintenanceRouter.get(
-  '/',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
-  maintenanceController.list,
-);
-maintenanceRouter.get(
-  '/:id',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
-  maintenanceController.getById,
-);
+const anyRole = authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR);
+
+maintenanceRouter.get('/', anyRole, maintenanceController.list);
+maintenanceRouter.get('/:id', anyRole, maintenanceController.getById);
+maintenanceRouter.get('/:id/history', anyRole, maintenanceController.history);
 maintenanceRouter.post(
   '/',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
+  anyRole,
   validate(createMaintenanceSchema),
   maintenanceController.create,
 );
 maintenanceRouter.put(
   '/:id',
-  authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR),
+  anyRole,
   validate(updateMaintenanceSchema),
   maintenanceController.update,
 );
+maintenanceRouter.patch(
+  '/:id/cancel',
+  anyRole,
+  validate(cancelSchema),
+  maintenanceController.cancel,
+);
+maintenanceRouter.patch('/:id/uncancel', anyRole, maintenanceController.uncancel);
+
 maintenanceRouter.delete(
   '/:id',
   authorize(UserRole.ADMIN, UserRole.MANAGER),

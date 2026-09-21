@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DriverStatus } from '@fleet-manager/shared'
 import { useDrivers } from '@/hooks/useDrivers'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
+import { formatCpf, formatDate } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
@@ -14,11 +16,10 @@ type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 const inputClass =
   'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
 
-function formatCpf(cpf: string) {
-  return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-}
+/** Sem validade cadastrada não há o que vencer — e tampouco o que alertar. */
+function isExpiringSoon(expiryDate: string | null) {
+  if (!expiryDate) return false
 
-function isExpiringSoon(expiryDate: string) {
   const now = Date.now()
   const expiry = new Date(expiryDate).getTime()
   const thirtyDays = 30 * 24 * 60 * 60 * 1000
@@ -40,8 +41,10 @@ export function DriverList() {
   } | null>(null)
 
   const canMutate = canManageFleet(currentUser?.role)
+  // A consulta parte quando quem digita faz uma pausa, não a cada tecla.
+  const debouncedSearch = useDebouncedValue(search)
   const { drivers, loading, error, reload } = useDrivers({
-    name: search || undefined,
+    search: debouncedSearch || undefined,
     status: status || undefined,
   })
 
@@ -154,13 +157,29 @@ export function DriverList() {
 
                     return (
                       <tr key={driver.id} className="hover:bg-white/[0.025]">
-                        <td className="px-4 py-3 font-medium text-white">{driver.name}</td>
+                        <td className="px-4 py-3 font-medium text-white">
+                          {driver.name}
+                          {!driver.linkedToUser && (
+                            <span
+                              className="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400"
+                              title={t('drivers.noAccountHint')}
+                            >
+                              {t('drivers.noAccount')}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-white/70">{formatCpf(driver.cpf)}</td>
-                        <td className="px-4 py-3 text-white/70">{driver.cnh}</td>
+                        <td className="px-4 py-3 text-white/70">{driver.cnh ?? '—'}</td>
                         <td className="px-4 py-3">
-                          <span className={expiring ? 'font-medium text-red-400' : 'text-white/70'}>
-                            {new Date(driver.cnhExpiry).toLocaleDateString('pt-BR')}
-                          </span>
+                          {driver.cnhExpiry ? (
+                            <span
+                              className={expiring ? 'font-medium text-red-400' : 'text-white/70'}
+                            >
+                              {formatDate(driver.cnhExpiry)}
+                            </span>
+                          ) : (
+                            <span className="text-white/30">{t('drivers.cnhMissing')}</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span
