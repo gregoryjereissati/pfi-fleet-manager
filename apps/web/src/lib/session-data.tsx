@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import type { CurrentUserDto, VehicleDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { getAccessToken, supabase } from '@/lib/supabase'
@@ -61,10 +62,24 @@ export function SessionDataProvider({ children }: { children: React.ReactNode })
   const loadedScope = useRef<string | null>(null)
   const scopeKey = scopeKeyOf(currentUser)
 
-  const loadCurrentUser = useCallback(async () => {
+  /**
+   * Conta do Supabase cujo perfil está carregado (ou sendo carregado).
+   * `undefined` enquanto a primeira leitura da sessão não terminou.
+   */
+  const loadedAuthUserId = useRef<string | null | undefined>(undefined)
+
+  /**
+   * Busca o perfil. Recebe a sessão quando quem chama já a tem — caso do
+   * evento de autenticação —, o que evita disputar de novo a trava da sessão
+   * que o cliente do Supabase compartilha entre as abas.
+   */
+  const loadCurrentUser = useCallback(async (session?: Session | null) => {
     try {
       setLoading(true)
-      const token = await getAccessToken()
+      const current =
+        session !== undefined ? session : (await supabase.auth.getSession()).data.session
+      loadedAuthUserId.current = current?.user.id ?? null
+      const token = current?.access_token ?? ''
 
       if (!token) {
         setCurrentUser(null)
@@ -95,16 +110,23 @@ export function SessionDataProvider({ children }: { children: React.ReactNode })
 
     // Trocar de conta, ou sair, invalida tudo: o próximo usuário não herda o
     // que o anterior tinha carregado.
-    const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
+        loadedAuthUserId.current = null
         clear()
         setLoading(false)
         return
       }
 
+      // O Supabase reemite SIGNED_IN a cada vez que a aba volta ao foco, e
+      // repassa o evento a todas as outras abas abertas. Para a mesma conta
+      // isso não é um login novo: recarregar ali derrubava a tela inteira para
+      // "Carregando…" e refazia todas as requisições, em cascata entre abas.
+      if (event === 'SIGNED_IN' && session?.user.id === loadedAuthUserId.current) return
+
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         clear()
-        void loadCurrentUser()
+        void loadCurrentUser(session)
       }
     })
 
@@ -157,7 +179,7 @@ export function SessionDataProvider({ children }: { children: React.ReactNode })
       currentUser,
       loading,
       error,
-      refreshCurrentUser: loadCurrentUser,
+      refreshCurrentUser: () => loadCurrentUser(),
       applyCurrentUser: (user: CurrentUserDto) => {
         setCurrentUser(user)
         setError(null)

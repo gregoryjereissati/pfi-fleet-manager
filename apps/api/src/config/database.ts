@@ -76,10 +76,11 @@ function criarConexao() {
     // deixariam de existir na requisição seguinte.
     prepare: false,
 
-    // O runtime serverless da Vercel reaproveita a instância entre invocações,
-    // mas cada uma atende poucas requisições simultâneas. Um teto baixo evita
-    // que instâncias paralelas somem conexões até esgotar o pooler.
-    max: env.NODE_ENV === 'production' ? 1 : 10,
+    // Na Vercel (Fluid Compute) uma mesma instância atende requisições
+    // simultâneas — o painel abre cinco de uma vez. Com uma conexão só, elas
+    // entravam em fila. Um teto pequeno libera o paralelismo sem que instâncias
+    // somadas esgotem o pooler, que em modo transação multiplexa as conexões.
+    max: env.NODE_ENV === 'production' ? 5 : 10,
 
     idle_timeout: 20,
     connect_timeout: 10,

@@ -4,6 +4,7 @@
   "outputDirectory": "apps/web/dist",
   "installCommand": "npm install",
   "framework": null,
+  "regions": ["gru1"],
   "rewrites": [
     {
       "source": "/api/(.*)",
