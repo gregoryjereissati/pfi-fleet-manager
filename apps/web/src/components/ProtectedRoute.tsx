@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
+import { LoadingState } from '@/components/ledger/Ui'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -36,8 +37,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (authenticated === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-fleet-black">
-        <span className="text-white/40 text-sm">{t('common.loading')}</span>
+      <div className="flex min-h-screen items-center justify-center">
+        <LoadingState label={t('common.loading')} />
       </div>
     )
   }

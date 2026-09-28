@@ -5,12 +5,18 @@ import './lib/i18n'
 import './index.css'
 import App from './App'
 import { SessionDataProvider } from './lib/session-data'
+import { installLedgerMotion } from './lib/ledger-motion'
+import { ToastProvider } from './components/ledger/Toast'
+
+installLedgerMotion()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <SessionDataProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </SessionDataProvider>
     </BrowserRouter>
   </React.StrictMode>,

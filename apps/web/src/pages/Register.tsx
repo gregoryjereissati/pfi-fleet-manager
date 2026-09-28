@@ -5,6 +5,7 @@ import { UserRole, UserStatus } from '@fleet-manager/shared'
 import type { RegisterProfileResponseDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { getAccessToken, hasSession, signIn, signUp } from '@/lib/supabase'
+import { BrandMark } from '@/components/ledger/Ui'
 
 export function Register() {
   const { t } = useTranslation()
@@ -118,130 +119,133 @@ export function Register() {
     }
   }
 
-  const inputClass =
-    'w-full rounded-lg bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+  const inputClass = 'lg-input w-full'
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-fleet-black py-8">
-      <div className="w-full max-w-lg px-6 py-8 bg-fleet-card rounded-xl border border-white/[0.07] space-y-6">
-        <div className="text-center space-y-1">
-          <img src="/logo.svg" width="40" height="40" alt="Fleet Manager" className="mx-auto mb-3" />
-          <h1 className="text-xl font-bold text-white">{t('register.title')}</h1>
-          <p className="text-sm text-white/40">{t('register.subtitle')}</p>
-        </div>
-
-        {error && (
-          <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-center">
-            {error}
-          </p>
-        )}
-
-        <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-5">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-white/55">
-              {t('register.companyJoinCode')}
-            </label>
-            <input
-              type="text"
-              required
-              value={form.companyJoinCode}
-              onChange={(e) => set('companyJoinCode', e.target.value.toUpperCase())}
-              className={inputClass}
-              placeholder={t('register.companyJoinCodePlaceholder')}
-            />
-            <p className="text-xs text-white/35">{t('register.companyJoinCodeHelp')}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1">
-              <label className="text-sm font-medium text-white/55">{t('register.name')}</label>
-              <input type="text" required value={form.name} onChange={(e) => set('name', e.target.value)} className={inputClass} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-white/55">{t('register.cpf')}</label>
-              <input type="text" required value={form.cpf} onChange={(e) => set('cpf', e.target.value)} className={inputClass} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-white/55">{t('register.phone')}</label>
-              <input type="text" required value={form.phone} onChange={(e) => set('phone', e.target.value)} className={inputClass} />
-            </div>
-            <div className="col-span-2 space-y-1">
-              <label className="text-sm font-medium text-white/55">{t('register.email')}</label>
-              <input type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} className={inputClass} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-white/55">{t('register.password')}</label>
-              <input type="password" required value={form.password} onChange={(e) => set('password', e.target.value)} className={inputClass} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-white/55">{t('register.confirmPassword')}</label>
-              <input type="password" required value={form.confirmPassword} onChange={(e) => set('confirmPassword', e.target.value)} className={inputClass} />
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="lg-in lg-flashlight group w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-lg-card shadow-2xl">
+        <div className="relative z-10 space-y-7 p-8">
+          <div className="space-y-6">
+            <Link to="/" className="inline-flex">
+              <BrandMark size={28} />
+            </Link>
+            <div>
+              <h1 className="text-3xl font-light leading-[1.1] tracking-tight text-white">
+                {t('register.title')}
+              </h1>
+              <p className="lg-muted mt-2 text-base">{t('register.subtitle')}</p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-white/55">{t('register.address')}</p>
+          {error && <p className="lg-alert lg-alert-error">{error}</p>}
+
+          <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-5">
+            <div>
+              <label className="lg-label">
+                {t('register.companyJoinCode')}
+              </label>
+              <input
+                type="text"
+                required
+                value={form.companyJoinCode}
+                onChange={(e) => set('companyJoinCode', e.target.value.toUpperCase())}
+                className={inputClass}
+                placeholder={t('register.companyJoinCodePlaceholder')}
+              />
+              <p className="mt-1.5 text-xs text-neutral-500">{t('register.companyJoinCodeHelp')}</p>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 space-y-1">
-                <label className="text-sm font-medium text-white/55">{t('register.addressStreet')}</label>
-                <input type="text" required value={form.addressStreet} onChange={(e) => set('addressStreet', e.target.value)} className={inputClass} />
+              <div className="col-span-2">
+                <label className="lg-label">{t('register.name')}</label>
+                <input type="text" required value={form.name} onChange={(e) => set('name', e.target.value)} className={inputClass} />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white/55">{t('register.addressNumber')}</label>
-                <input type="text" required value={form.addressNumber} onChange={(e) => set('addressNumber', e.target.value)} className={inputClass} />
+              <div>
+                <label className="lg-label">{t('register.cpf')}</label>
+                <input type="text" required value={form.cpf} onChange={(e) => set('cpf', e.target.value)} className={inputClass} />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white/55">{t('register.addressDistrict')}</label>
-                <input type="text" required value={form.addressDistrict} onChange={(e) => set('addressDistrict', e.target.value)} className={inputClass} />
+              <div>
+                <label className="lg-label">{t('register.phone')}</label>
+                <input type="text" required value={form.phone} onChange={(e) => set('phone', e.target.value)} className={inputClass} />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white/55">{t('register.addressCity')}</label>
-                <input type="text" required value={form.addressCity} onChange={(e) => set('addressCity', e.target.value)} className={inputClass} />
+              <div className="col-span-2">
+                <label className="lg-label">{t('register.email')}</label>
+                <input type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} className={inputClass} />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white/55">{t('register.addressState')}</label>
-                <input type="text" required maxLength={2} value={form.addressState} onChange={(e) => set('addressState', e.target.value.toUpperCase())} className={inputClass} />
+              <div>
+                <label className="lg-label">{t('register.password')}</label>
+                <input type="password" required value={form.password} onChange={(e) => set('password', e.target.value)} className={inputClass} />
               </div>
-              <div className="col-span-2 space-y-1">
-                <label className="text-sm font-medium text-white/55">{t('register.addressZip')}</label>
-                <input type="text" required value={form.addressZip} onChange={(e) => set('addressZip', e.target.value)} className={inputClass} />
+              <div>
+                <label className="lg-label">{t('register.confirmPassword')}</label>
+                <input type="password" required value={form.confirmPassword} onChange={(e) => set('confirmPassword', e.target.value)} className={inputClass} />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-white/55">{t('register.role')}</p>
-            <p className="text-xs text-white/35">{t('register.roleHelp')}</p>
-            <div className="flex gap-6">
-              {[UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR].map((role) => (
-                <label key={role} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="requestedRole"
-                    value={role}
-                    checked={form.requestedRole === role}
-                    onChange={() => set('requestedRole', role)}
-                  />
-                  <span className="text-sm text-white/60">{t(`users.roles.${role}`)}</span>
-                </label>
-              ))}
+            <div className="space-y-4 border-t border-white/5 pt-6">
+              <p className="text-base font-semibold tracking-tight text-white">{t('register.address')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="lg-label">{t('register.addressStreet')}</label>
+                  <input type="text" required value={form.addressStreet} onChange={(e) => set('addressStreet', e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className="lg-label">{t('register.addressNumber')}</label>
+                  <input type="text" required value={form.addressNumber} onChange={(e) => set('addressNumber', e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className="lg-label">{t('register.addressDistrict')}</label>
+                  <input type="text" required value={form.addressDistrict} onChange={(e) => set('addressDistrict', e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className="lg-label">{t('register.addressCity')}</label>
+                  <input type="text" required value={form.addressCity} onChange={(e) => set('addressCity', e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className="lg-label">{t('register.addressState')}</label>
+                  <input type="text" required maxLength={2} value={form.addressState} onChange={(e) => set('addressState', e.target.value.toUpperCase())} className={inputClass} />
+                </div>
+                <div className="col-span-2">
+                  <label className="lg-label">{t('register.addressZip')}</label>
+                  <input type="text" required value={form.addressZip} onChange={(e) => set('addressZip', e.target.value)} className={inputClass} />
+                </div>
+              </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50 transition-colors"
-          >
-            {loading ? t('actions.saving') : t('register.submit')}
-          </button>
-        </form>
+            <div className="space-y-3 border-t border-white/5 pt-6">
+              <p className="text-base font-semibold tracking-tight text-white">{t('register.role')}</p>
+              <p className="text-xs text-neutral-500">{t('register.roleHelp')}</p>
+              <div className="flex flex-wrap gap-6">
+                {[UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERATOR].map((role) => (
+                  <label key={role} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="requestedRole"
+                      value={role}
+                      checked={form.requestedRole === role}
+                      onChange={() => set('requestedRole', role)}
+                    />
+                    <span className="text-sm text-slate-300">{t(`users.roles.${role}`)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
-        <p className="text-center text-sm text-white/40">
-          <Link to="/login" className="text-gold hover:underline">
-            {t('register.login')}
-          </Link>
-        </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="shiny-cta shiny-cta-sm w-full"
+            >
+              {loading ? t('actions.saving') : t('register.submit')}
+            </button>
+          </form>
+
+          <p className="border-t border-white/5 pt-6 text-center">
+            <Link to="/login" className="lg-link">
+              {t('register.login')}
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )

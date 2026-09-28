@@ -8,6 +8,7 @@ import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
 import { enviarAnexo, extensaoAceita } from '@/lib/anexos'
 import { FilePreviewModal } from '@/components/FilePreviewModal'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 import type { DocumentItem } from '@/hooks/useDocuments'
 
 type EntityType = 'vehicle' | 'driver'
@@ -30,10 +31,9 @@ const VEHICLE_DOCUMENT_TYPES = [
 
 const DRIVER_DOCUMENT_TYPES = [DocumentType.CNH, DocumentType.LICENCA, DocumentType.OUTRO]
 
-const inputClass =
-  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
-const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+const labelClass = 'lg-label'
 
 export function DocumentForm() {
   const { t } = useTranslation()
@@ -184,29 +184,24 @@ export function DocumentForm() {
   }
 
   if (loadingDocument) {
-    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+    return <LoadingState label={t('common.loading')} />
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          {isEditing ? t('documents.edit') : t('documents.new')}
-        </h1>
-        <p className="text-sm text-white/40">{t('documents.formSubtitle')}</p>
-      </div>
+    <div className="max-w-2xl space-y-6">
+      <PageHeader
+        title={isEditing ? t('documents.edit') : t('documents.new')}
+        subtitle={t('documents.formSubtitle')}
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
-      >
+      <form onSubmit={handleSubmit} className="lg-inner lg-reveal space-y-5 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           {!isEditing && (
             <>
               <div className="md:col-span-2">
                 <label className={labelClass}>{t('documents.columns.entity')}</label>
                 <div className="flex flex-wrap gap-4">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-white/60">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
                     <input
                       type="radio"
                       checked={form.entityType === 'vehicle'}
@@ -214,7 +209,7 @@ export function DocumentForm() {
                     />
                     {t('documents.entity.vehicle')}
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-white/60">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
                     <input
                       type="radio"
                       checked={form.entityType === 'driver'}
@@ -292,12 +287,12 @@ export function DocumentForm() {
           <div className="md:col-span-2">
             <label className={labelClass}>{t('documents.upload.label')}</label>
             {existingFileUrl && !file && id && (
-              <p className="mb-1 text-xs text-white/40">
+              <p className="mb-2 text-xs text-neutral-500">
                 {t('documents.upload.current')}:{' '}
                 <button
                   type="button"
                   onClick={() => setPreviewOpen(true)}
-                  className="text-gold underline"
+                  className="lg-link text-xs"
                 >
                   {t('documents.preview.viewFile')}
                 </button>
@@ -310,27 +305,23 @@ export function DocumentForm() {
               className={inputClass}
             />
             {file ? (
-              <p className="mt-1 text-xs text-white/40">{file.name}</p>
+              <p className="mt-1.5 text-xs text-slate-300">{file.name}</p>
             ) : (
-              <p className="mt-1 text-xs text-white/30">{t('documents.upload.placeholder')}</p>
+              <p className="mt-1.5 text-xs text-neutral-500">{t('documents.upload.placeholder')}</p>
             )}
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="lg-alert lg-alert-error">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="lg-btn-accent">
             {submitting ? t('documents.upload.uploading') : t('actions.save')}
           </button>
           <button
             type="button"
             onClick={() => navigate('/documents')}
-            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
+            className="lg-btn-ghost"
           >
             {t('actions.cancel')}
           </button>

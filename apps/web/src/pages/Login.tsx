@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { signIn } from '@/lib/supabase'
+import { BrandMark } from '@/components/ledger/Ui'
 
-const inputClass =
-  'w-full rounded-lg bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
 export function Login() {
   const { t } = useTranslation()
@@ -36,60 +36,56 @@ export function Login() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-fleet-black">
-      <div className="w-full max-w-sm px-6 py-8 bg-fleet-card rounded-xl border border-white/[0.07] space-y-6">
-        <div className="text-center space-y-1">
-          <img src="/logo.svg" width="40" height="40" alt="Fleet Manager" className="mx-auto mb-3" />
-          <h1 className="text-xl font-bold text-white">{t('login.title')}</h1>
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="lg-in lg-flashlight group w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-lg-card shadow-2xl">
+        <div className="relative z-10 space-y-7 p-8">
+          <div className="space-y-6">
+            <Link to="/" className="inline-flex">
+              <BrandMark size={28} />
+            </Link>
+            <h1 className="text-3xl font-light leading-[1.1] tracking-tight text-white">
+              {t('login.title')}
+            </h1>
+          </div>
+
+          {registered && <p className="lg-alert lg-alert-ok">{t('login.registered')}</p>}
+
+          {error && <p className="lg-alert lg-alert-error">{error}</p>}
+
+          <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
+            <div>
+              <label className="lg-label">{t('login.email')}</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="lg-label">{t('login.password')}</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div className="pt-2">
+              <button type="submit" disabled={loading} className="shiny-cta shiny-cta-sm w-full">
+                {loading ? t('actions.saving') : t('login.submit')}
+              </button>
+            </div>
+          </form>
+
+          <p className="border-t border-white/5 pt-6 text-center">
+            <Link to="/register" className="lg-link">
+              {t('login.register')}
+            </Link>
+          </p>
         </div>
-
-        {registered && (
-          <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2 text-center">
-            {t('login.registered')}
-          </p>
-        )}
-
-        {error && (
-          <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-center">
-            {error}
-          </p>
-        )}
-
-        <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-white/55">{t('login.email')}</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-white/55">{t('login.password')}</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50 transition-colors"
-          >
-            {loading ? t('actions.saving') : t('login.submit')}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-white/40">
-          <Link to="/register" className="text-gold hover:underline">
-            {t('login.register')}
-          </Link>
-        </p>
       </div>
     </div>
   )

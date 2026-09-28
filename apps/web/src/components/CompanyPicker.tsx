@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
-import { Building2 } from 'lucide-react'
+import { ArrowRight, Building2 } from 'lucide-react'
 import { useCompanies } from '@/hooks/useCompanies'
 import { definirEmpresaAtiva } from '@/lib/empresa-ativa'
 import { signOut } from '@/lib/supabase'
+import { BrandMark, LoadingState } from '@/components/ledger/Ui'
 
 /**
  * Escolha da empresa, apresentada ao super administrador antes de qualquer
@@ -28,66 +29,81 @@ export function CompanyPicker() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-fleet-black">
-        <span className="text-sm text-white/40">{t('common.loading')}</span>
+      <div className="flex min-h-screen items-center justify-center">
+        <LoadingState label={t('common.loading')} />
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-fleet-black px-6 py-10">
-      <div className="w-full max-w-lg space-y-6">
-        <div className="space-y-2 text-center">
-          <div className="flex justify-center text-white/30">
-            <Building2 size={32} />
+    <div className="flex min-h-screen items-center justify-center px-6 py-10">
+      <div className="w-full max-w-lg space-y-8">
+        <div className="lg-in space-y-6">
+          <BrandMark size={28} />
+          <div>
+            <p className="lg-eyebrow mb-4">{t('nav.companies')}</p>
+            <h1 className="text-4xl font-light leading-[1.1] tracking-tight text-white">
+              {t('companyPicker.title')}
+            </h1>
+            <p className="lg-muted mt-3 text-base">{t('companyPicker.subtitle')}</p>
           </div>
-          <h1 className="text-xl font-semibold text-white">{t('companyPicker.title')}</h1>
-          <p className="text-sm text-white/40">{t('companyPicker.subtitle')}</p>
         </div>
 
-        {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {error}
-          </p>
-        )}
+        {error && <p className="lg-alert lg-alert-error">{error}</p>}
 
         {companies.length === 0 && !error && (
-          <p className="rounded-lg border border-white/[0.08] px-4 py-6 text-center text-sm text-white/40">
+          <p className="rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-8 text-center text-sm text-neutral-500">
             {t('companyPicker.empty')}
           </p>
         )}
 
-        <ul className="space-y-2">
-          {companies.map((empresa) => {
+        <ul className="space-y-3">
+          {companies.map((empresa, indice) => {
             const inativa = empresa.status === 'INACTIVE'
 
             return (
-              <li key={empresa.id}>
+              <li
+                key={empresa.id}
+                className="lg-reveal"
+                style={{ ['--lg-delay' as string]: `${0.1 + indice * 0.05}s` }}
+              >
                 <button
                   type="button"
                   disabled={inativa}
                   onClick={() => escolher(empresa.id)}
-                  className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors ${
-                    inativa
-                      ? 'cursor-not-allowed border-white/[0.06] opacity-40'
-                      : 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03]'
+                  className={`lg-flashlight group flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl border border-white/10 bg-lg-card px-5 py-4 text-left transition-colors ${
+                    inativa ? 'cursor-not-allowed opacity-40' : 'hover:border-white/20'
                   }`}
                 >
-                  <span>
-                    <span className="block text-sm font-medium text-white">{empresa.name}</span>
-                    <span className="block text-xs text-white/40">
-                      {t('companyPicker.summary', {
-                        vehicles: empresa.vehicles,
-                        drivers: empresa.drivers,
-                      })}
-                      {empresa.pendingUsers > 0 &&
-                        ` · ${t('companyPicker.pending', { count: empresa.pendingUsers })}`}
+                  <span className="relative z-10 flex min-w-0 items-center gap-4">
+                    <span className="lg-icon-tile">
+                      <Building2 size={18} strokeWidth={1.5} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-base font-semibold tracking-tight text-white">
+                        {empresa.name}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-neutral-500">
+                        {t('companyPicker.summary', {
+                          vehicles: empresa.vehicles,
+                          drivers: empresa.drivers,
+                        })}
+                        {empresa.pendingUsers > 0 && (
+                          <span className="text-yellow-400">
+                            {` · ${t('companyPicker.pending', { count: empresa.pendingUsers })}`}
+                          </span>
+                        )}
+                      </span>
                     </span>
                   </span>
-                  {inativa && (
-                    <span className="rounded border border-white/[0.1] px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/40">
-                      {t('companies.inactive')}
-                    </span>
+                  {inativa ? (
+                    <span className="lg-tag lg-tag-muted relative z-10">{t('companies.inactive')}</span>
+                  ) : (
+                    <ArrowRight
+                      size={18}
+                      strokeWidth={1.5}
+                      className="relative z-10 shrink-0 text-emerald-400 transition-transform group-hover:translate-x-0.5"
+                    />
                   )}
                 </button>
               </li>
@@ -97,7 +113,7 @@ export function CompanyPicker() {
 
         <button
           onClick={() => void signOut().then(() => window.location.replace('/'))}
-          className="w-full text-xs text-white/30 transition-colors hover:text-white/60"
+          className="w-full text-sm text-neutral-500 transition-colors hover:text-white"
         >
           {t('pending.logout')}
         </button>

@@ -1,39 +1,44 @@
 import type { Config } from 'tailwindcss'
 
+/**
+ * Tokens do design system Ledger
+ * (assets/developer-monetizati-design-system/.../design-system-fm2.html).
+ *
+ * Um preto de página, uma escada de superfícies quase pretas separadas por
+ * linhas brancas de 5–10% e um único destaque: esmeralda. Os nomes antigos
+ * (`gold`, `fleet-*`) apontam para os novos valores, para que nada fique com a
+ * identidade anterior por esquecimento.
+ */
 const config: Config = {
   darkMode: ['class'],
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
+        sans: ['Geist', 'sans-serif'],
       },
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+      transitionTimingFunction: {
+        // Curva do botão de alternância do design system (knob e gaveta).
+        spring: 'cubic-bezier(0.25, 1, 0.5, 1)',
       },
       colors: {
-        gold: '#C4A35A',
-        'gold-hover': '#D4BD82',
-        'fleet-black': '#0C0C0C',
-        'fleet-darker': '#141414',
-        'fleet-card': '#1C1C1C',
-        'fleet-input': '#242424',
-        'fleet-hover': '#222222',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+        lg: {
+          canvas: '#000000',
+          card: '#0A0B0E',
+          app: '#0c0d10',
+          inner: '#121317',
+          hover: '#16171b',
+          track: '#14181F',
+          tooltip: '#1a1b20',
+          elevated: '#1c1d24',
         },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
-        },
+        gold: '#34d399',
+        'gold-hover': '#6ee7b7',
+        'fleet-black': '#000000',
+        'fleet-darker': '#0c0d10',
+        'fleet-card': '#121317',
+        'fleet-input': '#121317',
+        'fleet-hover': '#16171b',
       },
     },
   },

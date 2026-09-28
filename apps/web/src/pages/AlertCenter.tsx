@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { DocumentStatus } from '@fleet-manager/shared'
 import { useDocuments, type DocumentItem } from '@/hooks/useDocuments'
 import { formatDate, hojeCivil } from '@/lib/utils'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 
 function getDaysLabel(
   expiryDate: string,
@@ -36,25 +37,26 @@ function DocumentAlertRow({
   const entityLabel = document.vehiclePlate ?? document.driverName ?? '-'
 
   return (
-    <div
-      className={`flex flex-col gap-3 rounded-md border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
-        isExpired
-          ? 'border-red-500/20 bg-red-500/[0.06]'
-          : 'border-amber-500/20 bg-amber-500/[0.06]'
-      }`}
-    >
-      <div>
-        <p className="text-sm font-medium text-white">
-          {entityLabel} - {t(`documents.types.${document.type}`)}
-        </p>
-        <p className="text-xs text-white/40">
+    <div className="lg-card lg-flashlight lg-reveal group p-6">
+      <div className="relative z-10 flex h-full flex-col gap-4">
+        <div className="flex items-start gap-3">
+          <span
+            className={`lg-dot mt-2 ${
+              isExpired ? 'animate-pulse text-rose-500' : 'text-yellow-400'
+            }`}
+          />
+          <p className="text-base font-semibold tracking-tight text-white">
+            {entityLabel} - {t(`documents.types.${document.type}`)}
+          </p>
+        </div>
+        <span className={`lg-tag self-start ${isExpired ? 'lg-tag-danger' : 'lg-tag-warn'}`}>
           {formatDate(document.expiryDate)} -{' '}
           {getDaysLabel(document.expiryDate, document.status, t)}
-        </p>
+        </span>
+        <Link to="/documents" className="lg-link mt-auto self-start">
+          {t('alerts.viewAll')}
+        </Link>
       </div>
-      <Link to="/documents" className="text-xs font-medium text-gold hover:underline">
-        {t('alerts.viewAll')}
-      </Link>
     </div>
   )
 }
@@ -77,38 +79,41 @@ export function AlertCenter() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">{t('alerts.title')}</h1>
-        <p className="text-sm text-white/40">{t('alerts.subtitle')}</p>
-      </div>
+      <PageHeader title={t('alerts.title')} subtitle={t('alerts.subtitle')} />
 
       {loading ? (
-        <p className="text-sm text-white/40">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
       ) : !hasAlerts ? (
-        <div className="rounded-lg border border-green-500/20 bg-green-500/[0.06] px-6 py-8 text-center">
-          <p className="text-sm font-medium text-green-400">{t('alerts.empty')}</p>
+        <div className="lg-alert lg-alert-ok px-6 py-8 text-center">
+          <p className="text-sm font-medium">{t('alerts.empty')}</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {expiredDocuments.length > 0 && (
-            <section className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-red-400">
+            <section className="space-y-4">
+              <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-white">
+                <span className="lg-dot animate-pulse text-rose-500" />
                 {t('alerts.expired')} ({expiredDocuments.length})
               </h2>
-              {expiredDocuments.map((document) => (
-                <DocumentAlertRow key={document.id} document={document} t={t} />
-              ))}
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {expiredDocuments.map((document) => (
+                  <DocumentAlertRow key={document.id} document={document} t={t} />
+                ))}
+              </div>
             </section>
           )}
 
           {expiringSoonDocuments.length > 0 && (
-            <section className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-400">
+            <section className="space-y-4">
+              <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-white">
+                <span className="lg-dot text-yellow-400" />
                 {t('alerts.expiringSoon')} ({expiringSoonDocuments.length})
               </h2>
-              {expiringSoonDocuments.map((document) => (
-                <DocumentAlertRow key={document.id} document={document} t={t} />
-              ))}
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {expiringSoonDocuments.map((document) => (
+                  <DocumentAlertRow key={document.id} document={document} t={t} />
+                ))}
+              </div>
             </section>
           )}
         </div>

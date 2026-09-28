@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { signOut } from '@/lib/supabase'
 import { CompanyPicker } from '@/components/CompanyPicker'
 import { definirEmpresaAtiva, empresaAtiva } from '@/lib/empresa-ativa'
+import { BrandMark, LoadingState } from '@/components/ledger/Ui'
 
 interface AccessGateProps {
   children: React.ReactNode
@@ -38,8 +39,8 @@ export function AccessGate({ children }: AccessGateProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <span className="text-gray-500 text-sm">{t('common.loading')}</span>
+      <div className="flex min-h-screen items-center justify-center">
+        <LoadingState label={t('common.loading')} />
       </div>
     )
   }
@@ -56,24 +57,37 @@ export function AccessGate({ children }: AccessGateProps) {
     const alerta = bloqueio.tone === 'alerta'
 
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center px-4">
         <div
-          className={`text-center space-y-4 max-w-sm px-6 py-10 bg-white rounded-xl shadow border ${
-            alerta ? 'border-red-200' : 'border-gray-200'
+          className={`lg-in w-full max-w-sm space-y-6 rounded-3xl border bg-lg-card p-8 text-center shadow-2xl ${
+            alerta ? 'border-rose-500/20' : 'border-white/10'
           }`}
         >
           <div className="flex justify-center">
-            <span className="text-5xl">{bloqueio.icon}</span>
+            <BrandMark size={28} />
           </div>
-          <h1 className={`text-xl font-bold ${alerta ? 'text-red-700' : 'text-gray-900'}`}>
-            {t(`${bloqueio.key}.title`)}
-          </h1>
-          <p className="text-sm text-gray-500">{t(`${bloqueio.key}.message`)}</p>
+          <div className="flex justify-center">
+            <span
+              className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-3xl ${
+                alerta ? 'border-rose-500/20 bg-rose-500/10' : 'border-white/5 bg-white/[0.03]'
+              }`}
+            >
+              {bloqueio.icon}
+            </span>
+          </div>
+          <div className="space-y-2">
+            <h1
+              className={`text-2xl font-light tracking-tight ${
+                alerta ? 'text-rose-400' : 'text-white'
+              }`}
+            >
+              {t(`${bloqueio.key}.title`)}
+            </h1>
+            <p className="lg-muted text-sm leading-relaxed">{t(`${bloqueio.key}.message`)}</p>
+          </div>
           <button
             onClick={handleLogout}
-            className={`mt-2 w-full rounded-lg px-4 py-2 text-sm font-medium text-white ${
-              alerta ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-800 hover:bg-gray-700'
-            }`}
+            className={`w-full ${alerta ? 'lg-btn-ghost lg-btn-danger' : 'lg-btn-ghost'}`}
           >
             {t('pending.logout')}
           </button>

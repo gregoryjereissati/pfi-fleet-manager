@@ -12,7 +12,8 @@
 Esta etapa parte da **aplicação existente e em funcionamento**. O código em `apps/` é a referência do comportamento vigente.
 
 - Nenhuma proposta anterior de mudança de regras está aprovada.
-- Regras de negócio, arquitetura e visual serão revisitados depois, em etapa própria.
+- Regras de negócio e arquitetura serão revisitadas depois, em etapa própria.
+- A identidade visual é o design system Ledger, descrito em [`CLAUDE.md`](CLAUDE.md#identidade-visual).
 - O Documento Técnico em `docs/academico/` é **referência**, não ordem de serviço. Divergência entre ele e o código não autoriza alterar a aplicação.
 
 ---

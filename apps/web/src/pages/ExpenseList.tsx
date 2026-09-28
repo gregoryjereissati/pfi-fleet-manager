@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Plus, Receipt } from 'lucide-react'
 import { EntryStatus, ExpenseType } from '@fleet-manager/shared'
 import { useExpenses } from '@/hooks/useExpenses'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
@@ -10,12 +11,14 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CancelEntryDialog } from '@/components/CancelEntryDialog'
+import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { RowActions } from '@/components/ledger/RowActions'
+import { useToast } from '@/components/ledger/Toast'
 import { formatDate } from '@/lib/utils'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
-const inputClass =
-  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
 function formatMoney(value: string) {
   return Number(value).toLocaleString('pt-BR', {
@@ -28,6 +31,7 @@ export function ExpenseList() {
   const { t } = useTranslation()
   const getToken = useToken()
   const { currentUser } = useCurrentUser()
+  const toast = useToast()
   const { vehicles } = useVehicleOptions()
   const [vehicleId, setVehicleId] = useState('')
   const [type, setType] = useState<ExpenseType | ''>('')
@@ -109,28 +113,25 @@ export function ExpenseList() {
           await apiFetch(`/expenses/${id}`, token, { method: 'DELETE' })
           reload()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('expenses.title')}</h1>
-          <p className="text-sm text-white/40">{t('expenses.subtitle')}</p>
-        </div>
-        <Link
-          to="/expenses/new"
-          className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
-        >
-          {t('expenses.new')}
-        </Link>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t('expenses.title')}
+        subtitle={t('expenses.subtitle')}
+        actions={
+          <Link to="/expenses/new" className="lg-btn-accent">
+            <Plus size={14} strokeWidth={2} /> {t('expenses.new')}
+          </Link>
+        }
+      />
 
-      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-4">
+      <div className="lg-inner grid gap-3 p-4 md:grid-cols-4">
         <select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
@@ -167,7 +168,7 @@ export function ExpenseList() {
           onChange={(event) => setEndDate(event.target.value)}
           className={inputClass}
         />
-        <label className="flex items-center gap-2 text-sm text-white/55">
+        <label className="flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"
             checked={showCancelled}
@@ -177,31 +178,40 @@ export function ExpenseList() {
         </label>
       </div>
 
-      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+      {actionError && <p className="lg-alert lg-alert-error">{actionError}</p>}
 
       {loading ? (
-        <p className="text-sm text-white/40">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
       ) : error ? (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="lg-alert lg-alert-error">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
+        <div className="lg-inner overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-fleet-darker">
-                <tr className="border-b border-white/[0.07] text-left text-white/40">
-                  <th className="px-4 py-3 font-medium">{t('expenses.columns.vehicle')}</th>
-                  <th className="px-4 py-3 font-medium">{t('expenses.columns.type')}</th>
-                  <th className="px-4 py-3 font-medium">{t('expenses.columns.amount')}</th>
-                  <th className="px-4 py-3 font-medium">{t('expenses.columns.date')}</th>
-                  <th className="px-4 py-3 font-medium">{t('expenses.columns.description')}</th>
-                  <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
+            <table className="lg-table min-w-full">
+              <thead>
+                <tr>
+                  <th>{t('expenses.columns.vehicle')}</th>
+                  <th>{t('expenses.columns.type')}</th>
+                  <th>{t('expenses.columns.amount')}</th>
+                  <th>{t('expenses.columns.date')}</th>
+                  <th>{t('expenses.columns.description')}</th>
+                  <th className="text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody>
                 {expenses.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-white/30">
-                      {t('expenses.empty')}
+                    <td colSpan={6}>
+                      <EmptyState
+                        icon={<Receipt size={20} strokeWidth={1.5} />}
+                        message={t('expenses.empty')}
+                        action={
+                          <Link to="/expenses/new" className="lg-btn-accent">
+                            <Plus size={14} strokeWidth={2} />
+                            {t('expenses.new')}
+                          </Link>
+                        }
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -209,76 +219,72 @@ export function ExpenseList() {
                     const cancelled = expense.status === EntryStatus.CANCELLED
 
                     return (
-                      <tr
-                        key={expense.id}
-                        className={`hover:bg-white/[0.025] ${cancelled ? 'opacity-55' : ''}`}
-                      >
-                        <td className="px-4 py-3 font-medium text-white">
+                      <tr key={expense.id} className={cancelled ? 'opacity-55' : ''}>
+                        <td className="font-medium text-white">
                           {expense.vehicle.plate}
-                          <div className="text-xs text-white/40">
+                          <div className="text-xs font-normal text-neutral-500">
                             {expense.vehicle.brand} {expense.vehicle.model}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-white/70">
+                        <td>
                           {t(`expenses.types.${expense.type}`)}
                           {cancelled && (
-                            <span className="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
+                            <span className="lg-tag lg-tag-muted ml-2">
                               {t('entries.cancelled')}
                             </span>
                           )}
                         </td>
                         <td
-                          className={`px-4 py-3 text-white/70 ${cancelled ? 'line-through' : ''}`}
+                          className={
+                            cancelled
+                              ? 'tabular-nums text-neutral-600 line-through'
+                              : 'font-semibold tabular-nums text-white'
+                          }
                         >
                           {formatMoney(expense.amount)}
                         </td>
-                        <td className="px-4 py-3 text-white/70">{formatDate(expense.date)}</td>
-                        <td className="px-4 py-3 text-white/50">
+                        <td className="whitespace-nowrap">{formatDate(expense.date)}</td>
+                        <td className="text-neutral-400">
                           {expense.description || '-'}
                           {cancelled && expense.cancelReason && (
-                            <div className="text-xs text-amber-400/70">
+                            <div className="text-xs text-orange-400/80">
                               {expense.cancelReason}
                             </div>
                           )}
                           {!expense.createdById && (
-                            <div className="text-xs text-white/25">
+                            <div className="text-xs text-neutral-600">
                               {t('entries.authorUnknown')}
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap items-center gap-3">
+                        <td>
+                          <div className="flex items-center justify-end gap-3">
                             {cancelled ? (
                               <button
                                 onClick={() => handleRestore(expense.id)}
-                                className="text-gold hover:underline"
+                                className="lg-action"
                               >
                                 {t('actions.restoreEntry')}
                               </button>
                             ) : (
-                              <>
-                                <Link
-                                  to={`/expenses/${expense.id}/edit`}
-                                  className="text-white/55 hover:underline"
-                                >
-                                  {t('actions.edit')}
-                                </Link>
-                                <button
-                                  onClick={() => setCancellingId(expense.id)}
-                                  className="text-amber-400 hover:underline"
-                                >
-                                  {t('actions.cancelEntry')}
-                                </button>
-                              </>
+                              <Link to={`/expenses/${expense.id}/edit`} className="lg-action">
+                                {t('actions.edit')}
+                              </Link>
                             )}
-                            {canDelete && (
-                              <button
-                                onClick={() => handleDelete(expense.id)}
-                                className="text-red-400 hover:underline"
-                              >
-                                {t('actions.remove')}
-                              </button>
-                            )}
+                            <RowActions
+                              actions={[
+                                !cancelled && {
+                                  label: t('actions.cancelEntry'),
+                                  onSelect: () => setCancellingId(expense.id),
+                                  tone: 'warn',
+                                },
+                                canDelete && {
+                                  label: t('actions.remove'),
+                                  onSelect: () => handleDelete(expense.id),
+                                  tone: 'danger',
+                                },
+                              ]}
+                            />
                           </div>
                         </td>
                       </tr>

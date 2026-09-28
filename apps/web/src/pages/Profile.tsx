@@ -6,6 +6,7 @@ import { updatePassword } from '@/lib/supabase'
 import { useSessionData } from '@/lib/session-data'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useToken } from '@/hooks/useToken'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 
 interface ProfileFormState {
   name: string
@@ -54,10 +55,13 @@ function mapUserToForm(user: CurrentUserDto): ProfileFormState {
   }
 }
 
-const inputClass =
-  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
-const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+const labelClass = 'lg-label'
+
+const sectionClass = 'lg-inner lg-reveal space-y-4 p-6'
+
+const headingClass = 'text-base font-semibold tracking-tight text-white'
 
 export function Profile() {
   const { t } = useTranslation()
@@ -143,36 +147,33 @@ export function Profile() {
   }
 
   if (loading) {
-    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+    return <LoadingState label={t('common.loading')} />
   }
 
   if (currentUserError || !currentUser) {
-    return <p className="text-sm text-red-400">{currentUserError ?? t('common.notFound')}</p>
+    return (
+      <p className="lg-alert lg-alert-error">{currentUserError ?? t('common.notFound')}</p>
+    )
   }
 
   return (
-    <div className="max-w-4xl space-y-4">
-      <div className="flex flex-col gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-6 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('profile.title')}</h1>
-          <p className="text-sm text-white/40">{t('profile.subtitle')}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
-            {t(`users.roles.${currentUser.role}`)}
-          </span>
-          <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-semibold text-white/50">
-            {t(`users.statuses.${currentUser.status}`)}
-          </span>
-        </div>
-      </div>
+    <div className="max-w-4xl space-y-6">
+      <PageHeader
+        title={t('profile.title')}
+        subtitle={t('profile.subtitle')}
+        actions={
+          <>
+            <span className="lg-tag">{t(`users.roles.${currentUser.role}`)}</span>
+            <span className="lg-tag lg-tag-muted">
+              {t(`users.statuses.${currentUser.status}`)}
+            </span>
+          </>
+        }
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-6 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
-      >
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-white">{t('profile.personalInfo')}</h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <section className={sectionClass}>
+          <h2 className={headingClass}>{t('profile.personalInfo')}</h2>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
@@ -215,8 +216,8 @@ export function Profile() {
           </div>
         </section>
 
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-white">{t('profile.address')}</h2>
+        <section className={sectionClass}>
+          <h2 className={headingClass}>{t('profile.address')}</h2>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
@@ -277,10 +278,10 @@ export function Profile() {
           </div>
         </section>
 
-        <section className="space-y-4">
+        <section className={sectionClass}>
           <div>
-            <h2 className="text-base font-semibold text-white">{t('profile.security')}</h2>
-            <p className="text-sm text-white/40">{t('profile.passwordHint')}</p>
+            <h2 className={headingClass}>{t('profile.security')}</h2>
+            <p className="lg-muted mt-1 text-sm">{t('profile.passwordHint')}</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -305,15 +306,11 @@ export function Profile() {
           </div>
         </section>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        {success && <p className="text-sm text-green-400">{success}</p>}
+        {error && <p className="lg-alert lg-alert-error">{error}</p>}
+        {success && <p className="lg-alert lg-alert-ok">{success}</p>}
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="lg-btn-accent">
             {submitting ? t('actions.saving') : t('actions.save')}
           </button>
         </div>

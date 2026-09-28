@@ -5,6 +5,7 @@ import { EntryStatus, ExpenseType } from '@fleet-manager/shared'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 
 interface ExpenseFormState {
   vehicleId: string
@@ -32,10 +33,9 @@ const initialForm: ExpenseFormState = {
   description: '',
 }
 
-const inputClass =
-  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
-const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+const labelClass = 'lg-label'
 
 /**
  * Registro e correção de uma despesa.
@@ -148,22 +148,17 @@ export function ExpenseForm() {
   }
 
   if (loading) {
-    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+    return <LoadingState label={t('common.loading')} />
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          {isEdit ? t('expenses.edit') : t('expenses.new')}
-        </h1>
-        <p className="text-sm text-white/40">{t('expenses.formSubtitle')}</p>
-      </div>
+    <div className="max-w-2xl space-y-6">
+      <PageHeader
+        title={isEdit ? t('expenses.edit') : t('expenses.new')}
+        subtitle={t('expenses.formSubtitle')}
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
-      >
+      <form onSubmit={handleSubmit} className="lg-inner lg-reveal space-y-5 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className={labelClass}>{t('expenses.columns.vehicle')}</label>
@@ -182,7 +177,7 @@ export function ExpenseForm() {
               ))}
             </select>
             {isEdit && (
-              <p className="mt-1 text-xs text-white/35">{t('expenses.changeVehicleHint')}</p>
+              <p className="mt-1.5 text-xs text-neutral-500">{t('expenses.changeVehicleHint')}</p>
             )}
           </div>
           <div>
@@ -232,20 +227,16 @@ export function ExpenseForm() {
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="lg-alert lg-alert-error">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="lg-btn-accent">
             {submitting ? t('actions.saving') : t('actions.save')}
           </button>
           <button
             type="button"
             onClick={() => navigate('/expenses')}
-            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
+            className="lg-btn-ghost"
           >
             {t('actions.cancel')}
           </button>

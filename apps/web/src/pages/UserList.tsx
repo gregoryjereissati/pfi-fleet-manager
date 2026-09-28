@@ -1,18 +1,24 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { UserStatus, UserRole } from '@fleet-manager/shared'
+import { UserCog } from 'lucide-react'
 import { useUsers } from '@/hooks/useUsers'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { RowActions } from '@/components/ledger/RowActions'
+
+type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
 const PROTECTED_ADMIN_EMAIL = 'admin@fleet-manager.com'
 
-const inputClass =
-  'rounded-md bg-fleet-input border border-white/[0.08] px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/50 disabled:opacity-40'
+// Seletores dentro da tabela: o campo do design system em tamanho compacto.
+const inputClass = 'lg-input px-2 py-1 text-xs'
 
 const statusColors: Record<UserStatus, string> = {
-  [UserStatus.ACTIVE]: 'bg-green-500/10 text-green-400',
-  [UserStatus.PENDING]: 'bg-amber-500/10 text-amber-400',
-  [UserStatus.BLOCKED]: 'bg-red-500/10 text-red-400',
-  [UserStatus.REJECTED]: 'bg-white/5 text-white/40',
+  [UserStatus.ACTIVE]: 'lg-tag-ok',
+  [UserStatus.PENDING]: 'lg-tag-warn',
+  [UserStatus.BLOCKED]: 'lg-tag-danger',
+  [UserStatus.REJECTED]: 'lg-tag-muted',
 }
 
 export function UserList() {
@@ -20,42 +26,73 @@ export function UserList() {
   const { users, loading, error, savingId, updateRole, updateStatus, deleteUser, roles } =
     useUsers()
   const [approveRole, setApproveRole] = useState<Record<string, UserRole>>({})
+  const [dialog, setDialog] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    variant: ConfirmDialogVariant
+    onConfirm: () => void
+  } | null>(null)
 
-  if (loading) return <p className="text-sm text-white/40">{t('common.loading')}</p>
-  if (error) return <p className="text-sm text-red-400">{error}</p>
+  if (loading) return <LoadingState label={t('common.loading')} />
+  if (error) return <p className="lg-alert lg-alert-error">{error}</p>
+
+  function closeDialog() {
+    setDialog(null)
+  }
+
+  function handleReject(id: string) {
+    setDialog({
+      title: t('users.actions.reject'),
+      message: t('users.rejectConfirm'),
+      confirmLabel: t('users.actions.reject'),
+      variant: 'danger',
+      onConfirm: () => {
+        closeDialog()
+        void updateStatus(id, UserStatus.REJECTED)
+      },
+    })
+  }
 
   function handleDelete(id: string, name: string) {
-    if (window.confirm(t('users.deleteConfirm', { name }))) {
-      void deleteUser(id)
-    }
+    setDialog({
+      title: t('users.actions.delete'),
+      message: t('users.deleteConfirm', { name }),
+      confirmLabel: t('users.actions.delete'),
+      variant: 'danger',
+      onConfirm: () => {
+        closeDialog()
+        void deleteUser(id)
+      },
+    })
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">{t('users.title')}</h1>
-        <p className="text-sm text-white/40">{t('users.subtitle')}</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title={t('users.title')} subtitle={t('users.subtitle')} />
 
-      <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
+      <div className="lg-inner lg-reveal overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-fleet-darker">
-              <tr className="border-b border-white/[0.07] text-left text-white/40">
-                <th className="px-4 py-3 font-medium">{t('users.columns.name')}</th>
-                <th className="px-4 py-3 font-medium">{t('users.columns.email')}</th>
-                <th className="px-4 py-3 font-medium">{t('users.columns.status')}</th>
-                <th className="px-4 py-3 font-medium">{t('users.columns.requestedRole')}</th>
-                <th className="px-4 py-3 font-medium">{t('users.columns.role')}</th>
-                <th className="px-4 py-3 font-medium">{t('users.columns.createdAt')}</th>
-                <th className="px-4 py-3 font-medium">{t('users.columns.actions')}</th>
+          <table className="lg-table min-w-full">
+            <thead>
+              <tr>
+                <th>{t('users.columns.name')}</th>
+                <th>{t('users.columns.email')}</th>
+                <th>{t('users.columns.status')}</th>
+                <th>{t('users.columns.requestedRole')}</th>
+                <th>{t('users.columns.role')}</th>
+                <th>{t('users.columns.createdAt')}</th>
+                <th className="text-right">{t('users.columns.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.05]">
+            <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-white/30">
-                    {t('users.empty')}
+                  <td colSpan={7}>
+                    <EmptyState
+                      icon={<UserCog size={20} strokeWidth={1.5} />}
+                      message={t('users.empty')}
+                    />
                   </td>
                 </tr>
               ) : (
@@ -64,20 +101,18 @@ export function UserList() {
                   const isProtectedAdmin = user.email === PROTECTED_ADMIN_EMAIL
 
                   return (
-                    <tr key={user.id} className="hover:bg-white/[0.025]">
-                      <td className="px-4 py-3 font-medium text-white">
+                    <tr key={user.id}>
+                      <td className="font-medium text-white">
                         {user.name}
                         {user.driverId && (
-                          <span className="ml-2 rounded-full bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">
+                          <span className="lg-tag lg-tag-accent ml-2">
                             {t('users.driverBadge')}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-white/60">{user.email}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[user.status]}`}
-                        >
+                      <td>{user.email}</td>
+                      <td>
+                        <span className={`lg-tag ${statusColors[user.status]}`}>
                           {t(`users.statuses.${user.status}`)}
                         </span>
                       </td>
@@ -86,12 +121,12 @@ export function UserList() {
                         efetivo: um pedido não vira permissão sozinho, e quem
                         aprova precisa ver os dois para decidir.
                       */}
-                      <td className="px-4 py-3 text-white/45">
+                      <td className="text-neutral-500">
                         {t(`users.roles.${user.requestedRole}`)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td>
                         {isProtectedAdmin ? (
-                          <span className="inline-flex rounded-full bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
+                          <span className="lg-tag">
                             {t(`users.roles.${user.role}`)}
                           </span>
                         ) : (
@@ -111,14 +146,14 @@ export function UserList() {
                           </select>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-white/50">
+                      <td className="tabular-nums text-neutral-500">
                         {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-4 py-3">
+                      <td>
                         {!isProtectedAdmin && (
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center justify-end gap-3">
                             {user.status === UserStatus.PENDING && (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-3">
                                 <select
                                   value={approveRole[user.id] ?? user.role}
                                   onChange={(e) =>
@@ -145,59 +180,56 @@ export function UserList() {
                                       approveRole[user.id] ?? user.role,
                                     )
                                   }
-                                  className="rounded bg-green-600/80 px-2 py-1 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
+                                  className="lg-action lg-action-ok"
                                 >
                                   {t('users.actions.approve')}
                                 </button>
-                                <button
-                                  disabled={isSaving}
-                                  onClick={() => {
-                                    if (window.confirm(t('users.rejectConfirm'))) {
-                                      void updateStatus(user.id, UserStatus.REJECTED)
-                                    }
-                                  }}
-                                  className="rounded bg-white/10 px-2 py-1 text-xs font-medium text-white/70 hover:bg-white/15 disabled:opacity-50"
-                                >
-                                  {t('users.actions.reject')}
-                                </button>
                               </div>
                             )}
-                            {user.status === UserStatus.REJECTED && (
-                              <button
-                                disabled={isSaving}
-                                onClick={() =>
-                                  void updateStatus(user.id, UserStatus.PENDING)
-                                }
-                                className="rounded bg-white/10 px-2 py-1 text-xs font-medium text-white/70 hover:bg-white/15 disabled:opacity-50"
-                              >
-                                {t('users.actions.unblock')}
-                              </button>
-                            )}
-                            {user.status === UserStatus.ACTIVE && (
-                              <button
-                                disabled={isSaving}
-                                onClick={() => void updateStatus(user.id, UserStatus.BLOCKED)}
-                                className="rounded bg-amber-600/80 px-2 py-1 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50"
-                              >
-                                {t('users.actions.block')}
-                              </button>
-                            )}
-                            {user.status === UserStatus.BLOCKED && (
-                              <button
-                                disabled={isSaving}
-                                onClick={() => void updateStatus(user.id, UserStatus.ACTIVE)}
-                                className="rounded bg-gold/80 px-2 py-1 text-xs font-medium text-fleet-black hover:bg-gold disabled:opacity-50"
-                              >
-                                {t('users.actions.unblock')}
-                              </button>
-                            )}
-                            <button
-                              disabled={isSaving}
-                              onClick={() => handleDelete(user.id, user.name)}
-                              className="rounded bg-red-600/80 px-2 py-1 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
-                            >
-                              {t('users.actions.delete')}
-                            </button>
+                            {/*
+                              Os itens do menu não têm estado desabilitado; enquanto
+                              a linha salva, a escolha é ignorada, como faziam os
+                              botões desabilitados.
+                            */}
+                            <RowActions
+                              actions={[
+                                user.status === UserStatus.PENDING && {
+                                  label: t('users.actions.reject'),
+                                  onSelect: () => {
+                                    if (!isSaving) handleReject(user.id)
+                                  },
+                                  tone: 'danger',
+                                },
+                                user.status === UserStatus.REJECTED && {
+                                  label: t('users.actions.unblock'),
+                                  onSelect: () => {
+                                    if (!isSaving) void updateStatus(user.id, UserStatus.PENDING)
+                                  },
+                                  tone: 'ok',
+                                },
+                                user.status === UserStatus.ACTIVE && {
+                                  label: t('users.actions.block'),
+                                  onSelect: () => {
+                                    if (!isSaving) void updateStatus(user.id, UserStatus.BLOCKED)
+                                  },
+                                  tone: 'warn',
+                                },
+                                user.status === UserStatus.BLOCKED && {
+                                  label: t('users.actions.unblock'),
+                                  onSelect: () => {
+                                    if (!isSaving) void updateStatus(user.id, UserStatus.ACTIVE)
+                                  },
+                                  tone: 'ok',
+                                },
+                                {
+                                  label: t('users.actions.delete'),
+                                  onSelect: () => {
+                                    if (!isSaving) handleDelete(user.id, user.name)
+                                  },
+                                  tone: 'danger',
+                                },
+                              ]}
+                            />
                           </div>
                         )}
                       </td>
@@ -209,6 +241,19 @@ export function UserList() {
           </table>
         </div>
       </div>
+
+      {dialog && (
+        <ConfirmDialog
+          isOpen
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          cancelLabel={t('actions.cancel')}
+          variant={dialog.variant}
+          onConfirm={dialog.onConfirm}
+          onCancel={closeDialog}
+        />
+      )}
     </div>
   )
 }

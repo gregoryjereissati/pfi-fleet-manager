@@ -59,14 +59,27 @@ export interface DashboardData {
   recentExpenses: RecentExpense[]
 }
 
-export function useDashboard(filters: DashboardFilters = {}) {
+/**
+ * `enabled: false` não busca nada e devolve `data` nulo — usado para o período
+ * de comparação, que só existe quando há um intervalo de datas definido.
+ */
+export function useDashboard(
+  filters: DashboardFilters = {},
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   const getToken = useToken()
   const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
   const filterKey = JSON.stringify(filters)
 
   useEffect(() => {
+    if (!enabled) {
+      setData(null)
+      setLoading(false)
+      return
+    }
+
     let cancelled = false
 
     async function load() {
@@ -103,7 +116,7 @@ export function useDashboard(filters: DashboardFilters = {}) {
     return () => {
       cancelled = true
     }
-  }, [filterKey, getToken])
+  }, [enabled, filterKey, getToken])
 
   return { data, loading, error }
 }

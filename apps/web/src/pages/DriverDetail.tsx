@@ -8,16 +8,17 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { canManageFleet } from '@/lib/roles'
 import { formatCpf, formatDate } from '@/lib/utils'
 import { FilePreviewModal } from '@/components/FilePreviewModal'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { ArrowLeft, Plus } from 'lucide-react'
 
 function getDocStatusClasses(status: DocumentStatus) {
-  if (status === 'EXPIRED') return 'bg-red-500/10 text-red-400'
-  if (status === 'EXPIRING_SOON') return 'bg-amber-500/10 text-amber-400'
-  return 'bg-green-500/10 text-green-400'
+  if (status === 'EXPIRED') return 'lg-tag-danger'
+  if (status === 'EXPIRING_SOON') return 'lg-tag-warn'
+  return 'lg-tag-ok'
 }
 
-const sectionClass = 'rounded-lg border border-white/[0.07] bg-fleet-card p-4'
-const thClass = 'pb-2 pr-4 text-white/40'
-const tdClass = 'py-2 pr-4 text-white/70'
+const sectionClass = 'lg-inner lg-reveal p-6'
+const sectionTitleClass = 'mb-4 text-base font-semibold tracking-tight text-white'
 
 export function DriverDetail() {
   const { id } = useParams<{ id: string }>()
@@ -33,15 +34,15 @@ export function DriverDetail() {
   })
 
   if (loading) {
-    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+    return <LoadingState label={t('common.loading')} />
   }
 
   if (error) {
-    return <p className="text-sm text-red-400">{error}</p>
+    return <p className="lg-alert lg-alert-error">{error}</p>
   }
 
   if (!driver) {
-    return <p className="text-sm text-white/40">{t('common.notFound')}</p>
+    return <p className="text-sm text-neutral-500">{t('common.notFound')}</p>
   }
 
   const activeAssignments = driver.assignments.filter((assignment) => !assignment.endDate)
@@ -49,72 +50,71 @@ export function DriverDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
-          <Link to="/drivers" className="text-sm text-gold hover:underline">
-            {t('actions.backToDrivers')}
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-white">{driver.name}</h1>
-            <p className="text-white/45">
+      <div className="space-y-4">
+        <Link to="/drivers" className="lg-link">
+          <ArrowLeft size={14} />
+          {t('actions.backToDrivers')}
+        </Link>
+        <PageHeader
+          title={
+            <span className="inline-flex flex-wrap items-center gap-3">
+              {driver.name}
+              <span
+                className={`lg-tag ${
+                  driver.status === DriverStatus.ACTIVE ? 'lg-tag-ok' : 'lg-tag-muted'
+                }`}
+              >
+                {driver.status === DriverStatus.ACTIVE && <span className="lg-dot animate-pulse" />}
+                {driver.status === DriverStatus.ACTIVE ? t('status.active') : t('status.inactive')}
+              </span>
+            </span>
+          }
+          subtitle={
+            <>
               CPF {formatCpf(driver.cpf)} • CNH {driver.cnh ?? t('drivers.cnhMissing')}
-            </p>
-            {driver.email && <p className="text-sm text-white/40">{driver.email}</p>}
-            {driver.phone && <p className="text-sm text-white/40">{driver.phone}</p>}
-          </div>
-          <span
-            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-              driver.status === DriverStatus.ACTIVE
-                ? 'bg-green-500/10 text-green-400'
-                : 'bg-white/5 text-white/40'
-            }`}
-          >
-            {driver.status === DriverStatus.ACTIVE ? t('status.active') : t('status.inactive')}
-          </span>
-        </div>
-
-        {canMutate && (
-          <Link
-            to={`/drivers/${driver.id}/edit`}
-            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
-          >
-            {t('actions.edit')}
-          </Link>
-        )}
+              {driver.email && <span className="block text-sm">{driver.email}</span>}
+              {driver.phone && <span className="block text-sm">{driver.phone}</span>}
+            </>
+          }
+          actions={
+            canMutate && (
+              <Link to={`/drivers/${driver.id}/edit`} className="lg-btn-ghost">
+                {t('actions.edit')}
+              </Link>
+            )
+          }
+        />
       </div>
 
       <section className={sectionClass}>
-        <h2 className="mb-3 text-sm font-semibold text-white/50">
+        <h2 className={sectionTitleClass}>
           {t('drivers.detail.vehicles')} ({activeAssignments.length})
         </h2>
         {activeAssignments.length === 0 ? (
-          <p className="text-sm text-white/30">{t('drivers.detail.noVehicles')}</p>
+          <p className="text-sm text-neutral-500">{t('drivers.detail.noVehicles')}</p>
         ) : (
-          <ul className="divide-y divide-white/[0.05]">
+          <ul className="space-y-2">
             {activeAssignments.map((assignment) => (
               <li
                 key={assignment.id}
-                className="flex items-center justify-between gap-3 py-3 text-sm"
+                className="lg-row flex items-center justify-between gap-3 px-4 py-3 text-sm"
               >
                 <span className="min-w-0">
-                  <Link
-                    to={`/vehicles/${assignment.vehicleId}`}
-                    className="font-medium text-gold hover:underline"
-                  >
+                  <Link to={`/vehicles/${assignment.vehicleId}`} className="lg-link">
                     {assignment.vehiclePlate}
                   </Link>
-                  <span className="block text-xs text-white/35">
+                  <span className="mt-0.5 block text-xs text-neutral-500">
                     {t('vehicles.assignmentSince', {
                       date: formatDate(assignment.startDate),
                     })}
                     {assignment.startEstimated && (
-                      <span className="ml-1 text-amber-400/80">
+                      <span className="ml-1 text-yellow-400/80">
                         {t('vehicles.assignmentEstimated')}
                       </span>
                     )}
                   </span>
                 </span>
-                <span className="shrink-0 text-right text-white/40">
+                <span className="shrink-0 text-right text-neutral-500">
                   {assignment.vehicleLabel}
                 </span>
               </li>
@@ -125,14 +125,12 @@ export function DriverDetail() {
 
       {endedAssignments.length > 0 && (
         <section className={sectionClass}>
-          <h2 className="mb-3 text-sm font-semibold text-white/50">
-            {t('vehicles.assignmentHistory')}
-          </h2>
-          <ul className="divide-y divide-white/[0.05]">
+          <h2 className={sectionTitleClass}>{t('vehicles.assignmentHistory')}</h2>
+          <ul className="space-y-2">
             {endedAssignments.map((assignment) => (
-              <li key={assignment.id} className="py-3 text-sm">
-                <span className="font-medium text-white/70">{assignment.vehiclePlate}</span>
-                <span className="block text-xs text-white/35">
+              <li key={assignment.id} className="lg-row px-4 py-3 text-sm">
+                <span className="font-medium text-slate-300">{assignment.vehiclePlate}</span>
+                <span className="mt-0.5 block text-xs text-neutral-500">
                   {t('vehicles.assignmentPeriod', {
                     start: formatDate(assignment.startDate),
                     end: formatDate(assignment.endDate as string),
@@ -145,59 +143,52 @@ export function DriverDetail() {
       )}
 
       <section className={sectionClass}>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white/50">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold tracking-tight text-white">
             {t('drivers.detail.documents')}
           </h2>
           {canMutate && (
-            <Link
-              to={`/documents/new?driverId=${driver.id}`}
-              className="text-xs text-gold hover:underline"
-            >
-              + {t('documents.new')}
+            <Link to={`/documents/new?driverId=${driver.id}`} className="lg-link">
+              <Plus size={14} strokeWidth={2} /> {t('documents.new')}
             </Link>
           )}
         </div>
         {loadingDocuments ? (
-          <p className="text-sm text-white/30">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
         ) : documents.length === 0 ? (
-          <p className="text-sm text-white/30">{t('drivers.detail.noDocuments')}</p>
+          <p className="text-sm text-neutral-500">{t('drivers.detail.noDocuments')}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table className="lg-table min-w-full">
               <thead>
-                <tr className="border-b border-white/[0.07] text-left">
-                  <th className={thClass}>{t('documents.columns.type')}</th>
-                  <th className={thClass}>{t('documents.columns.expiryDate')}</th>
-                  <th className={thClass}>{t('documents.columns.status')}</th>
-                  <th className={thClass}>{t('common.actions')}</th>
+                <tr>
+                  <th>{t('documents.columns.type')}</th>
+                  <th>{t('documents.columns.expiryDate')}</th>
+                  <th>{t('documents.columns.status')}</th>
+                  <th>{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody>
                 {documents.map((doc) => (
                   <tr key={doc.id}>
-                    <td className={tdClass}>{t(`documents.types.${doc.type}`)}</td>
-                    <td className={tdClass}>
-                      {formatDate(doc.expiryDate)}
-                    </td>
-                    <td className="py-2 pr-4">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${getDocStatusClasses(doc.status)}`}
-                      >
+                    <td>{t(`documents.types.${doc.type}`)}</td>
+                    <td className="tabular-nums">{formatDate(doc.expiryDate)}</td>
+                    <td>
+                      <span className={`lg-tag ${getDocStatusClasses(doc.status)}`}>
                         {t(`documents.statuses.${doc.status}`)}
                       </span>
                     </td>
-                    <td className="py-2">
+                    <td>
                       {doc.fileUrl ? (
                         <button
                           type="button"
                           onClick={() => setPreviewDocumentId(doc.id)}
-                          className="text-gold hover:underline"
+                          className="lg-action"
                         >
                           {t('documents.preview.viewFile')}
                         </button>
                       ) : (
-                        <span className="text-white/25">-</span>
+                        <span className="text-neutral-600">-</span>
                       )}
                     </td>
                   </tr>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Plus, Wrench } from 'lucide-react'
 import { MaintenanceStatus, MaintenanceType } from '@fleet-manager/shared'
 import { useMaintenances } from '@/hooks/useMaintenances'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
@@ -10,21 +11,25 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CancelEntryDialog } from '@/components/CancelEntryDialog'
+import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { RowActions } from '@/components/ledger/RowActions'
+import { useToast } from '@/components/ledger/Toast'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
-const inputClass =
-  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
 function getStatusClasses(status: MaintenanceStatus) {
-  if (status === MaintenanceStatus.DONE) return 'bg-green-500/10 text-green-400'
-  if (status === MaintenanceStatus.OVERDUE) return 'bg-red-500/10 text-red-400'
-  return 'bg-amber-500/10 text-amber-400'
+  if (status === MaintenanceStatus.DONE) return 'lg-tag-ok'
+  if (status === MaintenanceStatus.OVERDUE) return 'lg-tag-danger'
+  if (status === MaintenanceStatus.CANCELLED) return 'lg-tag-muted'
+  return 'lg-tag-warn'
 }
 
 export function MaintenanceList() {
   const { t } = useTranslation()
   const getToken = useToken()
+  const toast = useToast()
   const { currentUser } = useCurrentUser()
   const { vehicles } = useVehicleOptions()
   const [vehicleId, setVehicleId] = useState('')
@@ -65,7 +70,7 @@ export function MaintenanceList() {
           await apiFetch(`/maintenances/${id}`, token, { method: 'DELETE' })
           reload()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
@@ -120,26 +125,23 @@ export function MaintenanceList() {
       })
       reload()
     } catch (err) {
-      window.alert((err as Error).message)
+      toast.error((err as Error).message)
     }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('maintenances.title')}</h1>
-          <p className="text-sm text-white/40">{t('maintenances.subtitle')}</p>
-        </div>
-        <Link
-          to="/maintenances/new"
-          className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
-        >
-          {t('maintenances.new')}
-        </Link>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t('maintenances.title')}
+        subtitle={t('maintenances.subtitle')}
+        actions={
+          <Link to="/maintenances/new" className="lg-btn-accent">
+            <Plus size={14} strokeWidth={2} /> {t('maintenances.new')}
+          </Link>
+        }
+      />
 
-      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-3">
+      <div className="lg-inner grid gap-3 p-4 md:grid-cols-3">
         <select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
@@ -178,131 +180,136 @@ export function MaintenanceList() {
         </select>
       </div>
 
-      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+      {actionError && <p className="lg-alert lg-alert-error">{actionError}</p>}
 
       {loading ? (
-        <p className="text-sm text-white/40">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
       ) : error ? (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="lg-alert lg-alert-error">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
+        <div className="lg-inner overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-fleet-darker">
-                <tr className="border-b border-white/[0.07] text-left text-white/40">
-                  <th className="px-4 py-3 font-medium">{t('maintenances.columns.vehicle')}</th>
-                  <th className="px-4 py-3 font-medium">{t('maintenances.columns.type')}</th>
-                  <th className="px-4 py-3 font-medium">{t('maintenances.columns.status')}</th>
-                  <th className="px-4 py-3 font-medium">{t('maintenances.columns.scheduledDate')}</th>
-                  <th className="px-4 py-3 font-medium">{t('maintenances.columns.completedDate')}</th>
-                  <th className="px-4 py-3 font-medium">{t('maintenances.columns.description')}</th>
-                  <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
+            <table className="lg-table min-w-full">
+              <thead>
+                <tr>
+                  <th>{t('maintenances.columns.vehicle')}</th>
+                  <th>{t('maintenances.columns.type')}</th>
+                  <th>{t('maintenances.columns.status')}</th>
+                  <th>{t('maintenances.columns.scheduledDate')}</th>
+                  <th>{t('maintenances.columns.completedDate')}</th>
+                  <th>{t('maintenances.columns.description')}</th>
+                  <th className="text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody>
                 {maintenances.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-white/30">
-                      {t('maintenances.empty')}
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<Wrench size={20} strokeWidth={1.5} />}
+                        message={t('maintenances.empty')}
+                        action={
+                          <Link to="/maintenances/new" className="lg-btn-accent">
+                            <Plus size={14} strokeWidth={2} />
+                            {t('maintenances.new')}
+                          </Link>
+                        }
+                      />
                     </td>
                   </tr>
                 ) : (
                   maintenances.map((maintenance) => (
-                    <tr key={maintenance.id} className="hover:bg-white/[0.025]">
-                      <td className="px-4 py-3 font-medium text-white">
+                    <tr key={maintenance.id}>
+                      <td className="font-medium text-white">
                         {maintenance.vehicle.plate}
-                        <div className="text-xs text-white/40">
+                        <div className="text-xs font-normal text-neutral-500">
                           {maintenance.vehicle.brand} {maintenance.vehicle.model}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-white/70">
-                        {t(`maintenances.types.${maintenance.type}`)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${getStatusClasses(maintenance.status)}`}
-                        >
+                      <td>{t(`maintenances.types.${maintenance.type}`)}</td>
+                      <td>
+                        <span className={`lg-tag ${getStatusClasses(maintenance.status)}`}>
                           {t(`maintenances.statuses.${maintenance.status}`)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-white/70">
+                      <td className="whitespace-nowrap">
                         {new Date(maintenance.scheduledDate).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-4 py-3 text-white/70">
+                      <td className="whitespace-nowrap">
                         {maintenance.completedDate
                           ? new Date(maintenance.completedDate).toLocaleDateString('pt-BR')
                           : '-'}
                       </td>
-                      <td className="px-4 py-3 text-white/50">
+                      <td className="text-neutral-400">
                         {maintenance.description}
                         {maintenance.cancelReason && (
-                          <div className="text-xs text-amber-400/70">
+                          <div className="text-xs text-orange-400/80">
                             {maintenance.cancelReason}
                           </div>
                         )}
                         {!maintenance.createdById && (
-                          <div className="text-xs text-white/25">
+                          <div className="text-xs text-neutral-600">
                             {t('entries.authorUnknown')}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                          {maintenance.status === MaintenanceStatus.CANCELLED ? (
+                      <td>
+                        {maintenance.status === MaintenanceStatus.CANCELLED ? (
+                          <div className="flex items-center justify-end gap-3">
                             <button
                               onClick={() => handleRestore(maintenance.id)}
-                              className="text-gold hover:underline"
+                              className="lg-action"
                             >
                               {t('actions.restoreEntry')}
                             </button>
-                          ) : (
-                            <>
-                              {maintenance.status !== MaintenanceStatus.DONE && (
-                                <button
-                                  onClick={() =>
-                                    handleStatusChange(maintenance.id, MaintenanceStatus.DONE)
-                                  }
-                                  className="text-gold hover:underline"
-                                >
-                                  {t('maintenances.actions.complete')}
-                                </button>
-                              )}
-                              {maintenance.status === MaintenanceStatus.DONE && (
-                                <button
-                                  onClick={() =>
+                            <RowActions
+                              actions={[
+                                canDelete && {
+                                  label: t('actions.remove'),
+                                  onSelect: () => handleDelete(maintenance.id),
+                                  tone: 'danger',
+                                },
+                              ]}
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-3">
+                            <Link
+                              to={`/maintenances/${maintenance.id}/edit`}
+                              className="lg-action"
+                            >
+                              {t('actions.edit')}
+                            </Link>
+                            <RowActions
+                              actions={[
+                                maintenance.status !== MaintenanceStatus.DONE && {
+                                  label: t('maintenances.actions.complete'),
+                                  onSelect: () =>
+                                    handleStatusChange(maintenance.id, MaintenanceStatus.DONE),
+                                },
+                                maintenance.status === MaintenanceStatus.DONE && {
+                                  label: t('maintenances.actions.reopen'),
+                                  onSelect: () =>
                                     handleStatusChange(
                                       maintenance.id,
                                       MaintenanceStatus.SCHEDULED,
-                                    )
-                                  }
-                                  className="text-white/55 hover:underline"
-                                >
-                                  {t('maintenances.actions.reopen')}
-                                </button>
-                              )}
-                              <Link
-                                to={`/maintenances/${maintenance.id}/edit`}
-                                className="text-white/55 hover:underline"
-                              >
-                                {t('actions.edit')}
-                              </Link>
-                              <button
-                                onClick={() => setCancellingId(maintenance.id)}
-                                className="text-amber-400 hover:underline"
-                              >
-                                {t('actions.cancelEntry')}
-                              </button>
-                            </>
-                          )}
-                          {canDelete && (
-                            <button
-                              onClick={() => handleDelete(maintenance.id)}
-                              className="text-red-400 hover:underline"
-                            >
-                              {t('actions.remove')}
-                            </button>
-                          )}
-                        </div>
+                                    ),
+                                  tone: 'muted',
+                                },
+                                {
+                                  label: t('actions.cancelEntry'),
+                                  onSelect: () => setCancellingId(maintenance.id),
+                                  tone: 'warn',
+                                },
+                                canDelete && {
+                                  label: t('actions.remove'),
+                                  onSelect: () => handleDelete(maintenance.id),
+                                  tone: 'danger',
+                                },
+                              ]}
+                            />
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))

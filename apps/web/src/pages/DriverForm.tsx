@@ -7,6 +7,7 @@ import { useDriver } from '@/hooks/useDriver'
 import { useUsers } from '@/hooks/useUsers'
 import { useToken } from '@/hooks/useToken'
 import { formatCpf } from '@/lib/utils'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 
 interface DriverFormState {
   /** Só no cadastro: de quem é a ficha. */
@@ -25,10 +26,9 @@ const initialForm: DriverFormState = {
   status: DriverStatus.ACTIVE,
 }
 
-const inputClass =
-  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
-const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+const labelClass = 'lg-label'
 
 /**
  * Ficha operacional do motorista.
@@ -143,34 +143,29 @@ export function DriverForm() {
   }
 
   if (loading) {
-    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+    return <LoadingState label={t('common.loading')} />
   }
 
   if (loadError) {
-    return <p className="text-sm text-red-400">{loadError}</p>
+    return <p className="lg-alert lg-alert-error">{loadError}</p>
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          {isEdit ? t('drivers.edit') : t('drivers.new')}
-        </h1>
-        <p className="text-sm text-white/40">{t('drivers.formSubtitle')}</p>
-      </div>
+    <div className="max-w-2xl space-y-6">
+      <PageHeader
+        title={isEdit ? t('drivers.edit') : t('drivers.new')}
+        subtitle={t('drivers.formSubtitle')}
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
-      >
+      <form onSubmit={handleSubmit} className="lg-inner lg-reveal space-y-4 p-6">
         {isEdit ? (
-          <div className="rounded-md border border-white/[0.07] bg-fleet-darker px-4 py-3">
+          <div className="lg-row px-4 py-3">
             <p className="text-sm font-medium text-white">{driver?.name}</p>
-            <p className="text-xs text-white/40">
+            <p className="mt-0.5 text-xs text-neutral-500">
               {formatCpf(driver?.cpf)}
               {driver?.email && ` • ${driver.email}`}
             </p>
-            <p className="mt-2 text-xs text-white/35">
+            <p className="mt-2 text-xs text-neutral-500">
               {driver?.linkedToUser
                 ? t('drivers.identityFromAccount')
                 : t('drivers.identityWithoutAccount')}
@@ -195,7 +190,7 @@ export function DriverForm() {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-white/35">
+            <p className="mt-1.5 text-xs text-neutral-500">
               {candidates.length === 0 && !usersLoading
                 ? t('drivers.noCandidates')
                 : t('drivers.selectPersonHelp')}
@@ -246,20 +241,16 @@ export function DriverForm() {
           )}
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="lg-alert lg-alert-error">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="lg-btn-accent">
             {submitting ? t('actions.saving') : t('actions.save')}
           </button>
           <button
             type="button"
             onClick={() => navigate('/drivers')}
-            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
+            className="lg-btn-ghost"
           >
             {t('actions.cancel')}
           </button>

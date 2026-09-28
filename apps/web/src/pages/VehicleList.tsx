@@ -10,12 +10,15 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { EmptyState, LoadingState, PageHeader, SearchField } from '@/components/ledger/Ui'
+import { RowActions } from '@/components/ledger/RowActions'
+import { useToast } from '@/components/ledger/Toast'
+import { Car, Plus } from 'lucide-react'
 
 type VehicleSortField = 'createdAt' | 'plate' | 'brand' | 'model' | 'year'
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
-const inputClass =
-  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
 function getVehicleStatusLabel(status: VehicleStatus, t: (key: string) => string) {
   return status === VehicleStatus.ACTIVE ? t('status.active') : t('status.inactive')
@@ -26,6 +29,7 @@ export function VehicleList() {
   const { invalidate: invalidateVehicles } = useVehicleOptions()
   const getToken = useToken()
   const { currentUser } = useCurrentUser()
+  const toast = useToast()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [yearMin, setYearMin] = useState('')
@@ -77,7 +81,7 @@ export function VehicleList() {
           reload()
           invalidateVehicles()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
@@ -97,7 +101,7 @@ export function VehicleList() {
           reload()
           invalidateVehicles()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
@@ -120,7 +124,7 @@ export function VehicleList() {
           reload()
           invalidateVehicles()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
@@ -136,29 +140,24 @@ export function VehicleList() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('vehicles.title')}</h1>
-          <p className="text-sm text-white/40">{t('vehicles.subtitle')}</p>
-        </div>
-        {canMutate && (
-          <Link
-            to="/vehicles/new"
-            className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
-          >
-            {t('vehicles.new')}
-          </Link>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t('vehicles.title')}
+        subtitle={t('vehicles.subtitle')}
+        actions={
+          canMutate && (
+            <Link to="/vehicles/new" className="lg-btn-accent">
+              <Plus size={14} strokeWidth={2} /> {t('vehicles.new')}
+            </Link>
+          )
+        }
+      />
 
-      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-4">
-        <input
-          type="text"
+      <div className="lg-inner grid gap-3 p-4 md:grid-cols-4">
+        <SearchField
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('vehicles.searchPlaceholder')}
-          className={inputClass}
         />
         <select
           value={status}
@@ -186,15 +185,15 @@ export function VehicleList() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-white/40">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
       ) : error ? (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="lg-alert lg-alert-error">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
+        <div className="lg-inner overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-fleet-darker">
-                <tr className="border-b border-white/[0.07] text-left text-white/40">
+            <table className="lg-table min-w-full">
+              <thead>
+                <tr>
                   {[
                     ['plate', t('vehicles.columns.plate')],
                     ['brand', t('vehicles.columns.brand')],
@@ -204,85 +203,88 @@ export function VehicleList() {
                     <th
                       key={field}
                       onClick={() => toggleSort(field as VehicleSortField)}
-                      className="cursor-pointer px-4 py-3 font-medium select-none"
+                      className="cursor-pointer select-none"
                     >
                       {label}
                       {sortField === field && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
                     </th>
                   ))}
-                  <th className="px-4 py-3 font-medium">{t('vehicles.columns.color')}</th>
-                  <th className="px-4 py-3 font-medium">{t('vehicles.columns.status')}</th>
-                  <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
+                  <th>{t('vehicles.columns.color')}</th>
+                  <th>{t('vehicles.columns.status')}</th>
+                  <th className="text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody>
                 {vehicles.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-white/30">
-                      {t('vehicles.empty')}
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<Car size={20} strokeWidth={1.5} />}
+                        message={t('vehicles.empty')}
+                        action={
+                          canMutate && (
+                            <Link to="/vehicles/new" className="lg-btn-accent">
+                              <Plus size={14} strokeWidth={2} />
+                              {t('vehicles.new')}
+                            </Link>
+                          )
+                        }
+                      />
                     </td>
                   </tr>
                 ) : (
                   vehicles.map((vehicle) => (
-                    <tr key={vehicle.id} className="hover:bg-white/[0.025]">
-                      <td className="px-4 py-3 font-medium text-white">{vehicle.plate}</td>
-                      <td className="px-4 py-3 text-white/70">{vehicle.brand}</td>
-                      <td className="px-4 py-3 text-white/70">{vehicle.model}</td>
-                      <td className="px-4 py-3 text-white/70">{vehicle.year}</td>
-                      <td className="px-4 py-3 text-white/70">{vehicle.color || '-'}</td>
-                      <td className="px-4 py-3">
+                    <tr key={vehicle.id}>
+                      <td className="font-medium text-white">{vehicle.plate}</td>
+                      <td>{vehicle.brand}</td>
+                      <td>{vehicle.model}</td>
+                      <td className="tabular-nums">{vehicle.year}</td>
+                      <td>{vehicle.color || '-'}</td>
+                      <td>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            vehicle.status === VehicleStatus.ACTIVE
-                              ? 'bg-green-500/10 text-green-400'
-                              : 'bg-white/5 text-white/40'
+                          className={`lg-tag ${
+                            vehicle.status === VehicleStatus.ACTIVE ? 'lg-tag-ok' : 'lg-tag-muted'
                           }`}
                         >
                           {getVehicleStatusLabel(vehicle.status, t)}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <Link to={`/vehicles/${vehicle.id}`} className="text-gold hover:underline">
+                      <td>
+                        <div className="flex items-center justify-end gap-3">
+                          <Link to={`/vehicles/${vehicle.id}`} className="lg-action">
                             {t('actions.view')}
                           </Link>
-                          {canMutate && (
-                            <>
-                              <Link
-                                to={`/vehicles/${vehicle.id}/edit`}
-                                className="text-white/55 hover:underline"
-                              >
-                                {t('actions.edit')}
-                              </Link>
-                              <Link
-                                to={`/vehicles/${vehicle.id}/drivers`}
-                                className="text-white/55 hover:underline"
-                              >
-                                {t('vehicles.manageDrivers')}
-                              </Link>
-                              {vehicle.status === VehicleStatus.ACTIVE ? (
-                                <button
-                                  onClick={() => handleDeactivate(vehicle.id)}
-                                  className="text-amber-400 hover:underline"
-                                >
-                                  {t('actions.deactivate')}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleReactivate(vehicle.id)}
-                                  className="text-green-400 hover:underline"
-                                >
-                                  {t('actions.reactivate')}
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handlePermanentDelete(vehicle.id)}
-                                className="text-red-400 hover:underline"
-                              >
-                                {t('actions.delete')}
-                              </button>
-                            </>
-                          )}
+                          <RowActions
+                            actions={[
+                              canMutate && {
+                                label: t('actions.edit'),
+                                to: `/vehicles/${vehicle.id}/edit`,
+                                tone: 'muted',
+                              },
+                              canMutate && {
+                                label: t('vehicles.manageDrivers'),
+                                to: `/vehicles/${vehicle.id}/drivers`,
+                                tone: 'muted',
+                              },
+                              canMutate &&
+                                vehicle.status === VehicleStatus.ACTIVE && {
+                                  label: t('actions.deactivate'),
+                                  onSelect: () => handleDeactivate(vehicle.id),
+                                  tone: 'warn',
+                                },
+                              canMutate &&
+                                vehicle.status !== VehicleStatus.ACTIVE && {
+                                  label: t('actions.reactivate'),
+                                  onSelect: () => handleReactivate(vehicle.id),
+                                  tone: 'ok',
+                                },
+                              canMutate && {
+                                label: t('actions.delete'),
+                                onSelect: () => handlePermanentDelete(vehicle.id),
+                                tone: 'danger',
+                              },
+                            ]}
+                          />
                         </div>
                       </td>
                     </tr>

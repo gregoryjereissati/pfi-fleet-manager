@@ -12,13 +12,21 @@ import {
   UserCog,
   Building2,
   LogOut,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAlertCount } from '@/hooks/useAlertCount'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { isAdminRole } from '@/lib/roles'
+import { BrandMark } from '@/components/ledger/Ui'
 
-export function Sidebar() {
+interface SidebarProps {
+  /** Aberta como gaveta, em telas estreitas. Em telas largas fica sempre à vista. */
+  open: boolean
+  onClose: () => void
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const { t } = useTranslation()
   const { count: alertCount } = useAlertCount()
   const { currentUser } = useCurrentUser()
@@ -50,82 +58,96 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-60 bg-fleet-darker border-r border-white/[0.06] flex flex-col shrink-0">
-      <div className="px-5 py-5 border-b border-white/[0.06]">
-        <div className="flex items-center gap-3">
-          <img src="/logo.svg" width="30" height="30" alt="Fleet Manager" className="shrink-0" />
-          <span className="font-bold text-white tracking-wide">{t('app.name')}</span>
-        </div>
-      </div>
-
-      <nav className="flex-1 p-3 space-y-0.5">
-        {navItems.map(({ to, icon: Icon, labelKey, enabled }) =>
-          enabled ? (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-gold/10 text-gold border-l-2 border-gold pl-[10px]'
-                    : 'text-white/50 hover:bg-white/[0.04] hover:text-white/80',
-                )
-              }
-            >
-              <Icon size={16} />
-              <span className="flex-1">{t(labelKey)}</span>
-              {(to === '/documents' || to === '/alerts') && alertCount > 0 && (
-                <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500/80 px-1.5 py-0.5 text-xs font-bold text-white">
-                  {alertCount}
-                </span>
-              )}
-            </NavLink>
-          ) : (
-            <div
-              key={to}
-              title={t('nav.comingSoon')}
-              className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-white/20 cursor-not-allowed select-none"
-            >
-              <Icon size={16} />
-              {t(labelKey)}
-            </div>
-          ),
+    <>
+      <div
+        aria-hidden
+        onClick={onClose}
+        className={cn(
+          'fixed inset-0 z-30 bg-black/60 backdrop-blur-sm transition-opacity lg:hidden',
+          open ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
-      </nav>
+      />
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-white/5 bg-lg-app/95 backdrop-blur-md transition-transform duration-300 ease-spring lg:static lg:z-auto lg:translate-x-0 lg:bg-lg-app/80',
+          open ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        <div className="flex h-16 items-center justify-between px-6">
+          <BrandMark size={26} />
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg-icon-btn lg:hidden"
+            aria-label={t('nav.closeMenu')}
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-      <div className="p-4 border-t border-white/[0.06] space-y-3">
-        <NavLink
-          to="/profile"
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-2 min-w-0 rounded-md px-2 py-2 transition-colors',
-              isActive
-                ? 'bg-gold/10 text-gold border-l-2 border-gold pl-[6px]'
-                : 'hover:bg-white/[0.04]',
-            )
-          }
-        >
-          <div className="w-7 h-7 bg-gold/20 rounded-full flex items-center justify-center shrink-0 border border-gold/30">
-            <span className="text-gold text-xs font-bold">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
+          {navItems.map(({ to, icon: Icon, labelKey, enabled }) =>
+            enabled ? (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'border-white/5 bg-white/5 text-white'
+                      : 'border-transparent text-neutral-400 hover:bg-white/5 hover:text-white',
+                  )
+                }
+              >
+                <Icon size={16} strokeWidth={1.5} />
+                <span className="flex-1">{t(labelKey)}</span>
+                {(to === '/documents' || to === '/alerts') && alertCount > 0 && (
+                  <span className="lg-count">{alertCount}</span>
+                )}
+              </NavLink>
+            ) : (
+              <div
+                key={to}
+                title={t('nav.comingSoon')}
+                className="flex cursor-not-allowed select-none items-center gap-3 rounded-xl border border-transparent px-4 py-2.5 text-sm font-medium text-neutral-700"
+              >
+                <Icon size={16} strokeWidth={1.5} />
+                {t(labelKey)}
+              </div>
+            ),
+          )}
+        </nav>
+
+        <div className="space-y-2 border-t border-white/5 p-4">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              cn(
+                'flex min-w-0 items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors',
+                isActive ? 'border-white/5 bg-white/5' : 'border-transparent hover:bg-white/5',
+              )
+            }
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/5 text-sm font-medium text-emerald-400 ring-1 ring-white/10">
               {currentUser?.name?.charAt(0).toUpperCase() ?? '?'}
-            </span>
-          </div>
-          <div className="min-w-0">
-            <span className="block text-sm font-medium text-white/70 truncate">
-              {currentUser?.name}
-            </span>
-            <span className="block text-xs text-white/35 truncate">{t('nav.profile')}</span>
-          </div>
-        </NavLink>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-sm text-white/35 hover:text-white/60 transition-colors"
-        >
-          <LogOut size={14} />
-          {t('nav.logout')}
-        </button>
-      </div>
-    </aside>
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-medium text-white">
+                {currentUser?.name}
+              </span>
+              <span className="block truncate text-xs text-neutral-500">{t('nav.profile')}</span>
+            </div>
+          </NavLink>
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-neutral-500 transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <LogOut size={15} strokeWidth={1.5} />
+            {t('nav.logout')}
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }

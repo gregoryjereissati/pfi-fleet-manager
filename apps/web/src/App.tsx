@@ -1,9 +1,11 @@
 import { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AppLayout } from '@/layouts/AppLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AccessGate } from '@/components/AccessGate'
+import { LedgerBackdrop } from '@/components/ledger/LedgerBackdrop'
+import { LoadingState } from '@/components/ledger/Ui'
 
 // O caminho de entrada é carregado junto com a aplicação: quem abre o login
 // precisa ver o campo de senha, não esperar o resto do sistema.
@@ -43,12 +45,28 @@ function RouteFallback() {
 
   return (
     <div className="flex items-center justify-center py-20">
-      <span className="text-sm text-white/40">{t('common.loading')}</span>
+      <LoadingState label={t('common.loading')} />
     </div>
   )
 }
 
+/** Telas de entrada, com a cena do hero ao fundo. */
+const TELAS_DE_ENTRADA = ['/', '/login', '/register']
+
 export default function App() {
+  const { pathname } = useLocation()
+
+  return (
+    <>
+      <LedgerBackdrop variant={TELAS_DE_ENTRADA.includes(pathname) ? 'hero' : 'app'} />
+      <div className="relative z-10">
+        <AppRoutes />
+      </div>
+    </>
+  )
+}
+
+function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />

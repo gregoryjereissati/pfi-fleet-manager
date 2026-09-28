@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Bell, Building2, ChevronDown } from 'lucide-react'
+import { Bell, Building2, ChevronDown, Menu } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAlertCount } from '@/hooks/useAlertCount'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -14,10 +14,11 @@ const pageTitleMatchers: Array<{ pattern: RegExp; key: string }> = [
   { pattern: /^\/documents(?:\/.*)?$/, key: 'documents.title' },
   { pattern: /^\/alerts$/, key: 'alerts.title' },
   { pattern: /^\/profile$/, key: 'profile.title' },
+  { pattern: /^\/users$/, key: 'users.title' },
   { pattern: /^\/companies$/, key: 'companies.title' },
 ]
 
-export function Header() {
+export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { t, i18n } = useTranslation()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -34,21 +35,31 @@ export function Header() {
     pageTitleMatchers.find(({ pattern }) => pattern.test(pathname))?.key ?? 'app.name'
 
   return (
-    <header className="h-14 bg-fleet-darker border-b border-white/[0.06] flex items-center justify-between px-6 shrink-0">
-      <div className="flex min-w-0 items-center gap-3">
-        <h2 className="text-sm font-semibold text-white/80">{t(titleKey)}</h2>
-
+    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/5 bg-lg-app/80 px-4 backdrop-blur-md sm:px-6 lg:px-10">
+      <div className="flex min-w-0 items-center gap-3 text-sm">
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          className="lg-icon-btn shrink-0 lg:hidden"
+          aria-label={t('nav.openMenu')}
+        >
+          <Menu size={17} strokeWidth={1.5} />
+        </button>
         {/*
           A empresa em que se está trabalhando nunca foi exibida. Para quem
           pertence a uma só, é informação de contexto; para o super
           administrador, é o que distingue uma tela idêntica da outra.
         */}
         {currentUser?.companyName && (
-          <span className="flex min-w-0 items-center gap-1.5 border-l border-white/[0.08] pl-3 text-xs text-white/40">
-            <Building2 size={12} className="shrink-0" />
-            <span className="truncate">{currentUser.companyName}</span>
-          </span>
+          <>
+            <span className="hidden min-w-0 items-center gap-2 text-neutral-500 sm:flex">
+              <Building2 size={14} strokeWidth={1.5} className="shrink-0" />
+              <span className="truncate">{currentUser.companyName}</span>
+            </span>
+            <span className="hidden text-neutral-700 sm:inline">/</span>
+          </>
         )}
+        <h2 className="truncate font-medium text-white">{t(titleKey)}</h2>
       </div>
       <div className="flex items-center gap-3">
         {currentUser?.isSuperAdmin && (
@@ -57,28 +68,28 @@ export function Header() {
               definirEmpresaAtiva(null)
               window.location.replace('/dashboard')
             }}
-            className="flex items-center gap-1 rounded border border-white/[0.1] px-2 py-1 text-xs font-semibold text-white/40 transition-colors hover:text-white/70"
+            className="flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
             title={t('companySwitch.hint')}
+            aria-label={t('companySwitch.action')}
           >
-            {t('companySwitch.action')}
+            <Building2 size={14} strokeWidth={1.5} className="sm:hidden" />
+            <span className="hidden sm:inline">{t('companySwitch.action')}</span>
             <ChevronDown size={12} />
           </button>
         )}
         <button
           onClick={() => navigate('/alerts')}
-          className="relative text-white/40 transition-colors hover:text-white/70"
+          className="lg-icon-btn"
           aria-label={t('alerts.title')}
         >
-          <Bell size={17} />
+          <Bell size={17} strokeWidth={1.5} />
           {count > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-red-500/80 px-1 py-0.5 text-[10px] font-bold text-white">
-              {count}
-            </span>
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-lg-app bg-yellow-400" />
           )}
         </button>
         <button
           onClick={toggleLanguage}
-          className="text-xs font-semibold text-white/40 hover:text-white/70 border border-white/[0.1] rounded px-2 py-1 transition-colors"
+          className="flex h-9 items-center rounded-lg border border-white/5 bg-white/5 px-3 text-xs font-medium text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
         >
           {t('lang.switch')}
         </button>

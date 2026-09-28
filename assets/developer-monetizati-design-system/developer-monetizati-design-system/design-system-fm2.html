@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger Design System</title>
+<link rel="icon" href="assets/overview/assets/developer-monetizati.aura.build/favicon.ico">
+<!-- the Overview's own assets, same order as the Overview and design-system.html -->
+<script src="assets/overview/assets/cdn.tailwindcss.com/3.4.17.js"></script>
+<script src="assets/overview/assets/developer-monetizati.aura.build/iconify-icons.js"></script>
+<script src="assets/overview/assets/code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<link rel="stylesheet" href="assets/overview/assets/developer-monetizati.aura.build/fonts.css">
+<link rel="stylesheet" href="assets/overview/assets/developer-monetizati.aura.build/ledger.css">
+<script src="assets/overview/assets/developer-monetizati.aura.build/tailwind.config.js"></script>
+<script src="assets/overview/assets/developer-monetizati.aura.build/animate-on-scroll.js"></script>
+<style>
+/* ================================================================ catalog chrome
+   Documentation layout only, taken from design-system.html's own .ds-* catalog rules. Every specimen keeps
+   the Overview's Tailwind classes, tailwind.config.js and ledger.css untouched. */
+html { scroll-behavior: smooth; }
+#ds-nav .ds-links { min-width: 0; margin: 0 12px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+#ds-nav .ds-links::-webkit-scrollbar { display: none; }
+#ds-nav .ds-links a.is-active { color: #fff; }
+
+#ds-main { min-width: 0; padding: 8px 0 160px; }
+.ds-group { padding: 8px 0 112px; scroll-margin-top: 112px; }
+.ds-head { margin-bottom: 44px; }
+.ds-lede { margin: 18px 0 0; max-width: 72ch; font: 300 16px/1.6 Geist, sans-serif; color: #94a3b8; }
+.ds-lede code { font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #e5e5e5; }
+.ds-sub { margin: 56px 0 18px; font: 600 12px/1.4 Geist, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #34d399; }
+.ds-head + .ds-sub { margin-top: 0; }
+.ds-spec { margin: 0 0 56px; }
+.ds-spec:last-child { margin-bottom: 0; }
+.ds-spec > h3 { margin: 0 0 14px; font: 500 15px/1.4 Geist, sans-serif; letter-spacing: -.01em; color: #fff; }
+.ds-meta { display: block; margin-top: 12px; font: 11.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b4b4b4; overflow-wrap: anywhere; }
+.ds-note { margin: 8px 0 0; max-width: 80ch; font: 13px/1.6 Geist, sans-serif; color: #b0b0b0; }
+.ds-note code, .ds-meta b { color: #e5e5e5; font-weight: 400; }
+.ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px; }
+.ds-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
+.ds-cell > small { font: 600 11px/1.4 Geist, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #a3a3a3; }
+.ds-stage { position: relative; padding: 32px; border-radius: 24px; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.ds-contain { position: relative; overflow: hidden; isolation: isolate; }
+.ds-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 28px; align-items: start; }
+.ds-grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; align-items: start; }
+.ds-fit { width: fit-content; max-width: 100%; }
+
+/* typography + scale tables: role | live sample | declared size */
+.ds-type { display: grid; grid-template-columns: 210px minmax(0, 1fr) 150px; gap: 28px; align-items: center; padding: 26px 0;
+  border-top: 1px solid rgba(255,255,255,.08); }
+.ds-type:last-child { border-bottom: 1px solid rgba(255,255,255,.08); }
+.ds-type .role { font: 500 14px/1.4 Geist, sans-serif; color: #fff; }
+.ds-type .face { margin-top: 4px; font: 12px/1.5 Geist, sans-serif; color: #a8a8a8; }
+.ds-type .face code { display: block; margin-top: 6px; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: #9e9e9e; overflow-wrap: anywhere; }
+.ds-type .sample { min-width: 0; overflow-wrap: break-word; }
+.ds-type .sample > * { margin-top: 0 !important; margin-bottom: 0 !important; }
+.ds-type .sizes { text-align: right; font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #e5e5e5; }
+.ds-type .sizes small { display: block; color: #8a8a8a; font-size: 11px; }
+
+/* colors: live chip on its surface + label, value, token, use */
+.ds-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px 28px; }
+.ds-sw { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 14px; align-items: start; }
+.ds-chip { position: relative; height: 76px; overflow: hidden; display: grid; place-items: center; background: #000; border-radius: 16px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); }
+.ds-chip .aa { font: 500 26px/1 Geist, sans-serif; letter-spacing: -.04em; }
+.ds-chip .fill { position: absolute; inset: 0; }
+.ds-sw strong { display: block; font: 500 13px/1.4 Geist, sans-serif; color: #fff; }
+.ds-sw code { display: block; margin-top: 3px; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; color: #e5e5e5; overflow-wrap: anywhere; }
+.ds-sw code.tok { color: #9e9e9e; }
+.ds-sw p { margin: 4px 0 0; font: 12px/1.45 Geist, sans-serif; color: #ababab; }
+.ds-states { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; margin-bottom: 26px; }
+.ds-state { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.ds-state small { font: 600 10px/1.4 Geist, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #a3a3a3; }
+.ds-state code { font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; color: #e5e5e5; overflow-wrap: anywhere; }
+.ds-famname { margin: 0 0 12px; font: 500 13px/1.4 Geist, sans-serif; color: #fff; }
+.ds-bgbox { position: relative; height: 340px; overflow: hidden; isolation: isolate; }
+
+/* icons */
+.ds-icons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 34px 20px; }
+.ds-icon { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
+.ds-icon .stage { position: relative; min-width: 44px; height: 36px; display: flex; align-items: center; font-size: 24px; }
+.ds-icon code { font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; color: #e5e5e5; overflow-wrap: anywhere; }
+.ds-icon code i { display: block; font-style: normal; color: #9e9e9e; }
+
+/* motion gallery */
+.ds-ease { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 24px; margin-top: 8px; }
+.ds-ease > div { padding: 16px 0; border-top: 1px solid rgba(255,255,255,.1); }
+.ds-ease .demo { height: 56px; display: flex; align-items: flex-end; gap: 6px; margin-bottom: 12px; }
+.ds-ease strong { display: block; font: 500 13px/1.4 Geist, sans-serif; color: #fff; }
+.ds-ease code { display: block; margin-top: 4px; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; color: #e5e5e5; overflow-wrap: anywhere; }
+.ds-ease p { margin: 6px 0 0; font: 12px/1.45 Geist, sans-serif; color: #ababab; }
+
+@media (max-width: 1080px) {
+  .ds-type { grid-template-columns: 170px minmax(0, 1fr); }
+  .ds-type .sizes { grid-column: 2; text-align: left; }
+  .ds-icons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ds-ease { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+  .ds-group { padding-bottom: 88px; }
+  .ds-type { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ds-type .sizes { grid-column: auto; }
+  .ds-stage { padding: 20px 16px; }
+  .ds-bgbox { height: 280px; }
+  .ds-ease { grid-template-columns: 1fr; }
+  .ds-grid2 { grid-template-columns: minmax(0, 1fr); }
+  .ds-icons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body class="antialiased selection:bg-emerald-500 selection:text-white text-slate-300 bg-[#000000]">
+
+    <!-- Page container (the Overview's own) -->
+    <div class="md:px-8 lg:px-12 max-w-[1400px] mr-auto ml-auto pr-6 pl-6">
+
+      <!-- ============================================================ NAV
+           The Overview's floating navbar; its links become anchors to each section -->
+      <nav id="ds-nav" class="flex sticky [animation:animationIn_0.8s_ease-out_0.1s_both] bg-[#000000] z-50 border-[#ffffff]/10 border rounded-full mt-4 mb-0 pt-4 pr-4 pb-4 pl-4 top-4 backdrop-blur-md items-center justify-between">
+        <div class="flex items-center gap-2">
+          <a href="#top" aria-label="Ledger" class="inline-flex items-center justify-center bg-center mix-blend-screen w-[80px] h-[40px] bg-[url(assets/overview/assets/cdn.midjourney.com/372600d1-0464-41c8-8632-fecb7f20ff47/0_3__q01172a98.png)] bg-cover rounded-full invert"></a>
+        </div>
+
+        <div class="ds-links flex items-center gap-6 md:gap-8 text-sm font-medium text-slate-400">
+          <a href="#typography" class="font-geist transition-colors hover:text-emerald-400">Typography</a>
+          <a href="#colors" class="font-geist transition-colors hover:text-emerald-400">Colors</a>
+          <a href="#components" class="font-geist transition-colors hover:text-emerald-400">Components</a>
+          <a href="#layout" class="font-geist transition-colors hover:text-emerald-400">Layout</a>
+          <a href="#motion" class="font-geist transition-colors hover:text-emerald-400">Motion</a>
+          <a href="#icons" class="font-geist transition-colors hover:text-emerald-400">Icons</a>
+        </div>
+
+        <div class="hidden sm:flex items-center gap-4">
+          <button class="hidden md:block px-5 py-2 rounded-full border text-slate-300 hover:bg-slate-900 transition-colors text-sm border-neutral-900 font-geist">
+            Sign In
+          </button>
+          <button class="px-5 py-2 rounded-full bg-white hover:bg-slate-200 transition-colors text-sm text-neutral-950 font-geist font-medium">
+            Get Started
+          </button>
+        </div>
+      </nav>
+
+      <!-- ============================================================ 00 HERO
+           Exact clone of the Overview hero (structure, classes, scene, card, scripts). Only the copy changed. -->
+      <main id="top" class="grid grid-cols-1 lg:grid-cols-2 pt-32 pb-32 relative gap-x-16 gap-y-16 items-center">
+        <!-- Background Script & Div -->
+        <div class="absolute inset-0 -z-10 w-full h-full overflow-hidden">
+            <div data-us-project="vLGJIxHINq2tCeLOR9Dt" data-us-project-src="ledger-us-scene" class="absolute w-full h-full left-0 top-0 -z-10 opacity-60"></div>
+            <script src="assets/overview/assets/developer-monetizati.aura.build/unicorn-scene.js"></script>
+            <script type="text/javascript">!function(){if(!window.UnicornStudio){window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="assets/overview/assets/cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.0.0/dist/unicornStudio.umd.js",i.onload=function(){window.UnicornStudio.isInitialized||(UnicornStudio.init(),window.UnicornStudio.isInitialized=!0)},(document.head || document.body).appendChild(i)}}();</script>
+        </div>
+
+        <!-- Left Content -->
+        <div class="flex flex-col gap-8 max-w-2xl gap-x-8 gap-y-8 items-start">
+            <div class="inline-flex [animation:animationIn_0.8s_ease-out_0.2s_both] bg-slate-900 border-neutral-900 border rounded-full pt-1.5 pr-5 pb-1.5 pl-1.5 gap-x-3 gap-y-3 items-center">
+            <span class="bg-emerald-500 text-white text-xs px-2.5 py-1 rounded-full font-geist font-medium">New</span>
+            <span class="text-slate-300 text-sm font-geist">Living pattern library</span>
+            </div>
+
+            <h1 class="md:text-7xl leading-[1.1] [animation:animationIn_0.8s_ease-out_0.3s_both] text-5xl font-light text-white tracking-tight font-geist">
+            Ledger Design System
+            </h1>
+
+            <p class="leading-relaxed [animation:animationIn_0.8s_ease-out_0.4s_both] text-lg text-slate-400 font-geist max-w-lg">
+            Tokens, type, surfaces and motion for a pitch-black, emerald-lit
+            interface, each specimen built from the page's own classes.
+            </p>
+
+            <div class="flex flex-wrap [animation:animationIn_0.8s_ease-out_0.5s_both] pt-2 gap-x-4 gap-y-4 items-center">
+            <div class="inline-block bg-transparent">
+                <button class="shiny-cta focus:outline-none"><span class="font-geist">Explore Tokens</span></button>
+            </div>
+            <button class="group px-8 py-4 rounded-full border text-slate-300 text-lg hover:bg-slate-900 transition-all flex items-center gap-3 border-neutral-900 font-geist">
+                Components
+                <iconify-icon icon="solar:book-bookmark-linear" class="text-xl group-hover:text-white transition-colors"></iconify-icon>
+            </button>
+            </div>
+        </div>
+
+        <!-- Right Visual (Mockup) -->
+        <div class="card-top lg:justify-self-end flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] group hover:border-emerald-500/20 [animation:animationIn_0.8s_ease-out_0.6s_both] bg-[#0A0B0E] w-[32rem] max-w-full h-fit z-10 border-white/10 border rounded-[1.2em] ml-auto relative shadow-2xl justify-self-end">
+
+
+  <!-- Subtle Gradient Overlay -->
+  <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none">
+  </div>
+
+  <div class="z-10 flex flex-col h-full pt-8 pr-8 pb-8 pl-8 relative">
+    <!-- Header -->
+    <div class="flex items-start justify-between mb-8">
+      <div class="flex items-baseline gap-3">
+        <!-- Metric with ID for JS animation -->
+        <span id="metric-counter-aura" class="text-6xl text-white tabular-nums font-geist tracking-tight font-light">$2.8M</span>
+        <span class="text-base text-neutral-500 font-geist">processed volume</span>
+      </div>
+      <button class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors border border-white/5 shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+      </button>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="flex-1 flex flex-col gap-2 relative">
+      <!-- Goal Labels -->
+      <div class="flex justify-between text-xs font-medium text-neutral-400 uppercase tracking-wide px-1">
+        <span class="text-emerald-500/80 font-geist">Daily Peak</span>
+        <span class="font-geist">$450k</span>
+      </div>
+
+      <!-- Bars Container -->
+      <div class="h-44 flex items-end justify-between gap-3 relative mt-1">
+        <!-- Dashed Goal Line -->
+        <div class="absolute top-0 left-0 right-0 h-px border-t border-dashed border-white/20 w-full z-0"></div>
+
+        <!-- Mon -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <!-- Animated Bar -->
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[65%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 0ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Mon</span>
+        </div>
+
+        <!-- Tue -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[85%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 100ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Tue</span>
+        </div>
+
+        <!-- Wed (Highest) -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-500 to-emerald-300 h-[100%] rounded-lg shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-500 group-hover/bar:brightness-110 animate-bar-loop" style="animation-delay: 200ms;">
+            </div>
+          </div>
+          <span class="text-xs text-white font-geist">Wed</span>
+        </div>
+
+        <!-- Thu -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[55%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 300ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Thu</span>
+        </div>
+
+        <!-- Fri -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[90%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 400ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Fri</span>
+        </div>
+
+        <!-- Sat -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[45%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 500ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Sat</span>
+        </div>
+
+        <!-- Sun -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-neutral-600 to-neutral-400 h-[30%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 animate-bar-loop" style="animation-delay: 600ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Sun</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Stats -->
+    <div class="flex items-end justify-between mt-10 pt-6 border-t border-white/5">
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-xl font-geist">135<span class="text-emerald-500 font-geist">+</span></span>
+          <span class="text-neutral-500 text-sm font-geist">currencies</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-1 text-right">
+        <div class="flex items-center justify-end gap-2">
+          <span class="text-white text-xl font-geist">$42,805</span>
+          <span class="text-neutral-500 text-sm font-geist">tax automated</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const el = document.getElementById('metric-counter-aura');
+      if (!el) return;
+
+      const loop = () => {
+        const target = 2.8;
+        const duration = 2000;
+        const hold = 3000;
+        const fadeOut = 500;
+        const totalTime = duration + hold + fadeOut;
+        let start = null;
+
+        const animate = (timestamp) => {
+          if (!start) start = timestamp;
+          const elapsed = timestamp - start;
+
+          if (elapsed < duration) {
+            // Counting phase
+            const progress = 1 - Math.pow(1 - elapsed / duration, 4); // easeOutQuart
+            const current = (progress * target).toFixed(1);
+            el.textContent = '$' + current + 'M';
+            el.style.opacity = '1';
+          } else if (elapsed < duration + hold) {
+            // Hold phase
+            el.textContent = '$2.8M';
+            el.style.opacity = '1';
+          } else if (elapsed < totalTime) {
+            // Fade out phase
+            el.textContent = '$2.8M';
+            const fadeProgress = (elapsed - (duration + hold)) / fadeOut;
+            el.style.opacity = Math.max(0, 1 - fadeProgress).toString();
+          } else {
+            // Reset and restart
+            start = null;
+            el.textContent = '$0.0M';
+            requestAnimationFrame(animate);
+            return;
+          }
+
+          requestAnimationFrame(animate);
+        };
+
+        requestAnimationFrame(animate);
+      };
+
+      // Sync start slightly after bars
+      setTimeout(loop, 100);
+    })();
+  </script>
+</div>
+      </main>
+
+<div id="ds-main">
+
+<!-- ============================================================ 01 TYPOGRAPHY -->
+<section class="ds-group" id="typography">
+  <div class="ds-head">
+    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-[1px] bg-emerald-500"></span><p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Foundations · 01</p></div>
+    <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">Typography</h2>
+    <p class="ds-lede">One family does the talking: Geist, light for display and section copy, semibold for UI headings and figures. Size labels are read live from the rendered element, so they follow the breakpoint you are on. No style in the source uses gradient text.</p>
+  </div>
+
+  <div class="ds-type"><div><div class="role">Heading 1</div><div class="face">Geist · 300 · tracking-tight · white<code>hero h1 · md:text-7xl text-5xl leading-[1.1]</code></div></div>
+    <div class="sample"><h1 data-t class="md:text-7xl leading-[1.1] text-5xl font-light text-white tracking-tight font-geist">Ledger Design System</h1></div>
+    <div class="sizes">72px / 72px<small>&lt; md: 48px / 53px</small></div></div>
+
+  <div class="ds-type"><div><div class="role">Heading 2</div><div class="face">Geist · 300 · tracking-tight · white<code>section h2 · sm:text-5xl text-3xl leading-[1.1]</code></div></div>
+    <div class="sample"><h2 data-t class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">Lorem ipsum dolor sit</h2></div>
+    <div class="sizes">48px / 48px<small>&lt; sm: 30px / 33px</small></div></div>
+
+  <div class="ds-type"><div><div class="role">Heading 3</div><div class="face">Geist · 600 · tracking-tight · white<code>feature card h3 · text-2xl md:text-3xl</code></div></div>
+    <div class="sample font-geist"><h3 data-t class="text-2xl md:text-3xl font-semibold tracking-tight text-white">Lorem Ipsum Dolor</h3></div>
+    <div class="sizes">30px / 36px<small>&lt; md: 24px / 32px</small></div></div>
+
+  <div class="ds-type"><div><div class="role">Heading 4</div><div class="face">Geist · 600 · tracking-tight · white<code>card h3 / h4 · text-xl</code></div></div>
+    <div class="sample font-geist"><h3 data-t class="text-xl font-semibold text-white tracking-tight">Dolor Sit Amet</h3></div>
+    <div class="sizes">20px / 28px</div></div>
+
+  <div class="ds-type"><div><div class="role">Bold L</div><div class="face">Geist · 600 · tracking-tight · white<code>checklist card h3 · text-lg font-semibold</code></div></div>
+    <div class="sample font-geist"><h3 data-t class="text-white text-lg font-semibold tracking-tight">Lorem Ipsum Dolor</h3></div>
+    <div class="sizes">18px / 28px</div></div>
+
+  <div class="ds-type"><div><div class="role">Bold M</div><div class="face">Geist · 600 · uppercase · tracking-wide · emerald-400<code>section eyebrow · text-sm font-semibold</code></div></div>
+    <div class="sample"><div class="flex items-center gap-2"><span class="w-6 h-[1px] bg-emerald-500"></span><p data-t class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Lorem Ipsum Dolor</p></div></div>
+    <div class="sizes">14px / 20px</div></div>
+
+  <div class="ds-type"><div><div class="role">Bold S</div><div class="face">Geist · 600 · uppercase · tracking-wider · neutral-600<code>dashboard sidebar group label · text-[11px]</code></div></div>
+    <div class="sample font-geist"><div data-t class="text-[11px] font-semibold text-neutral-600 uppercase tracking-wider">General</div></div>
+    <div class="sizes">11px / 16.5px</div></div>
+
+  <div class="ds-type"><div><div class="role">Paragraph</div><div class="face">Geist · 400 · leading-relaxed · slate-400<code>hero lead · text-lg max-w-lg</code></div></div>
+    <div class="sample"><p data-t class="leading-relaxed text-lg text-slate-400 font-geist max-w-lg">Pitch-black canvas, hairline white borders and emerald glow over a live laser-beam aurora, with light Geist type and looping bar charts.</p></div>
+    <div class="sizes">18px / 29.25px</div></div>
+
+  <div class="ds-type"><div><div class="role">Regular L</div><div class="face">Geist · 300 · slate-400 · max-w 60ch<code>section intro p · sm:text-lg text-base</code></div></div>
+    <div class="sample"><p data-t class="sm:text-lg max-w-[60ch] text-base text-slate-400 font-geist font-light">Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor. Ut enim ad minim veniam, quis nostrud exercitation.</p></div>
+    <div class="sizes">18px / 28px<small>&lt; sm: 16px / 24px</small></div></div>
+
+  <div class="ds-type"><div><div class="role">Regular M</div><div class="face">Geist · 300 · leading-relaxed · slate-400<code>card body · text-sm font-light</code></div></div>
+    <div class="sample font-geist"><p data-t class="text-sm text-slate-400 font-light leading-relaxed">Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod. Ut enim ad minim veniam quis nostrud.</p></div>
+    <div class="sizes">14px / 22.75px</div></div>
+
+  <div class="ds-type"><div><div class="role">Regular S</div><div class="face">Geist · 400 · neutral-500<code>chart axis · stat units · text-xs</code></div></div>
+    <div class="sample"><span data-t class="text-xs text-neutral-500 font-geist">Mon · Tue · Wed</span></div>
+    <div class="sizes">12px / 16px</div></div>
+</section>
+
+<!-- ============================================================ 02 COLORS & SURFACES -->
+<section class="ds-group" id="colors">
+  <div class="ds-head">
+    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-[1px] bg-emerald-500"></span><p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Foundations · 02</p></div>
+    <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">Colors &amp; Surfaces</h2>
+    <p class="ds-lede">A black page, a ladder of near-black surfaces separated by white hairlines at 5–10%, and one accent: emerald. Purple and rose appear only as data colors.</p>
+  </div>
+
+  <p class="ds-sub">Backgrounds · page, section, card</p>
+  <div class="ds-colors">
+    <div class="ds-sw"><span class="ds-chip bg-[#000000]"></span>
+      <div><strong>Page canvas</strong><code>#000000</code><code class="tok">bg-[#000000]</code><p>Body and the navbar pill.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="fill bg-gradient-to-br from-white/10 via-white/0 to-white/10"></span></span>
+      <div><strong>Section frame</strong><code>white/10 → white/0 → white/10</code><code class="tok">bg-gradient-to-br rounded-3xl p-8</code><p>Wraps every content section on the page.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 rounded-xl bg-[#0A0B0E] border border-white/10"></span></span>
+      <div><strong>Card</strong><code>#0A0B0E</code><code class="tok">bg-[#0A0B0E]</code><p>Hero card, feature, market, pricing, footer cards.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="fill bg-[#0c0d10]"></span></span>
+      <div><strong>App canvas</strong><code>#0c0d10 · header /80</code><code class="tok">bg-[#0c0d10]</code><p>Dashboard sidebar, main area and sticky header.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0c0d10]"><span class="block w-12 h-12 rounded-xl bg-[#121317] border border-white/5"></span></span>
+      <div><strong>Inner card</strong><code>#121317</code><code class="tok">bg-[#121317]</code><p>Dashboard cards, search field, segmented track.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0A0B0E]"><span class="block w-12 h-8 rounded-xl bg-[#14181F] border border-white/5 shadow-inner"></span></span>
+      <div><strong>Pill track</strong><code>#14181F</code><code class="tok">bg-[#14181F]</code><p>Market card time-range pills.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#121317]"><span class="block px-2 py-1 rounded bg-[#1a1b20] border border-white/5 text-[10px] text-neutral-400">10:45</span></span>
+      <div><strong>Tooltip</strong><code>#1a1b20 · hover #16171b</code><code class="tok">bg-[#1a1b20]</code><p>Chart hover label; search field hover fill.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-6 rounded-full bg-slate-900 border border-neutral-900"></span></span>
+      <div><strong>Announcement pill</strong><code>#0f172a</code><code class="tok">slate-900</code><p>Hero “New” pill; outline-button hover.</p></div></div>
+  </div>
+
+  <p class="ds-sub">Glass and blur</p>
+  <div class="ds-grid3">
+    <div class="ds-cell"><div class="w-full p-5 bg-[#000000] rounded-3xl"><div class="w-full h-[74px] bg-[#000000] border-[#ffffff]/10 border rounded-full backdrop-blur-md"></div></div><small>Navbar pill</small>
+      <code class="ds-meta !mt-0">bg-[#000000] border-white/10 rounded-full p-4 backdrop-blur-md · sticky top-4</code></div>
+    <div class="ds-cell"><div class="ds-contain w-full p-5 bg-[#0A0B0E] rounded-3xl h-[170px] flex items-center justify-center"><div class="absolute -top-[40%] -left-[20%] w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-[80px]"></div><div class="relative bg-slate-900/90 backdrop-blur-md border border-white/10 w-full h-16 rounded-lg shadow-xl"></div></div><small>Tooltip glass</small>
+      <code class="ds-meta !mt-0">bg-slate-900/90 backdrop-blur-md border-white/10 rounded-lg shadow-xl</code></div>
+    <div class="ds-cell"><div class="ds-contain w-full p-5 bg-[#0A0B0E] rounded-3xl h-[170px] flex items-center"><div class="absolute -right-10 -top-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-[60px]"></div><div class="relative w-full h-full bg-[#121317]/80 backdrop-blur-sm border-r border-white/5 rounded-xl"></div></div><small>Plan panel</small>
+      <code class="ds-meta !mt-0">bg-[#121317]/80 backdrop-blur-sm border-r border-white/5 · pricing left half</code></div>
+  </div>
+
+  <p class="ds-sub">Surface ladder</p>
+  <div class="ds-grid3">
+    <div class="ds-cell"><div class="w-full p-5 bg-[#000000] rounded-3xl"><div class="w-full h-[130px] bg-[#0A0B0E] border border-white/10 rounded-3xl shadow-2xl hover:border-white/20 transition-all"></div></div><small>Card</small>
+      <code class="ds-meta !mt-0">bg-[#0A0B0E] border-white/10 rounded-3xl shadow-2xl · hover:border-white/20</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0c0d10] rounded-3xl"><div class="w-full h-[130px] bg-[#121317] border border-white/5 rounded-2xl hover:border-white/10 transition-colors"></div></div><small>Inner card</small>
+      <code class="ds-meta !mt-0">bg-[#121317] border-white/5 rounded-2xl · on #0c0d10 · hover:border-white/10</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0c0d10] rounded-3xl"><div class="w-full h-[130px] bg-gradient-to-br from-[#1c1d24] to-[#121317] border border-white/5 rounded-2xl relative overflow-hidden shadow-lg"><div class="absolute -right-12 -top-12 w-40 h-40 bg-emerald-500/5 rounded-full blur-[40px] pointer-events-none"></div></div></div><small>Elevated card</small>
+      <code class="ds-meta !mt-0">from-[#1c1d24] to-[#121317] + emerald-500/5 circle blur-[40px]</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0A0B0E] rounded-3xl"><div class="w-full h-[130px] rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors"></div></div><small>Tile</small>
+      <code class="ds-meta !mt-0">bg-white/[0.02] border-white/5 rounded-2xl · hover:bg-white/[0.05]</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0A0B0E] rounded-3xl"><div class="w-full h-[130px] rounded-xl bg-white/[0.03] border border-white/5 hover:border-emerald-500/20 transition-colors"></div></div><small>List row</small>
+      <code class="ds-meta !mt-0">bg-white/[0.03] border-white/5 rounded-xl · hover:border-emerald-500/20</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0A0B0E] rounded-3xl"><div class="w-full h-[130px] rounded-2xl bg-gradient-to-br from-[#0f1115] to-[#000000] border border-white/5 shadow-2xl"></div></div><small>Terminal well</small>
+      <code class="ds-meta !mt-0">from-[#0f1115] to-[#000000] border-white/5 rounded-2xl shadow-2xl</code></div>
+  </div>
+
+  <p class="ds-sub">Brand and accent</p>
+  <div class="ds-colors">
+    <div class="ds-sw"><span class="ds-chip"><span class="fill bg-emerald-500"></span></span>
+      <div><strong>Emerald accent</strong><code>#10b981</code><code class="tok">emerald-500</code><p>“New” badge, active 24H pill, toggle knob, live dots.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="aa text-emerald-400">Aa</span></span>
+      <div><strong>Accent text</strong><code>#34d399</code><code class="tok">emerald-400 · --gradient-shine</code><p>Eyebrows, positive deltas, chart line, CTA shine.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]"></span></span>
+      <div><strong>Accent glow</strong><code>rgba(16,185,129,0.2–0.5)</code><p>Bar, pill and badge halos (shadow-[0_0_15px_…]).</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-2 h-10 bg-purple-500 rounded-[1px]"></span></span>
+      <div><strong>Secondary (down)</strong><code>#a855f7</code><code class="tok">purple-500</code><p>Bearish candles; purple glow orb (/10).</p></div></div>
+  </div>
+
+  <p class="ds-sub">Text</p>
+  <div class="ds-colors">
+    <div class="ds-sw"><span class="ds-chip"><span class="aa text-white">Aa</span></span>
+      <div><strong>Primary text</strong><code>#ffffff</code><code class="tok">text-white</code><p>Headings, figures, active labels.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="aa text-slate-300">Aa</span></span>
+      <div><strong>Default text</strong><code>#cbd5e1</code><code class="tok">text-slate-300</code><p>Body default, quotes, list rows.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="aa text-slate-400">Aa</span></span>
+      <div><strong>Secondary text</strong><code>#94a3b8</code><code class="tok">text-slate-400</code><p>Lead and section copy, nav links, icons.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0A0B0E]"><span class="aa text-neutral-400">Aa</span></span>
+      <div><strong>UI secondary</strong><code>#a3a3a3</code><code class="tok">text-neutral-400</code><p>Card labels, icon buttons, axis labels.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#121317]"><span class="aa text-neutral-500">Aa</span></span>
+      <div><strong>Muted</strong><code>#737373 · slate-500 #64748b</code><code class="tok">text-neutral-500 · text-slate-500</code><p>Units, timestamps, footer links, terminal prompt.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0c0d10]"><span class="aa text-neutral-600">Aa</span></span>
+      <div><strong>Faint</strong><code>#525252 · #404040</code><code class="tok">text-neutral-600 · text-neutral-700</code><p>Overlines, axis ticks, “.00”, breadcrumb slash.</p></div></div>
+  </div>
+
+  <p class="ds-sub">Borders and dividers</p>
+  <div class="ds-colors">
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 rounded-xl border border-white/10"></span></span>
+      <div><strong>Card border</strong><code>rgba(255,255,255,0.1)</code><code class="tok">border-white/10</code><p>Navbar, cards; hover → white/20.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0c0d10]"><span class="block w-12 h-12 rounded-xl border border-white/5"></span></span>
+      <div><strong>Hairline</strong><code>rgba(255,255,255,0.05)</code><code class="tok">border-white/5</code><p>Inner cards, dividers (border-t pt-6 / pt-8), dashboard rules.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-8 rounded-full border border-neutral-900"></span></span>
+      <div><strong>Outline button</strong><code>#171717</code><code class="tok">border-neutral-900</code><p>Sign In, secondary hero CTA, hero pill.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 rounded-xl border border-emerald-500/20 bg-emerald-500/10"></span></span>
+      <div><strong>Accent border</strong><code>rgba(16,185,129,0.2) · /30</code><code class="tok">border-emerald-500/20</code><p>Badges, icon tiles, next arrow (/30).</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#121317]"><span class="block w-12 h-px border-t border-dashed border-white/20"></span></span>
+      <div><strong>Goal line</strong><code>dashed rgba(255,255,255,0.2)</code><code class="tok">border-dashed border-white/20</code><p>Metric card target.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-8 rounded-full shadow-[inset_0_0_0_1px_#1a1818]"></span></span>
+      <div><strong>CTA inner ring</strong><code>inset 0 0 0 1px #1a1818</code><code class="tok">.shiny-cta box-shadow</code><p>Inside the rotating border.</p></div></div>
+  </div>
+
+  <p class="ds-sub">Semantic</p>
+  <div class="ds-colors">
+    <div class="ds-sw"><span class="ds-chip bg-[#121317]"><span class="text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">+12.4%</span></span>
+      <div><strong>Positive</strong><code>#34d399 / #10b981 on rgba(16,185,129,0.1)</code><p>Gains, income, payouts.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#121317]"><span class="text-[11px] font-medium text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">+4.2%</span></span>
+      <div><strong>Negative</strong><code>#f43f5e on rgba(244,63,94,0.1)</code><code class="tok">rose-500</code><p>Expense growth.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0c0d10]"><span class="w-2 h-2 bg-yellow-400 rounded-full border border-[#0c0d10]"></span></span>
+      <div><strong>Notice</strong><code>#facc15</code><code class="tok">yellow-400</code><p>Unread dot; comparison line.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#121317]"><span class="flex h-1.5 w-14 rounded-full overflow-hidden bg-white/5"><span class="h-full bg-rose-500 w-[45%]"></span><span class="h-full bg-orange-400 w-[30%]"></span><span class="h-full bg-yellow-400 w-[15%]"></span></span></span>
+      <div><strong>Breakdown scale</strong><code>#f43f5e · #fb923c · #facc15 | #10b981 · #34d399 · #2dd4bf</code><p>Expense and income segment bars.</p></div></div>
+  </div>
+
+  <p class="ds-sub">Gradients · swatch and usage</p>
+  <div class="ds-colors">
+    <div class="ds-sw"><span class="ds-chip"><span class="fill bg-gradient-to-t from-emerald-600 to-emerald-400"></span></span>
+      <div><strong>Bar gradient</strong><code>#059669 → #34d399 · peak → #6ee7b7</code><code class="tok">from-emerald-600 to-emerald-400</code><p>Metric card bars; peak bar from-emerald-500 to-emerald-300.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-10 h-10 rounded-full" style="background: conic-gradient(transparent 0%, #059669 5%, #34d399 15%, #059669 30%, transparent 40%, transparent 100%)"></span></span>
+      <div><strong>CTA border sweep</strong><code>conic #059669 · #34d399</code><code class="tok">.shiny-cta · --gradient-angle</code><p>Rotating border of the primary CTA.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="fill bg-gradient-to-br from-[#1c1d24] to-[#121317]"></span></span>
+      <div><strong>Elevated gradient</strong><code>#1c1d24 → #121317</code><code class="tok">from-[#1c1d24] to-[#121317]</code><p>Total balance card.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="fill bg-gradient-to-br from-[#0f1115] to-[#000000]"></span></span>
+      <div><strong>Terminal well</strong><code>#0f1115 → #000000</code><code class="tok">from-[#0f1115] to-[#000000]</code><p>Webhooks terminal visual.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0A0B0E]"><span class="fill bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent"></span></span>
+      <div><strong>Card tint</strong><code>emerald-500/5 → transparent</code><code class="tok">bg-gradient-to-br from-emerald-500/5</code><p>Overlay inside the hero metric card.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip bg-[#0A0B0E]"><span class="fill" style="background: radial-gradient(60px circle at 60% 40%, rgba(16, 185, 129, 0.4), transparent 40%)"></span></span>
+      <div><strong>Flashlight</strong><code>radial rgba(16,185,129,0.4) border · rgba(255,255,255,0.03) fill</code><p>Pricing card hover, follows the cursor.</p></div></div>
+  </div>
+
+  <p class="ds-sub">Overlays · ambient glow</p>
+  <div class="ds-grid2">
+    <div class="ds-spec">
+      <h3>Card glow field · market card</h3>
+      <div class="ds-bgbox overflow-hidden group bg-[#0A0B0E] w-full border-white/10 border rounded-3xl relative shadow-2xl">
+        <div class="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute -bottom-[20%] -right-[10%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+      </div>
+      <code class="ds-meta">600px orbs · emerald-500/10 top-left · purple-500/10 bottom-right · blur-[120px]</code>
+    </div>
+    <div class="ds-spec">
+      <h3>App canvas glow · dashboard</h3>
+      <div class="ds-bgbox overflow-hidden bg-[#0c0d10] border-white/10 border rounded-3xl relative">
+        <div class="absolute top-0 right-0 w-[800px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none translate-x-1/3 -translate-y-1/4 z-0"></div>
+        <div class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none -translate-x-1/3 translate-y-1/4 z-0"></div>
+      </div>
+      <code class="ds-meta">emerald-500/5 800×600 top-right · blue-500/5 600×600 bottom-left · blur-[120px]</code>
+    </div>
+    <div class="ds-spec">
+      <h3>Contact glow · footer</h3>
+      <div class="ds-bgbox overflow-hidden bg-[#0A0B0E] border-white/10 border rounded-3xl relative">
+        <div class="absolute inset-0 pointer-events-none">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_40%)]"></div>
+          <div class="absolute bottom-0 left-0 w-full h-[300px] bg-gradient-to-t from-emerald-950/20 to-transparent"></div>
+        </div>
+      </div>
+      <code class="ds-meta">radial-gradient(circle at top right, rgba(16,185,129,0.1), transparent 40%) + bottom 300px from-emerald-950/20</code>
+    </div>
+    <div class="ds-spec">
+      <h3>Hero scene · laser beam aurora</h3>
+      <div class="ds-bgbox bg-[#000000] rounded-3xl flex items-center justify-center" style="box-shadow: inset 0 0 0 1px rgba(255,255,255,.08)"><span class="text-xs text-neutral-500 font-geist">Live behind the hero at the top of this page</span></div>
+      <code class="ds-meta">[data-us-project="vLGJIxHINq2tCeLOR9Dt"] absolute inset-0 -z-10 opacity-60 · Unicorn Studio v2.0.0 · fills the hero grid only</code>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 03 UI COMPONENTS -->
+<section class="ds-group" id="components">
+  <div class="ds-head">
+    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-[1px] bg-emerald-500"></span><p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Components · 03</p></div>
+    <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">UI Components</h2>
+    <p class="ds-lede">State rows render each state statically by applying the state's own utility (for example <code>hover:bg-slate-200</code> shown as <code>bg-slate-200</code>). The “Live” stages below them are the real, interactive markup. The source defines no disabled states and no input error state, so none are shown.</p>
+  </div>
+
+  <!-- ------------------------------------------------ buttons -->
+  <p class="ds-sub">Buttons · states</p>
+
+  <p class="ds-famname">Primary · shiny CTA</p>
+  <div class="ds-states">
+    <div class="ds-state"><small>Default</small><div class="inline-block bg-transparent"><button class="shiny-cta focus:outline-none"><span class="font-geist">Explore</span></button></div><code>.shiny-cta · border-spin 2.5s</code></div>
+    <div class="ds-state"><small>Active</small><div class="inline-block bg-transparent"><button class="shiny-cta focus:outline-none translate-y-px"><span class="font-geist">Explore</span></button></div><code>:active translateY(1px)</code></div>
+    <div class="ds-state"><small>Focus</small><div class="inline-block bg-transparent"><button class="shiny-cta focus:outline-none"><span class="font-geist">Explore</span></button></div><code>focus:outline-none · no ring</code></div>
+  </div>
+
+  <p class="ds-famname">Secondary · hero outline</p>
+  <div class="ds-states">
+    <div class="ds-state"><small>Default</small><button class="group px-8 py-4 rounded-full border text-slate-300 text-lg transition-all flex items-center gap-3 border-neutral-900 font-geist">Docs<iconify-icon icon="solar:book-bookmark-linear" class="text-xl transition-colors"></iconify-icon></button><code>border-neutral-900 · text-slate-300</code></div>
+    <div class="ds-state"><small>Hover</small><button class="group px-8 py-4 rounded-full border text-slate-300 text-lg bg-slate-900 transition-all flex items-center gap-3 border-neutral-900 font-geist">Docs<iconify-icon icon="solar:book-bookmark-linear" class="text-xl text-white transition-colors"></iconify-icon></button><code>hover:bg-slate-900 · icon → white</code></div>
+  </div>
+
+  <p class="ds-famname">Navbar · solid and outline</p>
+  <div class="ds-states">
+    <div class="ds-state"><small>Solid · default</small><button class="px-5 py-2 rounded-full bg-white text-sm text-neutral-950 font-geist font-medium">Get Started</button><code>bg-white · #fff</code></div>
+    <div class="ds-state"><small>Solid · hover</small><button class="px-5 py-2 rounded-full bg-slate-200 text-sm text-neutral-950 font-geist font-medium">Get Started</button><code>hover:bg-slate-200</code></div>
+    <div class="ds-state"><small>Outline · default</small><button class="px-5 py-2 rounded-full border text-slate-300 text-sm border-neutral-900 font-geist">Sign In</button><code>border-neutral-900</code></div>
+    <div class="ds-state"><small>Outline · hover</small><button class="px-5 py-2 rounded-full border text-slate-300 bg-slate-900 text-sm border-neutral-900 font-geist">Sign In</button><code>hover:bg-slate-900</code></div>
+  </div>
+
+  <p class="ds-famname">Dashboard · accent, solid, ghost</p>
+  <div class="ds-states font-geist">
+    <div class="ds-state"><small>Accent · default</small><button class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)] border border-emerald-400/20"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Space</button><code>emerald-500 → 600 · glow</code></div>
+    <div class="ds-state"><small>Accent · hover</small><button class="bg-gradient-to-r from-emerald-500 to-emerald-600 brightness-110 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)] border border-emerald-400/20"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Space</button><code>hover:brightness-110</code></div>
+    <div class="ds-state"><small>Solid · default</small><button class="px-4 bg-white text-neutral-900 text-xs font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">Transfer</button><code>bg-white text-neutral-900</code></div>
+    <div class="ds-state"><small>Solid · hover</small><button class="px-4 bg-neutral-200 text-neutral-900 text-xs font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">Transfer</button><code>hover:bg-neutral-200</code></div>
+    <div class="ds-state"><small>Ghost · default</small><button class="px-4 bg-white/5 border border-white/10 text-white text-xs font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">Add Funds</button><code>bg-white/5 border-white/10</code></div>
+    <div class="ds-state"><small>Ghost · hover</small><button class="px-4 bg-white/10 border border-white/10 text-white text-xs font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">Add Funds</button><code>hover:bg-white/10</code></div>
+  </div>
+
+  <p class="ds-famname">Icon, quiet and text buttons</p>
+  <div class="ds-states font-geist">
+    <div class="ds-state"><small>Icon · default</small><button class="p-2.5 rounded-xl bg-white/5 text-neutral-400 transition-colors border border-white/5 shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></button><code>bg-white/5 · neutral-400</code></div>
+    <div class="ds-state"><small>Icon · hover</small><button class="p-2.5 rounded-xl bg-white/10 text-white transition-colors border border-white/5 shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></button><code>hover:bg-white/10 · white</code></div>
+    <div class="ds-state"><small>Quiet · default</small><button class="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/5 border border-white/5 text-neutral-400 text-xs transition-colors font-geist">Options<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button><code>h-9 px-3 rounded-lg</code></div>
+    <div class="ds-state"><small>Quiet · hover</small><button class="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/10 border border-white/5 text-white text-xs transition-colors font-geist">Options<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button><code>hover:bg-white/10</code></div>
+    <div class="ds-state"><small>Text · default</small><button class="text-[10px] text-neutral-500 transition-colors">View all</button><code>text-[10px] neutral-500</code></div>
+    <div class="ds-state"><small>Text · hover</small><button class="text-[10px] text-white transition-colors">View all</button><code>hover:text-white</code></div>
+  </div>
+
+  <p class="ds-famname">Carousel arrows</p>
+  <div class="ds-states">
+    <div class="ds-state"><small>Prev · default</small><button class="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center transition-all duration-300 bg-[#0A0B0E] text-neutral-400 shadow-lg group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 transition-transform"><path d="m15 18-6-6 6-6"></path></svg></button><code>border-white/10</code></div>
+    <div class="ds-state"><small>Prev · hover</small><button class="w-14 h-14 rounded-full border border-white/20 flex items-center justify-center transition-all duration-300 bg-white/5 text-white scale-105 shadow-lg group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 -translate-x-0.5 transition-transform"><path d="m15 18-6-6 6-6"></path></svg></button><code>scale-105 · white/5 · icon ←0.5</code></div>
+    <div class="ds-state"><small>Prev · active</small><button class="w-14 h-14 rounded-full border border-white/20 flex items-center justify-center transition-all duration-300 bg-white/5 text-white scale-95 shadow-lg group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 transition-transform"><path d="m15 18-6-6 6-6"></path></svg></button><code>active:scale-95</code></div>
+    <div class="ds-state"><small>Next · default</small><button class="w-14 h-14 rounded-full border border-emerald-500/30 flex items-center justify-center transition-all duration-300 bg-[#0A0B0E] shadow-lg shadow-emerald-500/10 text-emerald-400 group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 transition-transform"><path d="m9 18 6-6-6-6"></path></svg></button><code>border-emerald-500/30</code></div>
+    <div class="ds-state"><small>Next · hover</small><button class="w-14 h-14 rounded-full border border-emerald-500 flex items-center justify-center bg-emerald-500/10 transition-all duration-300 shadow-lg shadow-emerald-500/10 scale-105 text-emerald-400 group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 translate-x-0.5 transition-transform"><path d="m9 18 6-6-6-6"></path></svg></button><code>bg-emerald-500/10 · border-emerald-500</code></div>
+    <div class="ds-state"><small>Next · active</small><button class="w-14 h-14 rounded-full border border-emerald-500 flex items-center justify-center bg-emerald-500/10 transition-all duration-300 shadow-lg shadow-emerald-500/10 scale-95 text-emerald-400 group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 transition-transform"><path d="m9 18 6-6-6-6"></path></svg></button><code>active:scale-95</code></div>
+  </div>
+
+  <div class="ds-spec">
+    <h3>Live · hover and press these</h3>
+    <div class="ds-stage"><div class="ds-row">
+      <div class="inline-block bg-transparent">
+          <button class="shiny-cta focus:outline-none"><span class="font-geist">Lorem Ipsum</span></button>
+      </div>
+      <button class="group px-8 py-4 rounded-full border text-slate-300 text-lg hover:bg-slate-900 transition-all flex items-center gap-3 border-neutral-900 font-geist">
+          Dolor Sit Amet
+          <iconify-icon icon="solar:book-bookmark-linear" class="text-xl group-hover:text-white transition-colors"></iconify-icon>
+      </button>
+      <button class="px-5 py-2 rounded-full border text-slate-300 hover:bg-slate-900 transition-colors text-sm border-neutral-900 font-geist">
+        Sign In
+      </button>
+      <button class="px-5 py-2 rounded-full bg-white hover:bg-slate-200 transition-colors text-sm text-neutral-950 font-geist font-medium">
+        Get Started
+      </button>
+      <button class="flex gap-2 ring-1 ring-white/10 hover:bg-white/10 transition-all text-sm text-white font-geist bg-white/5 rounded-full py-3 px-6 items-center justify-center font-medium shadow-lg hover:shadow-emerald-500/10 hover:border-emerald-500/30">
+        Lorem ipsum
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+      </button>
+      <div class="flex gap-6">
+        <button class="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center transition-all duration-300 bg-[#0A0B0E] hover:bg-white/5 hover:border-white/20 text-neutral-400 hover:text-white hover:scale-105 active:scale-95 shadow-lg group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 group-hover:-translate-x-0.5 transition-transform"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+        <button class="w-14 h-14 rounded-full border border-emerald-500/30 flex items-center justify-center hover:bg-emerald-500/10 hover:border-emerald-500 transition-all duration-300 bg-[#0A0B0E] shadow-lg shadow-emerald-500/10 hover:scale-105 active:scale-95 text-emerald-400 group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 group-hover:translate-x-0.5 transition-transform"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+    </div></div>
+    <div class="ds-stage bg-[#0c0d10] font-geist mt-4"><div class="ds-row">
+      <button class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:brightness-110 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)] border border-emerald-400/20">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+        Space
+      </button>
+      <div class="flex gap-3 relative z-10 w-[260px]">
+        <button class="flex-1 bg-white text-neutral-900 hover:bg-neutral-200 text-xs font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg> Transfer
+        </button>
+        <button class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg> Add Funds
+        </button>
+      </div>
+      <button class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors border border-white/5 shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+      </button>
+      <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-neutral-400 hover:text-white transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+      </button>
+      <button class="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-neutral-400 hover:text-white text-xs transition-colors font-geist">
+        Options
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+      </button>
+      <button class="text-[10px] text-neutral-500 hover:text-white transition-colors">View all</button>
+      <div class="flex items-center gap-3">
+        <a href="#icons" class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5 group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter transition-transform group-hover:scale-110"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+        </a>
+        <a href="#icons" class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5 group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github transition-transform group-hover:scale-110"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+        </a>
+        <a href="#icons" class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5 group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin transition-transform group-hover:scale-110"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect width="4" height="12" x="2" y="9"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+        </a>
+      </div>
+    </div></div>
+    <code class="ds-meta">Every live button above is the source markup verbatim. Carousel arrows drop their <b>onclick="handleTestimonialSwipe(±1)"</b> because the carousel they drive is not on this page.</code>
+  </div>
+
+  <!-- ------------------------------------------------ inputs -->
+  <p class="ds-sub">Inputs and controls</p>
+
+  <p class="ds-famname">Command search field</p>
+  <div class="ds-states font-geist">
+    <div class="ds-state"><small>Default</small><div class="relative group"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 transition-colors"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><input type="text" tabindex="-1" placeholder="Search" class="bg-[#121317] border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white focus:outline-none w-36 placeholder:text-neutral-600 transition-all"></div><code>bg-[#121317] border-white/5</code></div>
+    <div class="ds-state"><small>Hover</small><div class="relative group"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-white transition-colors"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><input type="text" tabindex="-1" placeholder="Search" class="bg-[#16171b] border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white focus:outline-none w-36 placeholder:text-neutral-600 transition-all"></div><code>hover:bg-[#16171b] · icon white</code></div>
+    <div class="ds-state"><small>Focus</small><div class="relative group"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 transition-colors"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><input type="text" tabindex="-1" value="Payouts" class="bg-[#121317] border border-emerald-500/30 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white focus:outline-none w-36 placeholder:text-neutral-600 transition-all"></div><code>focus:border-emerald-500/30</code></div>
+  </div>
+
+  <div class="ds-grid2">
+    <div class="ds-spec">
+      <h3>Live · command search</h3>
+      <div class="ds-stage bg-[#0c0d10] font-geist">
+<div class="relative group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 group-hover:text-white transition-colors">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+            <input type="text" placeholder="Search or type a command" class="bg-[#121317] border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500/30 w-64 max-w-full placeholder:text-neutral-600 transition-all hover:bg-[#16171b]">
+          </div>
+      </div>
+      <code class="ds-meta">pl-9 py-1.5 text-xs w-64 · placeholder neutral-600 · search icon → white on group hover</code>
+    </div>
+    <div class="ds-spec">
+      <h3>Live · billing toggle</h3>
+      <div class="ds-stage">
+<div class="flex items-center gap-3 select-none">
+      <span class="text-sm text-white font-geist transition-colors duration-300" id="labelMonthly">Monthly</span>
+      <button id="billingToggleBtn" class="w-12 h-6 rounded-full bg-white/10 border border-white/10 relative transition-colors hover:border-emerald-500/50 focus:outline-none cursor-pointer" onclick="togglePricing()">
+        <div id="billingKnob" class="absolute top-1 left-1 w-4 h-4 rounded-full bg-emerald-500 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"></div>
+      </button>
+      <div class="flex items-center">
+        <span class="text-sm text-neutral-400 font-geist font-medium transition-colors duration-300" id="labelAnnual">Yearly</span>
+        <span class="text-emerald-500 text-xs font-semibold ml-1.5 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">-20%</span>
+      </div>
+    </div>
+      </div>
+      <code class="ds-meta">knob → translateX(24px), 300 ms cubic-bezier(0.25,1,0.5,1) · hover:border-emerald-500/50 · also switches the plan card price below</code>
+    </div>
+  </div>
+
+  <p class="ds-famname">Billing toggle · states</p>
+  <div class="ds-states">
+    <div class="ds-state"><small>Off · monthly</small><div class="w-12 h-6 rounded-full bg-white/10 border border-white/10 relative"><div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-emerald-500 shadow-sm"></div></div><code>knob left-1</code></div>
+    <div class="ds-state"><small>Hover</small><div class="w-12 h-6 rounded-full bg-white/10 border border-emerald-500/50 relative"><div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-emerald-500 shadow-sm"></div></div><code>hover:border-emerald-500/50</code></div>
+    <div class="ds-state"><small>On · yearly</small><div class="w-12 h-6 rounded-full bg-white/10 border border-white/10 relative"><div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-emerald-500 shadow-sm translate-x-6"></div></div><code>translate-x-6 (24px)</code></div>
+  </div>
+
+  <div class="ds-grid2">
+    <div class="ds-spec">
+      <h3>Segmented range · dashboard</h3>
+      <div class="ds-stage bg-[#0c0d10] font-geist">
+<div class="flex gap-2 bg-[#121317] border-white/5 border rounded-lg pt-1 pr-1 pb-1 pl-1 gap-x-2 gap-y-2 items-center w-fit">
+            <button class="px-3 py-1 text-xs font-medium text-white bg-white/10 rounded-md shadow-sm">7d</button>
+            <button class="px-3 py-1 text-xs font-medium text-neutral-500 hover:text-white transition-colors">30d</button>
+            <button class="px-3 py-1 text-xs font-medium text-neutral-500 hover:text-white transition-colors">90d</button>
+          </div>
+      </div>
+      <code class="ds-meta">selected bg-white/10 text-white rounded-md shadow-sm · others neutral-500 → hover white</code>
+    </div>
+    <div class="ds-spec">
+      <h3>Segmented range · market</h3>
+      <div class="ds-stage bg-[#0A0B0E]">
+<div class="flex p-1 bg-[#14181F] rounded-xl border border-white/5 shadow-inner w-fit">
+            <button class="px-4 py-1.5 rounded-lg text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-geist">12M</button>
+            <button class="px-4 py-1.5 rounded-lg text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-geist">30D</button>
+            <button class="px-4 py-1.5 rounded-lg text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-geist">7D</button>
+            <button class="px-4 py-1.5 rounded-lg text-xs bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] font-geist">24H</button>
+          </div>
+      </div>
+      <code class="ds-meta">selected bg-emerald-500 glow 15px .4 · others neutral-500 → hover neutral-300</code>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------ navigation items -->
+  <p class="ds-sub">Navigation items · states</p>
+  <p class="ds-famname">Navbar and footer links</p>
+  <div class="ds-states">
+    <div class="ds-state"><small>Default</small><span class="text-sm font-medium text-slate-400 font-geist">Pricing</span><code>text-slate-400 (footer slate-500)</code></div>
+    <div class="ds-state"><small>Hover</small><span class="text-sm font-medium text-white font-geist">Pricing</span><code>hover:text-white</code></div>
+    <div class="ds-state"><small>Current</small><span class="text-sm font-medium text-white font-geist">Platform</span><code>text-white</code></div>
+    <div class="ds-state"><small>Current · hover</small><span class="text-sm font-medium text-emerald-400 font-geist">Platform</span><code>hover:text-emerald-400</code></div>
+  </div>
+  <p class="ds-famname">Dashboard sidebar item</p>
+  <div class="ds-states font-geist">
+    <div class="ds-state"><small>Default</small><span class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 text-sm font-medium border border-transparent"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>Analytics</span><code>text-neutral-400</code></div>
+    <div class="ds-state"><small>Hover</small><span class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-white bg-white/5 text-sm font-medium border border-transparent"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>Analytics</span><code>hover:text-white hover:bg-white/5</code></div>
+    <div class="ds-state"><small>Selected</small><span class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 text-white text-sm font-medium border border-white/5"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>Overview</span><code>bg-white/5 border-white/5 text-white</code></div>
+  </div>
+
+  <!-- ------------------------------------------------ badges -->
+  <p class="ds-sub">Badges, chips and status</p>
+  <div class="ds-spec">
+    <h3>Delta chips</h3>
+    <div class="ds-stage bg-[#121317] font-geist"><div class="ds-row">
+<div class="flex text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border-emerald-500/20 border rounded-md pt-1 pr-2.5 pb-1 pl-2.5 shadow-[0_0_10px_rgba(16,185,129,0.1)] gap-x-1.5 gap-y-1.5 items-center">
+                +12.5% </div>
+<div class="flex gap-1.5 bg-emerald-500/10 border-emerald-500/20 border rounded-md pt-1 pr-2.5 pb-1 pl-2.5 shadow-[0_0_10px_rgba(16,185,129,0.1)] gap-x-1.5 gap-y-1.5 items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400">
+                  <path d="m18 15-6-6-6 6"></path>
+                </svg>
+                <span class="text-emerald-400 font-medium text-sm">2.1%</span>
+              </div>
+<span class="text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">+12.4%</span>
+<span class="text-[11px] font-medium text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">+4.2%</span>
+<span class="px-2.5 py-1 rounded-md text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)] font-geist">+3.4%</span>
+    </div></div>
+    <code class="ds-meta">emerald-400/500 on emerald-500/10 border-emerald-500/20 (glow 10px .1–.2) · rose-500 on rose-500/10 · text-[10px] bold · text-[11px] · text-sm</code>
+  </div>
+  <div class="ds-spec">
+    <h3>Labels and pills</h3>
+    <div class="ds-stage font-geist"><div class="ds-row">
+<div class="inline-flex bg-slate-900 border-neutral-900 border rounded-full pt-1.5 pr-5 pb-1.5 pl-1.5 gap-x-3 gap-y-3 items-center">
+            <span class="bg-emerald-500 text-white text-xs px-2.5 py-1 rounded-full font-geist font-medium">New</span>
+            <span class="text-slate-300 text-sm font-geist">Lorem ipsum dolor sit</span>
+            </div>
+<span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">Optimized</span>
+<span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs uppercase border border-emerald-500/20 font-geist font-bold tracking-wider">
+                    Featured
+                </span>
+<span class="text-emerald-500 text-xs font-semibold ml-1.5 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">-20%</span>
+<div class="flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5">
+                        <iconify-icon icon="lucide:trending-up" class="text-emerald-400"></iconify-icon>
+                        <span class="text-xs text-slate-300 font-medium">+15% Recovery Rate</span>
+                    </div>
+    </div></div>
+    <code class="ds-meta">announcement pill bg-slate-900 rounded-full + emerald-500 “New” · Optimized text-[10px] bold uppercase · Featured text-xs bold uppercase · -20% · trend pill border-white/10 bg-white/5</code>
+  </div>
+  <div class="ds-grid2">
+    <div class="ds-spec">
+      <h3>Live status</h3>
+      <div class="ds-stage bg-[#0A0B0E] font-geist">
+        <div class="relative h-14 w-52">
+<div class="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm z-20">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="text-xs font-medium text-emerald-400">99.99% Uptime</span>
+    </div>
+        </div>
+        <div class="mt-6 text-xs text-slate-500">
+<div class="flex items-center gap-2">
+               <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+               <span class="text-slate-400">All systems operational</span>
+             </div>
+        </div>
+      </div>
+      <code class="ds-meta">uptime badge bg-emerald-500/10 backdrop-blur-sm + animate-ping halo · status dot animate-pulse</code>
+    </div>
+    <div class="ds-spec">
+      <h3>Unread notification · avatars</h3>
+      <div class="ds-stage bg-[#0c0d10] font-geist"><div class="ds-row">
+<button class="relative text-neutral-400 hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-400 rounded-full border border-[#0c0d10]"></span>
+            </button>
+<div class="flex bg-center text-xs font-medium text-white w-8 h-8 bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/6e807631-f507-40d1-92e2-17f496e11b6b_320w.webp)] bg-cover border-white/10 border rounded-full items-center justify-center"></div>
+<div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-emerald-400 text-sm ring-1 ring-white/10 font-geist font-medium">
+                    LI
+                </div>
+<div class="relative">
+                    <div class="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white text-base ring-2 ring-emerald-500/20 shadow-md font-geist font-medium">
+                        CE
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-[3px] border-[#121317]">
+                    </div>
+                </div>
+<div class="flex items-center -space-x-2">
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/overview/assets/images.unsplash.com/photo-1534528741775-53994a69daeb__q94a704e6.jpg)] bg-cover"></div>
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/overview/assets/images.unsplash.com/photo-1506794778202-cad84cf45f1d__q94a704e6.jpg)] bg-cover"></div>
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/overview/assets/images.unsplash.com/photo-1494790108377-be9c29b29330__q94a704e6.jpg)] bg-cover"></div>
+             </div>
+      </div></div>
+      <code class="ds-meta">bell 18px neutral-400 → white + yellow-400 dot · photo w-8 · initials w-12 ring-1 · featured w-14 ring-2 emerald + online dot · stack -space-x-2</code>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------ cards -->
+  <p class="ds-sub">Cards</p>
+  <p class="ds-note" style="margin: -8px 0 24px">The hero metric card is live at the top of the page (its counter script targets a single id, so it is not repeated here). Checklist and chart cards appear in their real grid under Layout.</p>
+
+  <div class="ds-spec">
+    <h3>KPI cards · dashboard</h3>
+    <div class="ds-stage bg-[#0c0d10] font-geist"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 gap-x-6 gap-y-6">
+<div class="bg-[#121317] border border-white/5 rounded-2xl p-6 relative group hover:border-white/10 transition-colors">
+            <div class="flex justify-between items-start mb-6">
+              <span class="text-sm font-medium text-neutral-500">Gross Volume</span>
+              <button class="text-neutral-600 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-3xl font-semibold text-white tracking-tight">$42,805</span>
+              <div class="flex text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border-emerald-500/20 border rounded-md pt-1 pr-2.5 pb-1 pl-2.5 shadow-[0_0_10px_rgba(16,185,129,0.1)] gap-x-1.5 gap-y-1.5 items-center">
+                +12.5% </div>
+            </div>
+          </div>
+<div class="bg-[#121317] border border-white/5 rounded-2xl p-6 flex flex-col relative overflow-hidden group hover:border-white/10 transition-all">
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-neutral-400">Expenses</span>
+              </div>
+              <button class="text-[10px] text-neutral-500 hover:text-white transition-colors">View all</button>
+            </div>
+            <div class="mt-auto">
+              <span class="text-2xl font-semibold text-white tracking-tight">$12,402</span>
+              <div class="flex items-center gap-2 mt-1 mb-4">
+                <span class="text-[11px] font-medium text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">+4.2%</span>
+                <span class="text-[11px] text-neutral-600">vs last month</span>
+              </div>
+              <!-- Breakdown Bar -->
+              <div class="flex h-1.5 w-full rounded-full overflow-hidden bg-white/5">
+                <div class="h-full bg-rose-500 w-[45%]"></div>
+                <div class="h-full bg-orange-400 w-[30%]"></div>
+                <div class="h-full bg-yellow-400 w-[15%]"></div>
+              </div>
+              <div class="flex justify-between mt-2 text-[10px] text-neutral-500">
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Servers</span>
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-orange-400"></div> Ads</span>
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400"></div> Tools</span>
+              </div>
+            </div>
+          </div>
+<div class="bg-gradient-to-br from-[#1c1d24] to-[#121317] border border-white/5 rounded-2xl p-6 relative overflow-hidden group hover:border-white/10 transition-all shadow-lg">
+            <!-- Decorative Circle -->
+            <div class="absolute -right-12 -top-12 w-40 h-40 bg-emerald-500/5 rounded-full blur-[40px] pointer-events-none">
+            </div>
+            <div class="flex justify-between items-start mb-8 relative z-10">
+              <div class="">
+                <p class="text-sm font-medium text-neutral-400 mb-1">Total Balance</p>
+                <div class="flex items-center gap-2">
+                  <img src="assets/overview/assets/flagcdn.com/w20/us.png" width="16" class="rounded-[2px] opacity-80" alt="US">
+                  <span class="text-xs font-medium text-neutral-500">USD</span>
+                </div>
+              </div>
+              <div class="p-2 rounded-lg bg-white/5 border border-white/5 text-white shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1">
+                  </path>
+                  <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="mb-8 relative z-10">
+              <h2 class="text-4xl font-semibold text-white tracking-tight">
+                $385,430<span class="text-2xl text-neutral-600">.00</span></h2>
+            </div>
+            <div class="flex gap-3 relative z-10">
+              <button class="flex-1 bg-white text-neutral-900 hover:bg-neutral-200 text-xs font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg> Transfer
+      </button>
+              <button class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg> Add Funds
+      </button>
+            </div>
+          </div>
+    </div></div>
+    <code class="ds-meta">KPI bg-[#121317] rounded-2xl p-6 · breakdown bar h-1.5 + dot legend · balance from-[#1c1d24] to-[#121317] · all hover:border-white/10</code>
+  </div>
+
+  <div class="ds-spec">
+    <h3>Feature card · large</h3>
+    <div class="ds-stage font-geist">
+<div class="relative group border border-white/10 md:p-10 overflow-hidden bg-[#0A0B0E] rounded-3xl pt-8 pr-8 pb-8 pl-8 shadow-2xl hover:border-white/20 transition-all duration-500">
+              <div class="absolute -right-20 -top-20 h-96 w-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-emerald-500/20 transition-all duration-500"></div>
+
+              <div class="flex items-center gap-4 mb-8 relative z-10">
+                <div class="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <iconify-icon icon="lucide:shield-check" class="text-emerald-400 text-2xl"></iconify-icon>
+                </div>
+                <h3 class="text-2xl md:text-3xl font-semibold tracking-tight text-white">Lorem Ipsum Dolor</h3>
+              </div>
+
+              <p class="text-slate-400 max-w-2xl text-lg font-light mb-10 relative z-10">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim.
+              </p>
+
+              <!-- Feature Icons Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 relative z-10">
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:globe-2" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Lorem Ipsum</span>
+                </div>
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:lock" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Dolor Sit Amet</span>
+                </div>
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:file-check" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Consectetur</span>
+                </div>
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:scale" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Adipiscing</span>
+                </div>
+              </div>
+            </div>
+    </div>
+    <code class="ds-meta">bg-[#0A0B0E] border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl · glow orb emerald-500/10 → /20 on hover (500 ms) · icon tile h-12 w-12 rounded-xl · tiles bg-white/[0.02] (grid 2 → 4)</code>
+  </div>
+
+  <div class="ds-grid2">
+    <div class="ds-spec">
+      <h3>Terminal card · webhooks</h3>
+      <div class="font-geist">
+<div class="group relative overflow-hidden h-full bg-[#0A0B0E] border border-white/10 rounded-3xl shadow-lg hover:border-emerald-500/30 transition-all duration-500">
+                <div class="flex flex-col h-full pt-8 pr-8 pb-8 pl-8">
+  <!-- Visual -->
+  <div class="relative h-48 w-full mb-8 rounded-2xl bg-gradient-to-br from-[#0f1115] to-[#000000] border border-white/5 overflow-hidden shadow-2xl group">
+    <!-- Code/Terminal Visual -->
+    <div id="terminal-logs-aura" class="absolute inset-5 font-mono text-[11px] leading-relaxed transition-opacity duration-700"></div>
+
+    <!-- Activity Pulse Badge -->
+    <div class="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm z-20">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="text-xs font-medium text-emerald-400">99.99% Uptime</span>
+    </div>
+
+    <!-- Scanline effect -->
+    <div class="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-20 pointer-events-none"></div>
+  </div>
+
+  <div class="mt-auto">
+    <div class="flex items-center gap-3 mb-3">
+      <iconify-icon icon="lucide:zap" class="text-emerald-400 text-xl"></iconify-icon>
+      <h3 class="text-xl font-semibold text-white tracking-tight">Dolor Sit Amet</h3>
+    </div>
+    <p class="text-sm text-slate-400 font-light leading-relaxed">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod. Ut enim ad minim veniam quis nostrud.
+    </p>
+  </div>
+
+  <script>
+    (function() {
+      const container = document.getElementById('terminal-logs-aura');
+      if (!container) return;
+
+      const lines = [
+        { text: "> initializing_ledger_api...", class: "text-slate-500" },
+        { text: "> connecting_webhooks...", class: "text-slate-500" },
+        {
+          segments: [
+            { text: "> status: ", class: "text-slate-500" },
+            { text: "active", class: "text-emerald-400" }
+          ]
+        },
+        {
+          segments: [
+            { text: "> latency: ", class: "text-slate-500" },
+            { text: "12ms", class: "text-white" }
+          ]
+        },
+        {
+          segments: [
+            { text: "> region: ", class: "text-slate-500" },
+            { text: "us-east-1", class: "text-white" }
+          ]
+        },
+        { text: "> verifying_signature...", class: "text-slate-500" },
+        {
+          segments: [
+            { text: "> 200 OK: ", class: "text-slate-500" },
+            { text: "event_processed", class: "text-emerald-400" }
+          ]
+        }
+      ];
+
+      const typeDelay = 30; // ms per char
+      const lineDelay = 300; // ms between lines
+      const resetDelay = 3500; // ms before restart
+
+      async function typeLine(lineData) {
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'flex items-center flex-wrap min-h-[1.5em]';
+
+        // Active cursor
+        const cursor = document.createElement('span');
+        cursor.className = 'w-1.5 h-3 bg-emerald-500 ml-1 opacity-100 inline-block align-middle shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+        lineDiv.appendChild(cursor);
+        container.appendChild(lineDiv);
+
+        const segments = lineData.segments || [{ text: lineData.text, class: lineData.class }];
+
+        for (let segment of segments) {
+            const span = document.createElement('span');
+            span.className = segment.class;
+            lineDiv.insertBefore(span, cursor);
+
+            for (let char of segment.text) {
+                span.textContent += char;
+                await new Promise(r => setTimeout(r, Math.random() * 20 + typeDelay));
+            }
+        }
+
+        cursor.remove();
+      }
+
+      async function run() {
+        while (true) { // Infinite loop
+            container.innerHTML = '';
+            container.style.opacity = '1';
+
+            for (let i = 0; i < lines.length; i++) {
+                await typeLine(lines[i]);
+                await new Promise(r => setTimeout(r, lineDelay));
+            }
+
+            // Add blinking cursor at the end
+            const finalLine = document.createElement('div');
+            finalLine.className = 'flex items-center mt-0.5';
+            finalLine.innerHTML = '<span class="text-slate-500 mr-1">></span><span class="w-1.5 h-3 bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>';
+            container.appendChild(finalLine);
+
+            await new Promise(r => setTimeout(r, resetDelay));
+
+            // Soft fade out
+            container.style.opacity = '0';
+            await new Promise(r => setTimeout(r, 700)); // Match transition duration
+        }
+      }
+
+      run();
+    })();
+  </script>
+</div>
+              </div>
+      </div>
+      <code class="ds-meta">visual h-48 from-[#0f1115] to-black · #terminal-logs-aura typed loop · uptime ping badge · hover:border-emerald-500/30</code>
+    </div>
+    <div class="ds-spec">
+      <h3>Checklist card · checkout</h3>
+      <div class="font-geist">
+<article class="relative bg-[#0A0B0E] border border-white/10 rounded-3xl p-8 h-full hover:border-white/20 transition-all">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-white text-lg font-semibold tracking-tight">Lorem Ipsum Dolor</h3>
+                  <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">Optimized</span>
+                </div>
+                <p class="text-sm text-slate-400 font-light mb-6">Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod.</p>
+
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Lorem &amp; Ipsum Dolor</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Consectetur Adipiscing</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Sed Do Eiusmod</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                </div>
+              </article>
+      </div>
+      <code class="ds-meta">article bg-[#0A0B0E] border-white/10 rounded-3xl p-8 · Optimized tag · rows bg-white/[0.03] rounded-xl px-4 py-3 · row hover:border-emerald-500/20</code>
+    </div>
+  </div>
+
+  <div class="ds-spec">
+    <h3>Plan card · pricing (flashlight)</h3>
+    <p class="ds-note" style="margin: -6px 0 14px">Move the pointer over the card; flip the billing toggle under Inputs to switch the price.</p>
+    <div class="ds-stage">
+<div id="pricingCard" class="overflow-hidden animate-[slideUp_0.6s_ease-out_0.1s_both] bg-[#0A0B0E] border border-white/10 rounded-2xl shadow-2xl relative group" onmousemove="updateCursor(event)">
+
+    <!-- Flashlight Effect: Border (High opacity emerald) -->
+    <div class="pointer-events-none absolute -inset-px p-px rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100 z-10" style="background: radial-gradient(600px circle at var(--x, 0px) var(--y, 0px), rgba(16, 185, 129, 0.4), transparent 40%);
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                -webkit-mask-composite: xor;
+                mask-composite: exclude;">
+    </div>
+
+    <!-- Flashlight Effect: Background (Low opacity white) -->
+    <div class="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100 z-0" style="background: radial-gradient(800px circle at var(--x, 0px) var(--y, 0px), rgba(255, 255, 255, 0.03), transparent 40%)">
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 relative z-10">
+      <!-- Left: Plan summary -->
+      <div class="flex flex-col bg-[#121317]/80 h-full border-r border-white/5 pt-8 pr-8 pb-8 pl-8 relative backdrop-blur-sm">
+          <div class="absolute top-0 right-0 p-px rounded-bl-xl rounded-tr-xl bg-gradient-to-br from-white/10 to-white/0 overflow-hidden"></div>
+
+          <div class="mb-8">
+            <h3 class="text-xl font-medium text-white font-geist mb-2">Lorem Ipsum Dolor</h3>
+            <p class="text-sm text-neutral-400 font-geist leading-relaxed">Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.</p>
+          </div>
+
+          <div class="flex items-baseline gap-1 mb-8">
+            <span class="text-5xl font-light text-white font-geist tracking-tight flex items-start">
+              $<span class="price-value tabular-nums transition-all duration-300" id="priceValue" data-monthly="29" data-annual="279">29</span>
+            </span>
+            <span class="text-neutral-500 font-geist transition-opacity duration-300" id="billingPeriod">/month</span>
+          </div>
+
+          <div class="mt-auto pt-8 border-t border-white/5">
+             <div class="flex items-center gap-3 mb-2">
+                 <div class="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                 <span class="text-xs text-emerald-400 font-medium uppercase tracking-wider font-geist">Dolor Sit</span>
+             </div>
+             <p class="text-sm text-neutral-300 font-geist">Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.</p>
+          </div>
+        </div>
+
+      <!-- Right: Features + CTA -->
+      <div class="lg:p-8 pt-6 pr-6 pb-6 pl-6 flex flex-col justify-between bg-gradient-to-br from-white/[0.02] to-transparent">
+        <div class="">
+          <div class="text-sm font-medium text-white mb-6 font-geist">Lorem ipsum dolor sit:</div>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Lorem ipsum dolor sit amet</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Consectetur adipiscing elit sed do eiusmod</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Tempor incididunt ut labore &amp; dolore</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" text-emerald-500"=""><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Magna aliqua enim &amp; ad minim</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Veniam quis nostrud &amp; exercitation</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+               <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Ullamco laboris nisi ut</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="mt-10 flex items-center justify-between gap-6 border-t border-white/5 pt-8">
+          <div class="">
+             <div class="flex items-center -space-x-2">
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/overview/assets/images.unsplash.com/photo-1534528741775-53994a69daeb__q94a704e6.jpg)] bg-cover"></div>
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/overview/assets/images.unsplash.com/photo-1506794778202-cad84cf45f1d__q94a704e6.jpg)] bg-cover"></div>
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/overview/assets/images.unsplash.com/photo-1494790108377-be9c29b29330__q94a704e6.jpg)] bg-cover"></div>
+             </div>
+             <div class="text-[10px] text-neutral-500 mt-2 font-geist">Lorem ipsum dolor sit amet</div>
+          </div>
+          <button class="flex gap-2 ring-1 ring-white/10 hover:bg-white/10 transition-all text-sm text-white font-geist bg-white/5 rounded-full py-3 px-6 items-center justify-center font-medium shadow-lg hover:shadow-emerald-500/10 hover:border-emerald-500/30">
+            Lorem ipsum
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+    // Flashlight cursor effect
+    window.updateCursor = function(e) {
+      const card = e.currentTarget;
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--x', `${x}px`);
+      card.style.setProperty('--y', `${y}px`);
+    }
+
+    // Toggle logic
+    window.togglePricing = function() {
+      const knob = document.getElementById('billingKnob');
+      const annualLabel = document.getElementById('labelAnnual');
+      const monthlyLabel = document.getElementById('labelMonthly');
+      const priceValue = document.getElementById('priceValue');
+      const billingPeriod = document.getElementById('billingPeriod');
+
+      const isAnnual = knob.classList.contains('translate-x-6');
+
+      // Animate opacity of values for smoothness
+      priceValue.style.opacity = '0.5';
+      billingPeriod.style.opacity = '0.5';
+
+      setTimeout(() => {
+          if (!isAnnual) {
+            // Switch to Annual
+            knob.classList.add('translate-x-6');
+            knob.style.transform = 'translateX(24px)';
+
+            annualLabel.classList.add('text-white');
+            annualLabel.classList.remove('text-neutral-400');
+            monthlyLabel.classList.remove('text-white');
+            monthlyLabel.classList.add('text-neutral-400');
+
+            priceValue.textContent = priceValue.dataset.annual;
+            billingPeriod.textContent = '/year';
+          } else {
+            // Switch to Monthly
+            knob.classList.remove('translate-x-6');
+            knob.style.transform = 'translateX(0px)';
+
+            annualLabel.classList.remove('text-white');
+            annualLabel.classList.add('text-neutral-400');
+            monthlyLabel.classList.add('text-white');
+            monthlyLabel.classList.remove('text-neutral-400');
+
+            priceValue.textContent = priceValue.dataset.monthly;
+            billingPeriod.textContent = '/month';
+          }
+
+          priceValue.style.opacity = '1';
+          billingPeriod.style.opacity = '1';
+      }, 150);
+    }
+  </script>
+    </div>
+    <code class="ds-meta">#pricingCard bg-[#0A0B0E] border-white/10 rounded-2xl · onmousemove updateCursor → --x/--y · radial border 600px rgba(16,185,129,.4) + fill 800px white/.03 on hover · grid-cols-1 lg:grid-cols-2 · left panel bg-[#121317]/80 · the 4th check keeps the source's malformed svg (renders as an empty bubble)</code>
+  </div>
+</section>
+
+<!-- ============================================================ 04 LAYOUT & SPACING -->
+<section class="ds-group" id="layout">
+  <div class="ds-head">
+    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-[1px] bg-emerald-500"></span><p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Foundations · 04</p></div>
+    <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">Layout &amp; Spacing</h2>
+    <p class="ds-lede">One 1400px container, sections framed in a faint gradient and separated by 96px, and cards gapped at 24px. The page runs on the default Tailwind 4px scale; nothing is customised.</p>
+  </div>
+
+  <p class="ds-sub">Containers</p>
+  <div class="ds-type"><div><div class="role">Page container</div><div class="face">wraps navbar, hero and every section<code>max-w-[1400px] mx-auto px-6 md:px-8 lg:px-12</code></div></div>
+    <div class="sample"><div class="w-full h-10 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300 font-geist">1400px · gutters 24 / 32 / 48</span></div></div>
+    <div class="sizes">1400px</div></div>
+  <div class="ds-type"><div><div class="role">Section frame</div><div class="face">gradient frame around each section<code>max-w-[1400px] rounded-3xl p-8 mt-24 mb-24</code></div></div>
+    <div class="sample"><div class="w-full h-10 rounded-3xl bg-gradient-to-br from-white/10 via-white/0 to-white/10 flex items-center justify-center"><span class="text-xs font-medium text-slate-300 font-geist">p-8 inside · 96px above and below</span></div></div>
+    <div class="sizes">32px · 96px</div></div>
+  <div class="ds-type"><div><div class="role">Hero block</div><div class="face">two-column hero grid<code>grid lg:grid-cols-2 pt-32 pb-32 gap-x-16 gap-y-16</code></div></div>
+    <div class="sample"><div class="grid grid-cols-2 gap-4"><div class="h-10 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300 font-geist">copy · max-w-2xl</span></div><div class="h-10 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300 font-geist">card · w-[32rem]</span></div></div></div>
+    <div class="sizes">128px · 64px</div></div>
+  <div class="ds-type"><div><div class="role">Text measure</div><div class="face">line length caps<code>max-w-lg (hero lead) · max-w-[60ch] (section intro) · max-w-2xl (hero copy)</code></div></div>
+    <div class="sample"><div class="flex flex-col gap-2"><div class="h-2 max-w-lg rounded-full bg-emerald-500/20 border border-emerald-500/20"></div><div class="h-2 max-w-[60ch] rounded-full bg-emerald-500/20 border border-emerald-500/20"></div><div class="h-2 max-w-2xl rounded-full bg-emerald-500/20 border border-emerald-500/20"></div></div></div>
+    <div class="sizes">512 · 60ch · 672</div></div>
+
+  <p class="ds-sub">Spacing scale in use</p>
+  <div class="ds-type"><div><div class="role">gap-2 · 8px</div><div class="face">eyebrow rule to text, icon to label</div></div>
+    <div class="sample"><span class="block h-2 w-2 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">8px</div></div>
+  <div class="ds-type"><div><div class="role">gap-3 · 12px</div><div class="face">metric bars, button pairs, list rows</div></div>
+    <div class="sample"><span class="block h-2 w-3 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">12px</div></div>
+  <div class="ds-type"><div><div class="role">gap-4 · 16px</div><div class="face">hero CTAs, navbar buttons, header row</div></div>
+    <div class="sample"><span class="block h-2 w-4 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">16px</div></div>
+  <div class="ds-type"><div><div class="role">gap-6 · p-6 · 24px</div><div class="face">card grids, inner card padding</div></div>
+    <div class="sample"><span class="block h-2 w-6 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">24px</div></div>
+  <div class="ds-type"><div><div class="role">gap-8 · p-8 · 32px</div><div class="face">card padding, hero column gap, dividers pt-8</div></div>
+    <div class="sample"><span class="block h-2 w-8 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">32px</div></div>
+  <div class="ds-type"><div><div class="role">md:p-10 · 40px</div><div class="face">large feature card padding</div></div>
+    <div class="sample"><span class="block h-2 w-10 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">40px</div></div>
+  <div class="ds-type"><div><div class="role">gap-12 · md:p-12 · 48px</div><div class="face">footer grid, marquee logos</div></div>
+    <div class="sample"><span class="block h-2 w-12 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">48px</div></div>
+  <div class="ds-type"><div><div class="role">gap-16 · mb-16 · 64px</div><div class="face">section header to content, hero grid gap</div></div>
+    <div class="sample"><span class="block h-2 w-16 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">64px</div></div>
+  <div class="ds-type"><div><div class="role">mt-24 · mb-24 · 96px</div><div class="face">between sections</div></div>
+    <div class="sample"><span class="block h-2 w-24 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">96px</div></div>
+  <div class="ds-type"><div><div class="role">pt-32 · pb-32 · 128px</div><div class="face">hero vertical padding</div></div>
+    <div class="sample"><span class="block h-2 w-32 rounded-full bg-emerald-500/20 border border-emerald-500/20"></span></div><div class="sizes">128px</div></div>
+
+  <p class="ds-sub">Radii</p>
+  <div class="ds-colors">
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 bg-[#0A0B0E] border border-white/10 rounded-md"></span></span><div><strong>rounded-md · 6px</strong><p>Delta chips, tags, segmented pill.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 bg-[#0A0B0E] border border-white/10 rounded-lg"></span></span><div><strong>rounded-lg · 8px</strong><p>Dashboard buttons, fields, bars.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 bg-[#0A0B0E] border border-white/10 rounded-xl"></span></span><div><strong>rounded-xl · 12px</strong><p>Icon tiles, sidebar items, list rows.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 bg-[#0A0B0E] border border-white/10 rounded-2xl"></span></span><div><strong>rounded-2xl · 16px</strong><p>Inner cards, plan card, feature tiles.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 bg-[#0A0B0E] border border-white/10 rounded-[1.2em]"></span></span><div><strong>rounded-[1.2em] · ~19px</strong><p>Hero metric card only.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-12 bg-[#0A0B0E] border border-white/10 rounded-3xl"></span></span><div><strong>rounded-3xl · 24px</strong><p>Cards and section frames.</p></div></div>
+    <div class="ds-sw"><span class="ds-chip"><span class="block w-12 h-8 bg-[#0A0B0E] border border-white/10 rounded-full"></span></span><div><strong>rounded-full</strong><p>Navbar, CTAs, pills, avatars.</p></div></div>
+  </div>
+
+  <p class="ds-sub">Pattern A · section frame with header and 1/3 – 2/3 grid</p>
+  <div class="ds-spec">
+    <h3>Features section, row 2 (real markup; the 96px section margins are kept)</h3>
+    <div class="ds-stage !p-0 overflow-hidden">
+      <section class="fade-in-up -translate-y-6 [animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll bg-gradient-to-br from-white/10 via-white/0 to-white/10 w-full max-w-[1400px] rounded-3xl mt-24 mr-auto mb-24 ml-auto pt-8 pr-8 pb-8 pl-8 relative">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-16">
+          <div class="">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-6 h-[1px] bg-emerald-500"></span>
+                <p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Consectetur Elit</p>
+            </div>
+            <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">
+              Lorem ipsum dolor sit amet elit
+            </h2>
+            <p class="sm:text-lg max-w-[60ch] text-base text-slate-400 mt-6 font-geist font-light">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore.
+            </p>
+          </div>
+        </div>
+
+        <div class="font-geist space-y-6">
+          <!-- Row 2: 1/3 - 2/3 -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Small card (1/3) -->
+            <div class="lg:col-span-1">
+              <article class="relative bg-[#0A0B0E] border border-white/10 rounded-3xl p-8 h-full hover:border-white/20 transition-all">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-white text-lg font-semibold tracking-tight">Lorem Ipsum Dolor</h3>
+                  <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">Optimized</span>
+                </div>
+                <p class="text-sm text-slate-400 font-light mb-6">Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod.</p>
+
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Lorem &amp; Ipsum Dolor</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Consectetur Adipiscing</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Sed Do Eiusmod</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Large feature (2/3) -->
+            <div class="lg:col-span-2">
+              <aside class="overflow-hidden flex flex-col hover:border-white/20 transition-all bg-[#0A0B0E] h-full border-white/10 border rounded-3xl pt-8 pr-8 pb-8 pl-8 relative">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h4 class="text-2xl font-semibold text-white tracking-tight">
+                    Lorem Ipsum &amp; Dolor Sit
+                    </h4>
+                    <div class="flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5">
+                        <iconify-icon icon="lucide:trending-up" class="text-emerald-400"></iconify-icon>
+                        <span class="text-xs text-slate-300 font-medium">+15% Recovery Rate</span>
+                    </div>
+                </div>
+
+                <p class="text-slate-400 max-w-lg font-light mb-8">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim.
+                </p>
+
+                <!-- Graph Visualization -->
+                <div class="mt-auto h-32 w-full flex items-end gap-2 opacity-80">
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[30%] animate-bar-loop" style="animation-delay: 0ms"></div>
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[45%] animate-bar-loop" style="animation-delay: 100ms"></div>
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[35%] animate-bar-loop" style="animation-delay: 200ms"></div>
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[50%] animate-bar-loop" style="animation-delay: 300ms"></div>
+                  <!-- Recovery Highlight -->
+                  <div class="w-full h-[75%] relative group cursor-pointer">
+                    <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-black text-[10px] font-bold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Recovered</div>
+                    <div class="w-full h-full bg-gradient-to-t from-emerald-900/50 to-emerald-500 rounded-t-sm animate-bar-loop" style="animation-delay: 400ms"></div>
+                  </div>
+                  <div class="w-full bg-emerald-500/20 rounded-t-sm h-[60%] animate-bar-loop" style="animation-delay: 500ms"></div>
+                  <div class="w-full bg-emerald-500/30 rounded-t-sm h-[80%] animate-bar-loop" style="animation-delay: 600ms"></div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <code class="ds-meta">section frame p-8 rounded-3xl mt-24 mb-24 · header mb-16 · rows space-y-6 · grid grid-cols-1 lg:grid-cols-3 gap-6 · lg:col-span-1 + lg:col-span-2 (row 1 mirrors it: 2/3 + 1/3) · stacks to one column below lg</code>
+  </div>
+
+  <p class="ds-sub">Pattern B · split panel</p>
+  <div class="ds-spec">
+    <h3>Pricing card grid · grid-cols-1 lg:grid-cols-2</h3>
+    <div class="ds-stage bg-[#0A0B0E]">
+      <div class="grid grid-cols-1 lg:grid-cols-2 border border-white/10 rounded-2xl overflow-hidden">
+        <div class="flex flex-col bg-[#121317]/80 border-r border-white/5 pt-8 pr-8 pb-8 pl-8 backdrop-blur-sm gap-3"><span class="text-xs font-medium text-slate-300 font-geist">Plan summary</span><span class="text-[11px] text-neutral-600 font-geist">bg-[#121317]/80 · p-8 · border-r border-white/5</span></div>
+        <div class="lg:p-8 pt-6 pr-6 pb-6 pl-6 flex flex-col gap-3 bg-gradient-to-br from-white/[0.02] to-transparent"><span class="text-xs font-medium text-slate-300 font-geist">Features + CTA</span><span class="text-[11px] text-neutral-600 font-geist">p-6 lg:p-8 · from-white/[0.02]</span></div>
+      </div>
+    </div>
+    <code class="ds-meta">the two halves of #pricingCard with their own padding and fills · stacks below lg</code>
+  </div>
+
+  <p class="ds-sub">Pattern C · 12-column footer</p>
+  <div class="ds-spec">
+    <h3>Footer grid · lg:grid-cols-12 (4 + 8, links 2 → 4)</h3>
+    <div class="ds-stage bg-[#0A0B0E] font-geist">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
+        <div class="lg:col-span-4 h-28 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300">Contact · col-span-4</span></div>
+        <div class="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+          <div class="h-28 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300">Product</span></div>
+          <div class="h-28 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300">Resources</span></div>
+          <div class="h-28 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300">Company</span></div>
+          <div class="h-28 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center"><span class="text-xs font-medium text-slate-300">Legal</span></div>
+        </div>
+      </div>
+    </div>
+    <code class="ds-meta">grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-16 md:mb-24 · lg:col-span-4 + lg:col-span-8 grid-cols-2 md:grid-cols-4 gap-8 md:gap-4 · card md:p-12 lg:p-16</code>
+  </div>
+</section>
+
+<!-- ============================================================ 05 MOTION & INTERACTION -->
+<section class="ds-group" id="motion">
+  <div class="ds-head">
+    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-[1px] bg-emerald-500"></span><p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Foundations · 05</p></div>
+    <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">Motion &amp; Interaction</h2>
+    <p class="ds-lede">Things arrive with a blur-up, charts breathe on long loops, and hover answers with a border, a fill or a glow. Every animation below runs on the source keyframes in ledger.css.</p>
+  </div>
+
+  <div class="ds-spec">
+    <h3>Entrance · blur-up hero sequence</h3>
+    <div class="ds-stage">
+      <div id="ds-entrance" class="flex flex-col gap-8 max-w-2xl gap-x-8 gap-y-8 items-start">
+<div class="inline-flex [animation:animationIn_0.8s_ease-out_0.2s_both] bg-slate-900 border-neutral-900 border rounded-full pt-1.5 pr-5 pb-1.5 pl-1.5 gap-x-3 gap-y-3 items-center">
+            <span class="bg-emerald-500 text-white text-xs px-2.5 py-1 rounded-full font-geist font-medium">New</span>
+            <span class="text-slate-300 text-sm font-geist">Living pattern library</span>
+            </div>
+<h1 class="md:text-7xl leading-[1.1] [animation:animationIn_0.8s_ease-out_0.3s_both] text-5xl font-light text-white tracking-tight font-geist">
+            Ledger Design System
+            </h1>
+<p class="leading-relaxed [animation:animationIn_0.8s_ease-out_0.4s_both] text-lg text-slate-400 font-geist max-w-lg">
+            Tokens, type, surfaces and motion for a pitch-black, emerald-lit
+            interface, each specimen built from the page's own classes.
+            </p>
+<div class="flex flex-wrap [animation:animationIn_0.8s_ease-out_0.5s_both] pt-2 gap-x-4 gap-y-4 items-center">
+            <div class="inline-block bg-transparent">
+                <button class="shiny-cta focus:outline-none"><span class="font-geist">Explore Tokens</span></button>
+            </div>
+            <button class="group px-8 py-4 rounded-full border text-slate-300 text-lg hover:bg-slate-900 transition-all flex items-center gap-3 border-neutral-900 font-geist">
+                Components
+                <iconify-icon icon="solar:book-bookmark-linear" class="text-xl group-hover:text-white transition-colors"></iconify-icon>
+            </button>
+            </div>
+      </div>
+    </div>
+    <div class="mt-4"><button id="ds-replay" class="group px-5 py-2 rounded-full border text-slate-300 text-sm hover:bg-slate-900 transition-all flex items-center gap-2 border-neutral-900 font-geist bg-black">Replay</button></div>
+    <code class="ds-meta">@keyframes animationIn · 0% opacity 0, translateY(30px), blur(8px) → 100% none · [animation:animationIn_0.8s_ease-out_&lt;delay&gt;_both] · hero delays 0.1 / 0.2 / 0.3 / 0.4 / 0.5 / 0.6 s</code>
+  </div>
+
+  <div class="ds-spec">
+    <h3>Scroll reveal · .animate-on-scroll</h3>
+    <div class="ds-stage bg-[#0A0B0E] font-geist">
+      <div id="ds-reveal" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="[animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll bg-[#121317] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors"><span class="text-sm font-medium text-neutral-500">0.1s</span><p class="text-2xl font-semibold text-white tracking-tight mt-4">$42,805</p></div>
+        <div class="[animation:animationIn_0.8s_ease-out_0.2s_both] animate-on-scroll bg-[#121317] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors"><span class="text-sm font-medium text-neutral-500">0.2s</span><p class="text-2xl font-semibold text-white tracking-tight mt-4">$36,210</p></div>
+        <div class="[animation:animationIn_0.8s_ease-out_0.3s_both] animate-on-scroll bg-[#121317] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors"><span class="text-sm font-medium text-neutral-500">0.3s</span><p class="text-2xl font-semibold text-white tracking-tight mt-4">1,429</p></div>
+      </div>
+    </div>
+    <div class="mt-4"><button id="ds-reveal-replay" class="group px-5 py-2 rounded-full border text-slate-300 text-sm hover:bg-slate-900 transition-all flex items-center gap-2 border-neutral-900 font-geist bg-black">Replay</button></div>
+    <code class="ds-meta">animate-on-scroll.js · animation-play-state paused until 20% visible (rootMargin -10% bottom) · plays once · every page section carries it</code>
+  </div>
+
+  <p class="ds-sub">Motion gallery</p>
+  <div class="ds-ease">
+    <div><div class="demo"><div class="w-6 h-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-lg animate-bar-loop" style="animation-delay: 0ms;"></div><div class="w-6 h-[70%] bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-lg animate-bar-loop" style="animation-delay: 100ms;"></div><div class="w-6 h-[85%] bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-lg animate-bar-loop" style="animation-delay: 200ms;"></div></div>
+      <strong>.animate-bar-loop</strong><code>barCycle 6s cubic-bezier(0.33, 1, 0.68, 1) infinite · origin bottom</code><p>Metric and recovery bars rise, hold, drop; 100 ms stagger.</p></div>
+    <div><div class="demo items-end"><div class="w-2 h-[80%] flex justify-center relative candle-anim" style="animation-delay: 0ms"><div class="w-[1px] h-full bg-emerald-500/50"></div><div class="absolute h-[60%] w-[6px] bg-emerald-400 rounded-[1px] top-[20%]"></div></div><div class="w-2 h-[60%] flex justify-center relative candle-anim" style="animation-delay: 100ms"><div class="w-[1px] h-full bg-purple-500/50"></div><div class="absolute h-[50%] w-[6px] bg-purple-500 rounded-[1px] top-[20%]"></div></div><div class="w-2 h-full flex justify-center relative candle-anim" style="animation-delay: 200ms"><div class="w-[1px] h-full bg-emerald-500/50"></div><div class="absolute h-[40%] w-[6px] bg-emerald-400 rounded-[1px] top-[20%]"></div></div></div>
+      <strong>.candle-anim</strong><code>candleCycle 8s cubic-bezier(0.25, 1, 0.5, 1) infinite</code><p>Market candles, 100 ms stagger.</p></div>
+    <div><div class="demo items-center" style="height: auto"><div class="inline-block bg-transparent"><button class="shiny-cta focus:outline-none"><span class="font-geist">Lorem Ipsum</span></button></div></div>
+      <strong>.shiny-cta</strong><code>border-spin 2.5s linear infinite · @property --gradient-angle</code><p>Conic border sweep of the primary CTA.</p></div>
+    <div><div class="demo items-center gap-4"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span><div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div><span class="w-1.5 h-3 bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span></div>
+      <strong>animate-ping · animate-pulse</strong><code>Tailwind built-ins</code><p>Uptime badge, system status dot, terminal cursor.</p></div>
+    <div><div class="demo items-center"><span class="text-2xl text-white tabular-nums font-geist tracking-tight font-light">$2.8M</span></div>
+      <strong>Count-up loop</strong><code>rAF · 2000 ms easeOutQuart → hold 3000 ms → fade 500 ms</code><p>Live in the hero card (#metric-counter-aura).</p></div>
+    <div><div class="demo items-center"><span class="font-mono text-[11px] text-slate-500">&gt; connecting_webhooks...</span></div>
+      <strong>Typing log</strong><code>30–50 ms per char · 300 ms per line · 3.5 s hold · 700 ms fade</code><p>Live in the terminal card under Components.</p></div>
+    <div><div class="demo items-center"><span class="text-xs text-slate-400">300 ms · 500 ms</span></div>
+      <strong>Hover transitions</strong><code>transition-colors · duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] · duration-500</code><p>Borders, fills, card glows (emerald /10 → /20).</p></div>
+    <div><div class="demo items-center"><span class="text-xs text-slate-400">300 ms</span></div>
+      <strong>Switch knob</strong><code>duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]</code><p>Billing toggle; price fades to .5 for 150 ms.</p></div>
+    <div><div class="demo items-center"><span class="text-xs text-slate-400">marquee-rtl</span></div>
+      <strong>Logo marquee</strong><code>marquee-rtl 40s linear infinite · translateX(0 → -50%)</code><p>Duplicated logo set, edge mask 20% / 80% (live below).</p></div>
+  </div>
+
+  <p class="ds-sub">Hover lab · live</p>
+  <div class="ds-grid3 font-geist">
+    <div class="ds-cell"><div class="w-full p-5 bg-[#000000] rounded-3xl"><div class="w-full h-[120px] bg-[#0A0B0E] border border-white/10 rounded-3xl shadow-2xl hover:border-white/20 transition-all"></div></div><small>Card border lift</small><code class="ds-meta !mt-0">hover:border-white/20 · transition-all</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#000000] rounded-3xl"><div class="relative group border border-white/10 overflow-hidden bg-[#0A0B0E] rounded-3xl h-[120px] shadow-2xl hover:border-white/20 transition-all duration-500"><div class="absolute -right-20 -top-20 h-96 w-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-emerald-500/20 transition-all duration-500"></div></div></div><small>Glow orb intensify</small><code class="ds-meta !mt-0">group-hover:bg-emerald-500/20 · 500 ms</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#000000] rounded-3xl"><div class="group relative overflow-hidden h-[120px] bg-[#0A0B0E] border border-white/10 rounded-3xl shadow-lg hover:border-emerald-500/30 transition-all duration-500"></div></div><small>Accent border</small><code class="ds-meta !mt-0">hover:border-emerald-500/30 · 500 ms</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0A0B0E] rounded-3xl"><div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors"><span class="text-sm text-slate-300">Lorem &amp; Ipsum Dolor</span><iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon></div></div><small>List row</small><code class="ds-meta !mt-0">hover:border-emerald-500/20</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0A0B0E] rounded-3xl"><div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors"><iconify-icon icon="lucide:lock" class="text-slate-400 text-2xl"></iconify-icon><span class="text-xs font-medium text-slate-300">Dolor Sit Amet</span></div></div><small>Tile fill</small><code class="ds-meta !mt-0">hover:bg-white/[0.05]</code></div>
+    <div class="ds-cell"><div class="w-full p-5 bg-[#0A0B0E] rounded-3xl"><div class="h-28 flex items-end justify-between gap-3"><div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10"><div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5"><div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[65%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)]"></div></div><span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Mon</span></div><div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10"><div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5"><div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[85%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)]"></div></div><span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Tue</span></div></div></div><small>Bar brighten</small><code class="ds-meta !mt-0">group-hover/bar:brightness-110 · label → white</code></div>
+  </div>
+
+  <div class="ds-spec mt-14">
+    <h3>Logo marquee · live</h3>
+    <div class="ds-contain bg-[#000000] rounded-3xl">
+<div class="[animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll pt-8 pb-8">
+  <div class="py-6 w-full">
+    <div class="relative flex w-full flex-col items-center justify-center overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_20%,black_80%,transparent)]">
+      <div class="flex w-max min-w-full shrink-0 animate-[marquee-rtl_40s_linear_infinite] items-center gap-12 group-hover:[animation-play-state:paused]">
+
+        <!-- Original Set -->
+        <div class="flex items-center gap-12 shrink-0">
+          <a href="#motion" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/b9181a49-20ab-4552-b731-976469c0154b_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ca43984b-3298-41bb-871b-d113545c657c_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/07ee863a-59fe-4785-a806-5592f2439df2_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/be92aecb-6303-4bbe-9283-ba238ac8b0ee_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/9f9002c0-4b36-4d16-b000-15655b25b879_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1040d3ec-8da2-47f6-b134-1341261ccfb9_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+        </div>
+
+        <!-- Duplicate Set for Seamless Loop -->
+        <div class="flex items-center gap-12 shrink-0" aria-hidden="true">
+          <a href="#motion" tabindex="-1" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/b9181a49-20ab-4552-b731-976469c0154b_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" tabindex="-1" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ca43984b-3298-41bb-871b-d113545c657c_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" tabindex="-1" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/07ee863a-59fe-4785-a806-5592f2439df2_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" tabindex="-1" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/be92aecb-6303-4bbe-9283-ba238ac8b0ee_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" tabindex="-1" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/9f9002c0-4b36-4d16-b000-15655b25b879_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#motion" tabindex="-1" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/overview/assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1040d3ec-8da2-47f6-b134-1341261ccfb9_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+    <code class="ds-meta">mask linear-gradient(to right, transparent, black 20%, black 80%, transparent) · w-max track animate-[marquee-rtl_40s_linear_infinite] · two identical sets · logos hover:opacity-80</code>
+  </div>
+</section>
+
+<!-- ============================================================ 06 ICONS -->
+<section class="ds-group" id="icons">
+  <div class="ds-head">
+    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-[1px] bg-emerald-500"></span><p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Foundations · 06</p></div>
+    <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">Icons</h2>
+    <p class="ds-lede">Two delivery paths, one look: the <code>&lt;iconify-icon&gt;</code> web component (Solar and Lucide sets, preloaded offline) and inline Lucide-style SVGs. All are outline glyphs drawn in <code>currentColor</code>, so they take the text colour of their parent.</p>
+  </div>
+
+  <p class="ds-sub">Size variants</p>
+  <div class="ds-stage bg-[#0A0B0E] font-geist"><div class="ds-row items-end">
+    <div class="ds-cell"><iconify-icon icon="lucide:shield-check" class="text-emerald-400 text-sm"></iconify-icon><small>text-sm · 14</small></div>
+    <div class="ds-cell"><iconify-icon icon="lucide:shield-check" class="text-emerald-400"></iconify-icon><small>inherit · 16</small></div>
+    <div class="ds-cell"><iconify-icon icon="lucide:shield-check" class="text-emerald-400 text-xl"></iconify-icon><small>text-xl · 20</small></div>
+    <div class="ds-cell"><iconify-icon icon="lucide:shield-check" class="text-emerald-400 text-2xl"></iconify-icon><small>text-2xl · 24</small></div>
+    <div class="ds-cell text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg><small>svg 12 · stroke 2</small></div>
+    <div class="ds-cell text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><small>svg 14 · 1.5</small></div>
+    <div class="ds-cell text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg><small>svg 16 · 1.5</small></div>
+    <div class="ds-cell text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg><small>svg 18 · 1.5</small></div>
+    <div class="ds-cell text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg><small>svg 20 · 1.5</small></div>
+    <div class="ds-cell text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="m9 18 6-6-6-6"></path></svg><small>svg 24 · 2</small></div>
+    <div class="ds-cell text-neutral-700"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><small>svg 32 · 1.5</small></div>
+  </div></div>
+  <p class="ds-note">Stroke weight tracks size: 1.5 at 14–20px for UI chrome, 2 for small action glyphs, 2.5–3 for 12px chevrons and checks.</p>
+
+  <p class="ds-sub">Color inheritance · currentColor</p>
+  <div class="ds-stage bg-[#0A0B0E] font-geist"><div class="ds-row">
+    <div class="ds-cell text-white"><iconify-icon icon="lucide:zap" class="text-2xl"></iconify-icon><small>text-white</small></div>
+    <div class="ds-cell text-slate-300"><iconify-icon icon="lucide:zap" class="text-2xl"></iconify-icon><small>text-slate-300</small></div>
+    <div class="ds-cell text-slate-400"><iconify-icon icon="lucide:zap" class="text-2xl"></iconify-icon><small>text-slate-400</small></div>
+    <div class="ds-cell text-neutral-500"><iconify-icon icon="lucide:zap" class="text-2xl"></iconify-icon><small>text-neutral-500</small></div>
+    <div class="ds-cell text-neutral-600"><iconify-icon icon="lucide:zap" class="text-2xl"></iconify-icon><small>text-neutral-600</small></div>
+    <div class="ds-cell text-emerald-400"><iconify-icon icon="lucide:zap" class="text-2xl"></iconify-icon><small>text-emerald-400</small></div>
+    <div class="ds-cell text-emerald-500"><iconify-icon icon="lucide:zap" class="text-2xl"></iconify-icon><small>text-emerald-500</small></div>
+    <div class="ds-cell"><button class="group px-8 py-4 rounded-full border text-slate-300 text-lg hover:bg-slate-900 transition-all flex items-center gap-3 border-neutral-900 font-geist">Hover<iconify-icon icon="solar:book-bookmark-linear" class="text-xl group-hover:text-white transition-colors"></iconify-icon></button><small>group-hover:text-white</small></div>
+  </div></div>
+
+  <p class="ds-sub">Icon containers</p>
+  <div class="ds-stage bg-[#0A0B0E] font-geist"><div class="ds-row">
+    <div class="ds-cell"><div class="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center"><iconify-icon icon="lucide:shield-check" class="text-emerald-400 text-2xl"></iconify-icon></div><small>Feature badge</small></div>
+    <div class="ds-cell"><div class="p-2 rounded-lg bg-white/5 border border-white/5 text-white shadow-inner"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg></div><small>Balance box</small></div>
+    <div class="ds-cell"><div class="mt-0.5 rounded-full bg-emerald-500/10 p-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg></div><small>Check bubble</small></div>
+    <div class="ds-cell"><button class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors border border-white/5 shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></button><small>Icon button</small></div>
+    <div class="ds-cell"><a href="#icons" class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5 group"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin transition-transform group-hover:scale-110"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect width="4" height="12" x="2" y="9"></rect><circle cx="4" cy="4" r="2"></circle></svg></a><small>Social · scale-110</small></div>
+  </div></div>
+
+  <p class="ds-sub">Inventory</p>
+  <div class="ds-icons">
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></div><code>solar:alt-arrow-down-linear<i>iconify-icon · navbar dropdown caret</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="solar:book-bookmark-linear" class="text-xl"></iconify-icon></div><code>solar:book-bookmark-linear<i>iconify-icon · text-xl · hero secondary CTA</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:shield-check" class="text-emerald-400 text-2xl"></iconify-icon></div><code>lucide:shield-check<i>text-emerald-400 text-2xl · feature badge</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:globe-2" class="text-slate-400 text-2xl"></iconify-icon></div><code>lucide:globe-2<i>text-slate-400 text-2xl · feature tile</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:lock" class="text-slate-400 text-2xl"></iconify-icon></div><code>lucide:lock<i>text-slate-400 text-2xl · feature tile</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:file-check" class="text-slate-400 text-2xl"></iconify-icon></div><code>lucide:file-check<i>text-slate-400 text-2xl · feature tile</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:scale" class="text-slate-400 text-2xl"></iconify-icon></div><code>lucide:scale<i>text-slate-400 text-2xl · feature tile</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:zap" class="text-emerald-400 text-xl"></iconify-icon></div><code>lucide:zap<i>text-emerald-400 text-xl · webhooks title</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon></div><code>lucide:check<i>text-emerald-500 text-sm · checklist rows</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-300"><iconify-icon icon="lucide:trending-up" class="text-emerald-400"></iconify-icon></div><code>lucide:trending-up<i>text-emerald-400 · trend pill</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></div><code>activity<i>svg · metric card · 20 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-white"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg></div><code>layout-dashboard<i>svg · sidebar · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></div><code>line-chart<i>svg · sidebar · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div><code>users<i>svg · sidebar · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div><code>dollar-sign<i>svg · sidebar · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg></div><code>wallet<i>svg · sidebar · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"></path><path d="m17 7 2 2-2 2"></path><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect></svg></div><code>square-code<i>svg · sidebar · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8c0 4.5-6 9-6 9s-6-4.5-6-9a6 6 0 0 1 12 0"></path><circle cx="12" cy="8" r="2"></circle></svg></div><code>map-pin<i>svg · sidebar · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></div><code>bell<i>svg · header · 18 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-600"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div><code>more-vertical<i>svg · card menus · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-white"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></div><code>plus<i>svg · Space button · 14 · 2</i></code></div>
+    <div class="ds-icon"><div class="stage text-emerald-400"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></div><code>arrow-right<i>svg · Transfer / pricing CTA · 14–16 · 2</i></code></div>
+    <div class="ds-icon"><div class="stage text-neutral-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg></div><code>download<i>svg · market card · 16 · 1.5</i></code></div>
+    <div class="ds-icon"><div class="stage text-emerald-400"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div><code>star<i>svg · testimonial rating · filled</i></code></div>
+    <div class="ds-icon"><div class="stage text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg></div><code>github<i>svg · footer social · 18 · 2</i></code></div>
+  </div>
+</section>
+
+</div>
+    </div>
+
+<script>
+(function () {
+  /* nav: highlight the section in view */
+  var links = [].slice.call(document.querySelectorAll('#ds-nav .ds-links a'));
+  var groups = [].slice.call(document.querySelectorAll('#ds-main .ds-group'));
+  function spy() {
+    var y = 160, cur = null;
+    groups.forEach(function (g) { if (g.getBoundingClientRect().top <= y) cur = g; });
+    links.forEach(function (a) {
+      var on = !!cur && a.getAttribute('href') === '#' + cur.id;
+      if (on && !a.classList.contains('is-active')) a.parentNode.scrollLeft = a.offsetLeft - a.parentNode.offsetLeft - 24;
+      a.classList.toggle('is-active', on);
+    });
+  }
+  addEventListener('scroll', spy, { passive: true });
+  spy();
+
+  /* hero and navbar buttons jump into the catalog (markup unchanged) */
+  function go(sel, id) { var b = document.querySelector(sel); if (b) b.addEventListener('click', function () { document.getElementById(id).scrollIntoView(); }); }
+  go('#top .shiny-cta', 'colors');
+  go('#top .inline-block + button', 'components');
+  go('#ds-nav .bg-white', 'typography');
+
+  /* typography: size / line-height labels read from the rendered element */
+  function px(v) { var n = parseFloat(v); return (Math.round(n * 100) / 100) + 'px'; }
+  function measure() {
+    [].slice.call(document.querySelectorAll('.ds-type [data-t]')).forEach(function (el) {
+      var cs = getComputedStyle(el), row = el.closest('.ds-type'), out = row && row.querySelector('.sizes');
+      if (!out) return;
+      var small = out.querySelector('small');
+      out.firstChild.nodeValue = px(cs.fontSize) + ' / ' + px(cs.lineHeight);
+      if (small) out.appendChild(small);
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  addEventListener('load', measure);
+  addEventListener('resize', measure, { passive: true });
+
+  /* motion: replay the entrance by re-inserting the same nodes (restarts their CSS animations) */
+  document.getElementById('ds-replay').addEventListener('click', function () {
+    var box = document.getElementById('ds-entrance');
+    [].slice.call(box.children).forEach(function (n) { box.replaceChild(n.cloneNode(true), n); });
+  });
+  /* motion: replay the scroll reveal (fresh nodes, observed again by animate-on-scroll.js) */
+  document.getElementById('ds-reveal-replay').addEventListener('click', function () {
+    var box = document.getElementById('ds-reveal');
+    [].slice.call(box.children).forEach(function (n) { var c = n.cloneNode(true); c.classList.remove('animate'); box.replaceChild(c, n); });
+    if (window.initInViewAnimations) window.initInViewAnimations('#ds-reveal .animate-on-scroll');
+  });
+})();
+</script>
+</body>
+</html>

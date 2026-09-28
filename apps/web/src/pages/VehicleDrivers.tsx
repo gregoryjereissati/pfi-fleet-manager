@@ -9,9 +9,12 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { ArrowLeft } from 'lucide-react'
 
-const inputClass =
-  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
+const sectionClass = 'lg-inner p-6'
+const sectionTitleClass = 'mb-4 text-base font-semibold tracking-tight text-white'
 
 export function VehicleDrivers() {
   const { id } = useParams<{ id: string }>()
@@ -84,56 +87,60 @@ export function VehicleDrivers() {
   }
 
   if (loading) {
-    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+    return <LoadingState label={t('common.loading')} />
   }
 
   if (error) {
-    return <p className="text-sm text-red-400">{error}</p>
+    return <p className="lg-alert lg-alert-error">{error}</p>
   }
 
   if (!vehicle) {
-    return <p className="text-sm text-white/40">{t('common.notFound')}</p>
+    return <p className="text-sm text-neutral-500">{t('common.notFound')}</p>
   }
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="space-y-2">
-        <Link to={`/vehicles/${vehicle.id}`} className="text-sm text-gold hover:underline">
+      <div className="space-y-4">
+        <Link to={`/vehicles/${vehicle.id}`} className="lg-link">
+          <ArrowLeft size={14} />
           {t('actions.backToVehicle')}
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-white">
-            {t('vehicles.manageDriversFor', { plate: vehicle.plate })}
-          </h1>
-          <p className="text-sm text-white/40">
-            {vehicle.brand} {vehicle.model} • {vehicle.year}
-          </p>
-        </div>
+        <PageHeader
+          title={t('vehicles.manageDriversFor', { plate: vehicle.plate })}
+          subtitle={
+            <>
+              {vehicle.brand} {vehicle.model} • {vehicle.year}
+            </>
+          }
+        />
       </div>
 
-      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+      {actionError && <p className="lg-alert lg-alert-error">{actionError}</p>}
 
-      <section className="rounded-lg border border-white/[0.07] bg-fleet-card p-4">
-        <h2 className="mb-3 text-sm font-semibold text-white/50">
+      <section className={`${sectionClass} lg-reveal`}>
+        <h2 className={sectionTitleClass}>
           {t('vehicles.linkedDrivers')} ({active.length})
         </h2>
 
         {assignmentsLoading ? (
-          <p className="text-sm text-white/40">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
         ) : active.length === 0 ? (
-          <p className="text-sm text-white/30">{t('vehicles.noLinkedDrivers')}</p>
+          <p className="text-sm text-neutral-500">{t('vehicles.noLinkedDrivers')}</p>
         ) : (
-          <ul className="divide-y divide-white/[0.05]">
+          <ul className="space-y-2">
             {active.map((assignment) => (
-              <li key={assignment.id} className="flex items-center justify-between py-3 text-sm">
+              <li
+                key={assignment.id}
+                className="lg-row flex items-center justify-between gap-4 px-4 py-3 text-sm"
+              >
                 <span className="min-w-0">
                   <span className="font-medium text-white">{assignment.driverName}</span>
-                  <span className="block text-xs text-white/40">
+                  <span className="mt-0.5 block text-xs text-neutral-500">
                     {t('vehicles.assignmentSince', {
                       date: formatDate(assignment.startDate),
                     })}
                     {assignment.startEstimated && (
-                      <span className="ml-1 text-amber-400/80">
+                      <span className="ml-1 text-yellow-400/80">
                         {t('vehicles.assignmentEstimated')}
                       </span>
                     )}
@@ -142,7 +149,7 @@ export function VehicleDrivers() {
                 <button
                   disabled={actionLoading}
                   onClick={() => handleUnlink(assignment.driverId)}
-                  className="shrink-0 text-red-400 hover:underline disabled:opacity-50"
+                  className="lg-action lg-action-danger shrink-0"
                 >
                   {t('actions.endAssignment')}
                 </button>
@@ -152,8 +159,8 @@ export function VehicleDrivers() {
         )}
       </section>
 
-      <section className="rounded-lg border border-white/[0.07] bg-fleet-card p-4">
-        <h2 className="mb-3 text-sm font-semibold text-white/50">{t('vehicles.addDriver')}</h2>
+      <section className={sectionClass}>
+        <h2 className={sectionTitleClass}>{t('vehicles.addDriver')}</h2>
         <input
           type="text"
           value={search}
@@ -163,23 +170,26 @@ export function VehicleDrivers() {
         />
 
         {driversLoading ? (
-          <p className="text-sm text-white/40">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
         ) : driversError ? (
-          <p className="text-sm text-red-400">{driversError}</p>
+          <p className="lg-alert lg-alert-error">{driversError}</p>
         ) : availableDrivers.length === 0 ? (
-          <p className="text-sm text-white/30">{t('vehicles.noAvailableDrivers')}</p>
+          <p className="text-sm text-neutral-500">{t('vehicles.noAvailableDrivers')}</p>
         ) : (
-          <ul className="divide-y divide-white/[0.05]">
+          <ul className="space-y-2">
             {availableDrivers.map((driver) => (
-              <li key={driver.id} className="flex items-center justify-between py-3 text-sm">
+              <li
+                key={driver.id}
+                className="lg-row flex items-center justify-between gap-4 px-4 py-3 text-sm"
+              >
                 <span>
                   <span className="font-medium text-white">{driver.name}</span>
-                  {driver.cpf && <span className="text-white/40"> • {driver.cpf}</span>}
+                  {driver.cpf && <span className="text-neutral-500"> • {driver.cpf}</span>}
                 </span>
                 <button
                   disabled={actionLoading}
                   onClick={() => handleLink(driver.id)}
-                  className="text-gold hover:underline disabled:opacity-50"
+                  className="lg-action shrink-0"
                 >
                   {t('actions.link')}
                 </button>
@@ -194,21 +204,19 @@ export function VehicleDrivers() {
         bloco, a informação estaria no banco e invisível na tela.
       */}
       {ended.length > 0 && (
-        <section className="rounded-lg border border-white/[0.07] bg-fleet-card p-4">
-          <h2 className="mb-3 text-sm font-semibold text-white/50">
-            {t('vehicles.assignmentHistory')}
-          </h2>
-          <ul className="divide-y divide-white/[0.05]">
+        <section className={sectionClass}>
+          <h2 className={sectionTitleClass}>{t('vehicles.assignmentHistory')}</h2>
+          <ul className="space-y-2">
             {ended.map((assignment) => (
-              <li key={assignment.id} className="py-3 text-sm">
-                <span className="font-medium text-white/70">{assignment.driverName}</span>
-                <span className="block text-xs text-white/35">
+              <li key={assignment.id} className="lg-row px-4 py-3 text-sm">
+                <span className="font-medium text-slate-300">{assignment.driverName}</span>
+                <span className="mt-0.5 block text-xs text-neutral-500">
                   {t('vehicles.assignmentPeriod', {
                     start: formatDate(assignment.startDate),
                     end: formatDate(assignment.endDate as string),
                   })}
                   {assignment.startEstimated && (
-                    <span className="ml-1 text-amber-400/70">
+                    <span className="ml-1 text-yellow-400/70">
                       {t('vehicles.assignmentEstimated')}
                     </span>
                   )}

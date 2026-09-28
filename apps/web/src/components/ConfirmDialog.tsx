@@ -25,28 +25,22 @@ export function ConfirmDialog({
 
   const confirmClass =
     variant === 'danger'
-      ? 'bg-red-600/90 text-white hover:bg-red-600'
+      ? 'lg-btn-ghost lg-btn-danger'
       : variant === 'warning'
-        ? 'bg-amber-600/90 text-white hover:bg-amber-600'
-        : 'bg-gold text-fleet-black font-semibold hover:bg-gold-hover'
+        ? 'lg-btn-ghost lg-btn-warning'
+        : 'lg-btn-accent'
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative z-10 w-full max-w-sm rounded-lg bg-fleet-card border border-white/[0.08] p-6 shadow-2xl">
-        <h2 className="text-base font-semibold text-white">{title}</h2>
-        <p className="mt-2 text-sm text-white/55">{message}</p>
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
-          >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <div className="lg-in relative z-10 w-full max-w-sm rounded-3xl border border-white/10 bg-lg-card p-7 shadow-2xl">
+        <h2 className="text-xl font-semibold tracking-tight text-white">{title}</h2>
+        <p className="lg-muted mt-2 text-sm leading-relaxed">{message}</p>
+        <div className="mt-7 flex justify-end gap-3">
+          <button onClick={onCancel} className="lg-btn-ghost">
             {cancelLabel}
           </button>
-          <button
-            onClick={onConfirm}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${confirmClass}`}
-          >
+          <button onClick={onConfirm} className={confirmClass}>
             {confirmLabel}
           </button>
         </div>

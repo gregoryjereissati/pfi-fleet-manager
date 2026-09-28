@@ -11,7 +11,8 @@ O projeto está em uma **nova etapa**, que parte da aplicação existente e em f
 
 - **A aplicação atual é a base.** O código em `apps/` é a referência do comportamento vigente.
 - **Nenhuma proposta anterior de mudança de regras está aprovada.** Uma revisão de produto chegou a ser esboçada e foi descartada como planejamento. Se alguém mencionar regras "RP01–RP32", elas não existem mais e nunca foram aprovadas.
-- **Regras de negócio, arquitetura e identidade visual serão revisitadas depois**, em etapa própria. Até lá, não as altere por iniciativa própria.
+- **Regras de negócio e arquitetura serão revisitadas depois**, em etapa própria. Até lá, não as altere por iniciativa própria.
+- **A identidade visual é o design system Ledger** (seção [Identidade visual](#identidade-visual)). Telas novas seguem esse padrão; mudá-lo exige confirmação.
 - **O Documento Técnico é referência, não ordem de serviço.** Ele descreve o sistema no momento em que foi escrito; divergência entre ele e o código não autoriza alterar a aplicação.
 - **Não faça commit sem autorização explícita.**
 
@@ -53,6 +54,35 @@ routes → middlewares → controllers → services → repositories → Postgre
 `config/` (env com Zod, conexão única do postgres.js) · `db/` (migrations SQL, executor, seed e limpeza) · `jobs/` (rotina diária de alertas) · `lib/` (verificação de token, auditoria, erros do PostgreSQL) · `types/` (tipos do modelo e augmentações do Express).
 
 O mapa das pastas está no [README](README.md#mapa-do-projeto).
+
+---
+
+## Identidade visual
+
+O frontend segue o **design system Ledger**. A referência é o HTML em
+`assets/developer-monetizati-design-system/developer-monetizati-design-system/design-system-fm2.html`:
+preto de página, superfícies quase pretas separadas por linhas brancas de
+5–10%, um único destaque em esmeralda, Geist leve nos títulos e cantos
+arredondados. Rosa, laranja, amarelo e roxo aparecem só como cores de dado e
+de estado.
+
+| Onde | O quê |
+|---|---|
+| `apps/web/tailwind.config.ts` | Tokens `lg-*` (superfícies) e a fonte Geist |
+| `apps/web/src/index.css` | Classes `lg-*`: cartões, botões, campos, tabelas, etiquetas, avisos, o `.shiny-cta` e as animações |
+| `apps/web/src/components/ledger/` | `LedgerBackdrop` (só CSS: orbes esmeralda e roxo com o brilho de canto nas telas de entrada, orbes de brilho dentro do sistema) e peças como `PageHeader` |
+| `apps/web/src/lib/ledger-motion.ts` | Entrada ao rolar (`.lg-reveal`) e lanterna dos cartões (`.lg-flashlight`) |
+
+A evolução mensal do painel é uma curva do Recharts no estilo do design system
+(linha esmeralda, área em degradê, linha tracejada no pico); os demais gráficos
+são marcação com essas classes. Tela nova usa as classes `lg-*`, não cores soltas.
+
+Convenções de interação:
+
+- **Erros** vão para o aviso flutuante (`useToast()` em `components/ledger/Toast.tsx`), nunca `window.alert`.
+- **Confirmações** usam o `ConfirmDialog`, nunca `window.confirm`.
+- **Ações de linha**: a principal fica visível; as demais entram no menu `RowActions` ("⋯").
+- **Listas vazias** usam o `EmptyState`, com a ação de criar quando o perfil pode criar.
 
 ---
 
@@ -147,7 +177,7 @@ Nada de `git commit`, `git push`, deploy ou alteração de banco por iniciativa 
 
 ### 3. Não altere regras de negócio, stack ou visual nesta etapa
 
-Serão revisitados em etapa própria. Se uma tarefa parecer pedir isso, confirme antes.
+Regras e stack serão revisitadas em etapa própria. O visual segue o design system Ledger; fugir dele exige confirmação. Se uma tarefa parecer pedir isso, confirme antes.
 
 ### 4. Antes de concluir
 

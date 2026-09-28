@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { FileText, Plus } from 'lucide-react'
 import { DocumentType, type DocumentStatus } from '@fleet-manager/shared'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
@@ -10,17 +11,19 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { FilePreviewModal } from '@/components/FilePreviewModal'
+import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { RowActions } from '@/components/ledger/RowActions'
+import { useToast } from '@/components/ledger/Toast'
 import { formatDate } from '@/lib/utils'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
-const inputClass =
-  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
 function getStatusClasses(status: DocumentStatus) {
-  if (status === 'EXPIRED') return 'bg-red-500/10 text-red-400'
-  if (status === 'EXPIRING_SOON') return 'bg-amber-500/10 text-amber-400'
-  return 'bg-green-500/10 text-green-400'
+  if (status === 'EXPIRED') return 'lg-tag-danger'
+  if (status === 'EXPIRING_SOON') return 'lg-tag-warn'
+  return 'lg-tag-ok'
 }
 
 function getEntityLabel(vehiclePlate: string | null, driverName: string | null) {
@@ -30,6 +33,7 @@ function getEntityLabel(vehiclePlate: string | null, driverName: string | null) 
 export function DocumentList() {
   const { t } = useTranslation()
   const getToken = useToken()
+  const toast = useToast()
   const { currentUser } = useCurrentUser()
   const { vehicles } = useVehicleOptions()
   const [vehicleId, setVehicleId] = useState('')
@@ -70,30 +74,27 @@ export function DocumentList() {
           await apiFetch(`/documents/${id}`, token, { method: 'DELETE' })
           reload()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('documents.title')}</h1>
-          <p className="text-sm text-white/40">{t('documents.subtitle')}</p>
-        </div>
-        {canMutate && (
-          <Link
-            to="/documents/new"
-            className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
-          >
-            {t('documents.new')}
-          </Link>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t('documents.title')}
+        subtitle={t('documents.subtitle')}
+        actions={
+          canMutate && (
+            <Link to="/documents/new" className="lg-btn-accent">
+              <Plus size={14} strokeWidth={2} /> {t('documents.new')}
+            </Link>
+          )
+        }
+      />
 
-      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-3">
+      <div className="lg-inner grid gap-3 p-4 md:grid-cols-3">
         <select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
@@ -131,83 +132,90 @@ export function DocumentList() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-white/40">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
       ) : error ? (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="lg-alert lg-alert-error">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
+        <div className="lg-inner overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-fleet-darker">
-                <tr className="border-b border-white/[0.07] text-left text-white/40">
-                  <th className="px-4 py-3 font-medium">{t('documents.columns.entity')}</th>
-                  <th className="px-4 py-3 font-medium">{t('documents.columns.type')}</th>
-                  <th className="px-4 py-3 font-medium">{t('documents.columns.expiryDate')}</th>
-                  <th className="px-4 py-3 font-medium">{t('documents.columns.status')}</th>
-                  <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
+            <table className="lg-table min-w-full">
+              <thead>
+                <tr>
+                  <th>{t('documents.columns.entity')}</th>
+                  <th>{t('documents.columns.type')}</th>
+                  <th>{t('documents.columns.expiryDate')}</th>
+                  <th>{t('documents.columns.status')}</th>
+                  <th className="text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody>
                 {documents.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-white/30">
-                      {t('documents.empty')}
+                    <td colSpan={5}>
+                      <EmptyState
+                        icon={<FileText size={20} strokeWidth={1.5} />}
+                        message={t('documents.empty')}
+                        action={
+                          canMutate && (
+                            <Link to="/documents/new" className="lg-btn-accent">
+                              <Plus size={14} strokeWidth={2} />
+                              {t('documents.new')}
+                            </Link>
+                          )
+                        }
+                      />
                     </td>
                   </tr>
                 ) : (
                   documents.map((document) => (
-                    <tr key={document.id} className="hover:bg-white/[0.025]">
-                      <td className="px-4 py-3 font-medium text-white">
+                    <tr key={document.id}>
+                      <td className="font-medium text-white">
                         {getEntityLabel(document.vehiclePlate, document.driverName)}
-                        <div className="text-xs text-white/40">
+                        <div className="text-xs font-normal text-neutral-500">
                           {document.vehiclePlate
                             ? t('documents.entity.vehicle')
                             : t('documents.entity.driver')}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-white/70">
-                        {t(`documents.types.${document.type}`)}
-                      </td>
-                      <td className="px-4 py-3 text-white/70">
-                        {formatDate(document.expiryDate)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${getStatusClasses(document.status)}`}
-                        >
+                      <td>{t(`documents.types.${document.type}`)}</td>
+                      <td className="whitespace-nowrap">{formatDate(document.expiryDate)}</td>
+                      <td>
+                        <span className={`lg-tag ${getStatusClasses(document.status)}`}>
                           {t(`documents.statuses.${document.status}`)}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                          {document.fileUrl && (
+                      <td>
+                        <div className="flex items-center justify-end gap-3">
+                          {document.fileUrl ? (
                             <button
                               type="button"
                               onClick={() => setPreviewDocumentId(document.id)}
-                              className="text-gold hover:underline"
+                              className="lg-action"
                             >
                               {t('documents.preview.viewFile')}
                             </button>
+                          ) : canMutate ? (
+                            <Link to={`/documents/${document.id}/edit`} className="lg-action">
+                              {t('actions.edit')}
+                            </Link>
+                          ) : (
+                            <span className="text-neutral-600">-</span>
                           )}
-                          {canMutate && (
-                            <>
-                              <Link
-                                to={`/documents/${document.id}/edit`}
-                                className="text-white/55 hover:underline"
-                              >
-                                {t('actions.edit')}
-                              </Link>
-                              <button
-                                onClick={() => handleDelete(document.id)}
-                                className="text-red-400 hover:underline"
-                              >
-                                {t('actions.remove')}
-                              </button>
-                            </>
-                          )}
-                          {!canMutate && !document.fileUrl && (
-                            <span className="text-white/25">-</span>
-                          )}
+                          <RowActions
+                            actions={[
+                              canMutate &&
+                                Boolean(document.fileUrl) && {
+                                  label: t('actions.edit'),
+                                  to: `/documents/${document.id}/edit`,
+                                  tone: 'muted',
+                                },
+                              canMutate && {
+                                label: t('actions.remove'),
+                                onSelect: () => handleDelete(document.id),
+                                tone: 'danger',
+                              },
+                            ]}
+                          />
                         </div>
                       </td>
                     </tr>

@@ -10,11 +10,14 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { formatCpf, formatDate } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { EmptyState, LoadingState, PageHeader, SearchField } from '@/components/ledger/Ui'
+import { RowActions } from '@/components/ledger/RowActions'
+import { useToast } from '@/components/ledger/Toast'
+import { Plus, Users } from 'lucide-react'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
-const inputClass =
-  'rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
 /** Sem validade cadastrada não há o que vencer — e tampouco o que alertar. */
 function isExpiringSoon(expiryDate: string | null) {
@@ -30,6 +33,7 @@ export function DriverList() {
   const { t } = useTranslation()
   const getToken = useToken()
   const { currentUser } = useCurrentUser()
+  const toast = useToast()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [dialog, setDialog] = useState<{
@@ -65,7 +69,7 @@ export function DriverList() {
           await apiFetch(`/drivers/${id}`, token, { method: 'DELETE' })
           reload()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
@@ -84,36 +88,31 @@ export function DriverList() {
           await apiFetch(`/drivers/${id}/permanent`, token, { method: 'DELETE' })
           reload()
         } catch (err) {
-          window.alert((err as Error).message)
+          toast.error((err as Error).message)
         }
       },
     })
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('drivers.title')}</h1>
-          <p className="text-sm text-white/40">{t('drivers.subtitle')}</p>
-        </div>
-        {canMutate && (
-          <Link
-            to="/drivers/new"
-            className="inline-flex items-center justify-center rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover"
-          >
-            {t('drivers.new')}
-          </Link>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t('drivers.title')}
+        subtitle={t('drivers.subtitle')}
+        actions={
+          canMutate && (
+            <Link to="/drivers/new" className="lg-btn-accent">
+              <Plus size={14} strokeWidth={2} /> {t('drivers.new')}
+            </Link>
+          )
+        }
+      />
 
-      <div className="grid gap-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4 md:grid-cols-2">
-        <input
-          type="text"
+      <div className="lg-inner grid gap-3 p-4 md:grid-cols-2">
+        <SearchField
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('drivers.searchPlaceholder')}
-          className={inputClass}
         />
         <select
           value={status}
@@ -127,28 +126,39 @@ export function DriverList() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-white/40">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
       ) : error ? (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="lg-alert lg-alert-error">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
+        <div className="lg-inner overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-fleet-darker">
-                <tr className="border-b border-white/[0.07] text-left text-white/40">
-                  <th className="px-4 py-3 font-medium">{t('drivers.columns.name')}</th>
-                  <th className="px-4 py-3 font-medium">{t('drivers.columns.cpf')}</th>
-                  <th className="px-4 py-3 font-medium">{t('drivers.columns.cnh')}</th>
-                  <th className="px-4 py-3 font-medium">{t('drivers.columns.cnhExpiry')}</th>
-                  <th className="px-4 py-3 font-medium">{t('drivers.columns.status')}</th>
-                  <th className="px-4 py-3 font-medium">{t('common.actions')}</th>
+            <table className="lg-table min-w-full">
+              <thead>
+                <tr>
+                  <th>{t('drivers.columns.name')}</th>
+                  <th>{t('drivers.columns.cpf')}</th>
+                  <th>{t('drivers.columns.cnh')}</th>
+                  <th>{t('drivers.columns.cnhExpiry')}</th>
+                  <th>{t('drivers.columns.status')}</th>
+                  <th className="text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody>
                 {drivers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-white/30">
-                      {t('drivers.empty')}
+                    <td colSpan={6}>
+                      <EmptyState
+                        icon={<Users size={20} strokeWidth={1.5} />}
+                        message={t('drivers.empty')}
+                        action={
+                          canMutate && (
+                            <Link to="/drivers/new" className="lg-btn-accent">
+                              <Plus size={14} strokeWidth={2} />
+                              {t('drivers.new')}
+                            </Link>
+                          )
+                        }
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -156,37 +166,39 @@ export function DriverList() {
                     const expiring = isExpiringSoon(driver.cnhExpiry)
 
                     return (
-                      <tr key={driver.id} className="hover:bg-white/[0.025]">
-                        <td className="px-4 py-3 font-medium text-white">
+                      <tr key={driver.id}>
+                        <td className="font-medium text-white">
                           {driver.name}
                           {!driver.linkedToUser && (
                             <span
-                              className="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400"
+                              className="lg-tag lg-tag-warn ml-2"
                               title={t('drivers.noAccountHint')}
                             >
                               {t('drivers.noAccount')}
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-white/70">{formatCpf(driver.cpf)}</td>
-                        <td className="px-4 py-3 text-white/70">{driver.cnh ?? '—'}</td>
-                        <td className="px-4 py-3">
+                        <td className="tabular-nums">{formatCpf(driver.cpf)}</td>
+                        <td className="tabular-nums">{driver.cnh ?? '—'}</td>
+                        <td>
                           {driver.cnhExpiry ? (
                             <span
-                              className={expiring ? 'font-medium text-red-400' : 'text-white/70'}
+                              className={
+                                expiring
+                                  ? 'font-medium tabular-nums text-rose-400'
+                                  : 'tabular-nums text-slate-300'
+                              }
                             >
                               {formatDate(driver.cnhExpiry)}
                             </span>
                           ) : (
-                            <span className="text-white/30">{t('drivers.cnhMissing')}</span>
+                            <span className="text-neutral-500">{t('drivers.cnhMissing')}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                              driver.status === DriverStatus.ACTIVE
-                                ? 'bg-green-500/10 text-green-400'
-                                : 'bg-white/5 text-white/40'
+                            className={`lg-tag ${
+                              driver.status === DriverStatus.ACTIVE ? 'lg-tag-ok' : 'lg-tag-muted'
                             }`}
                           >
                             {driver.status === DriverStatus.ACTIVE
@@ -194,38 +206,31 @@ export function DriverList() {
                               : t('status.inactive')}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <Link
-                              to={`/drivers/${driver.id}`}
-                              className="text-gold hover:underline"
-                            >
+                        <td>
+                          <div className="flex items-center justify-end gap-3">
+                            <Link to={`/drivers/${driver.id}`} className="lg-action">
                               {t('drivers.viewDetail')}
                             </Link>
-                            {canMutate && (
-                              <>
-                                <Link
-                                  to={`/drivers/${driver.id}/edit`}
-                                  className="text-white/55 hover:underline"
-                                >
-                                  {t('actions.edit')}
-                                </Link>
-                                {driver.status === DriverStatus.ACTIVE && (
-                                  <button
-                                    onClick={() => handleDeactivate(driver.id)}
-                                    className="text-amber-400 hover:underline"
-                                  >
-                                    {t('actions.deactivate')}
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handlePermanentDelete(driver.id)}
-                                  className="text-red-400 hover:underline"
-                                >
-                                  {t('actions.delete')}
-                                </button>
-                              </>
-                            )}
+                            <RowActions
+                              actions={[
+                                canMutate && {
+                                  label: t('actions.edit'),
+                                  to: `/drivers/${driver.id}/edit`,
+                                  tone: 'muted',
+                                },
+                                canMutate &&
+                                  driver.status === DriverStatus.ACTIVE && {
+                                    label: t('actions.deactivate'),
+                                    onSelect: () => handleDeactivate(driver.id),
+                                    tone: 'warn',
+                                  },
+                                canMutate && {
+                                  label: t('actions.delete'),
+                                  onSelect: () => handlePermanentDelete(driver.id),
+                                  tone: 'danger',
+                                },
+                              ]}
+                            />
                           </div>
                         </td>
                       </tr>

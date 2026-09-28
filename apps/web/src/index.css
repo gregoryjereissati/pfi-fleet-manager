@@ -2,69 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design system Ledger aplicado ao Fleet Manager.
+ * Referência: assets/developer-monetizati-design-system/.../design-system-fm2.html.
+ *
+ * Preto de página, superfícies quase pretas separadas por linhas brancas de
+ * 5–10%, um único destaque em esmeralda, Geist leve nos títulos e seminegrito
+ * nos números. Rosa, laranja, amarelo e roxo aparecem só como cores de dado e
+ * de estado.
+ */
+
+/* Borda giratória do botão principal (.shiny-cta). */
+@property --gradient-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --gradient-angle-offset {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --gradient-percent {
+  syntax: '<percentage>';
+  initial-value: 20%;
+  inherits: false;
+}
+
+@property --gradient-shine {
+  syntax: '<color>';
+  initial-value: #34d399;
+  inherits: false;
+}
+
+/* Miolo do .shiny-cta: registrado para que a troca de cor no hover seja
+   animada (um degradê comum muda de uma vez). */
+@property --shiny-fill {
+  syntax: '<color>';
+  initial-value: #000000;
+  inherits: false;
+}
+
 @layer base {
   :root {
-    --background: 0 0% 5%;
-    --foreground: 0 0% 100%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 45%;
-    --border: 0 0% 100% / 0.07;
-    --input: 0 0% 14%;
-    --primary: 43 44% 56%;
-    --primary-foreground: 0 0% 5%;
-    --ring: 43 44% 56%;
-    --radius: 0.5rem;
-
     color-scheme: dark;
   }
 
   * {
-    border-color: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  html,
+  body {
+    background-color: #000000;
   }
 
   body {
-    background-color: #0C0C0C;
-    color: #ffffff;
-    font-family: 'Outfit', sans-serif;
+    color: #cbd5e1;
+    font-family: 'Geist', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  input::placeholder,
-  textarea::placeholder {
-    color: rgba(255, 255, 255, 0.28);
-  }
-
-  select option {
-    background-color: #242424;
+  ::selection {
+    background: #10b981;
     color: #ffffff;
   }
 
-  input[type="date"]::-webkit-calendar-picker-indicator,
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
+  input::placeholder,
+  textarea::placeholder {
+    color: #525252;
+  }
+
+  select option {
+    background-color: #121317;
+    color: #ffffff;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
     filter: invert(0.6);
     cursor: pointer;
   }
 
-  input[type="file"]::file-selector-button {
-    background-color: #2C2C2C;
-    color: rgba(255, 255, 255, 0.6);
+  input[type='file']::file-selector-button {
+    margin-right: 10px;
+    padding: 6px 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    padding: 2px 10px;
-    font-family: 'Outfit', sans-serif;
-    font-size: 12px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font: 500 12px/1.4 'Geist', sans-serif;
     cursor: pointer;
-    margin-right: 8px;
+    transition: background-color 0.15s;
   }
 
-  input[type="file"]::file-selector-button:hover {
-    background-color: #333333;
+  input[type='file']::file-selector-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 
-  input[type="radio"] {
-    accent-color: #C4A35A;
+  input[type='radio'],
+  input[type='checkbox'] {
+    accent-color: #10b981;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(16, 185, 129, 0.5);
+    outline-offset: 2px;
   }
 
   ::-webkit-scrollbar {
@@ -73,15 +120,788 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #141414;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: #334155;
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(196, 163, 90, 0.4);
+    background: #475569;
   }
+}
+
+@layer components {
+  /* ------------------------------------------------------------ tipografia */
+
+  /* Sobretítulo: traço esmeralda + texto em caixa alta ("Foundations · 01"). */
+  .lg-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #34d399;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+
+  .lg-eyebrow::before {
+    content: '';
+    width: 1.5rem;
+    height: 1px;
+    flex-shrink: 0;
+    background: #10b981;
+  }
+
+  /* Rótulo de grupo da barra lateral e rótulos mínimos. */
+  .lg-overline {
+    color: #525252;
+    font-size: 11px;
+    line-height: 1.5;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* Rótulo de campo. */
+  .lg-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    color: #a3a3a3;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+  }
+
+  /* Texto de apoio. */
+  .lg-muted {
+    color: #94a3b8;
+    font-weight: 300;
+  }
+
+  /* ------------------------------------------------------------ superfícies */
+
+  /* Cartão: #0A0B0E, borda branca 10%, raio 24px; a borda acende no hover. */
+  .lg-card {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    background-color: #0a0b0e;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .lg-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Cartão interno do painel: #121317, borda 5%, raio 16px. */
+  .lg-inner {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    background-color: #121317;
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .lg-inner:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Cartão elevado (o "Total Balance"): degradê e orbe esmeralda no canto. */
+  .lg-elevated {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    background: linear-gradient(to bottom right, #1c1d24, #121317);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .lg-elevated:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .lg-elevated::before {
+    content: '';
+    position: absolute;
+    top: -3rem;
+    right: -3rem;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.05);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+
+  /* Ladrilho e linha de lista. */
+  .lg-tile {
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    transition: background-color 0.15s;
+  }
+
+  .lg-tile:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .lg-row {
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    transition: border-color 0.15s;
+  }
+
+  .lg-row:hover {
+    border-color: rgba(16, 185, 129, 0.2);
+  }
+
+  /* Ladrilho de ícone em esmeralda. */
+  .lg-icon-tile {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 0.75rem;
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+  }
+
+  /* Lanterna: borda esmeralda e brilho branco que seguem o cursor
+     (`--x/--y` vêm de lib/ledger-motion). */
+  .lg-flashlight {
+    position: relative;
+  }
+
+  .lg-flashlight::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: 10;
+    padding: 1px;
+    border-radius: inherit;
+    background: radial-gradient(
+      600px circle at var(--x, 0px) var(--y, 0px),
+      rgba(16, 185, 129, 0.4),
+      transparent 40%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .lg-flashlight::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      800px circle at var(--x, 0px) var(--y, 0px),
+      rgba(255, 255, 255, 0.03),
+      transparent 40%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .lg-flashlight:hover::before,
+  .lg-flashlight:hover::after {
+    opacity: 1;
+  }
+
+  /* ------------------------------------------------------------ botões */
+
+  /* CTA principal com a borda cônica que gira (verbatim do design system). */
+  .shiny-cta {
+    --gradient-angle: 0deg;
+    --gradient-angle-offset: 0deg;
+    --gradient-percent: 20%;
+    --gradient-shine: #34d399;
+    position: relative;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    padding: 1.25rem 2.5rem;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background:
+      linear-gradient(var(--shiny-fill), var(--shiny-fill)) padding-box,
+      conic-gradient(
+          from calc(var(--gradient-angle) - var(--gradient-angle-offset)),
+          transparent 0%,
+          #059669 5%,
+          var(--gradient-shine) 15%,
+          #059669 30%,
+          transparent 40%,
+          transparent 100%
+        )
+        border-box;
+    box-shadow: inset 0 0 0 1px #1a1818;
+    color: #ffffff;
+    font-size: 1.125rem;
+    line-height: 1.2;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+    isolation: isolate;
+    transition:
+      --shiny-fill 0.3s,
+      box-shadow 0.3s,
+      transform 0.15s;
+    animation: border-spin 2.5s linear infinite;
+  }
+
+  /* Hover: o miolo ganha um fundo esmeralda escuro e o botão, brilho. */
+  .shiny-cta:hover:not(:disabled) {
+    --shiny-fill: #06261c;
+    box-shadow:
+      inset 0 0 0 1px #1a1818,
+      0 0 28px -6px rgba(16, 185, 129, 0.55);
+  }
+
+  /* Pressionado: afunda e escurece de volta. */
+  .shiny-cta:active:not(:disabled) {
+    --shiny-fill: #031a13;
+    transform: scale(0.97);
+    box-shadow:
+      inset 0 0 0 1px #1a1818,
+      0 0 12px -4px rgba(16, 185, 129, 0.4);
+  }
+
+  .shiny-cta:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Anel que gira em volta do símbolo do hero: a mesma varredura cônica do
+     .shiny-cta, num quadrado arredondado. O conteúdo vai num filho com fundo. */
+  .lg-orbit {
+    --gradient-angle: 0deg;
+    position: relative;
+    padding: 1.5px;
+    border-radius: 2rem;
+    background: conic-gradient(
+      from var(--gradient-angle),
+      transparent 0%,
+      #059669 5%,
+      #34d399 15%,
+      #059669 30%,
+      transparent 40%,
+      transparent 100%
+    );
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    animation: border-spin 4s linear infinite;
+  }
+
+  /* Tamanho compacto, para formulários. */
+  .shiny-cta-sm {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9375rem;
+  }
+
+  /* Botão de destaque do painel: degradê esmeralda com brilho. */
+  .lg-btn-accent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 0.5rem;
+    background: linear-gradient(to right, #10b981, #059669);
+    box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.3);
+    color: #ffffff;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+
+  .lg-btn-accent:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  /* Botão sólido branco. */
+  .lg-btn-solid {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    color: #171717;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .lg-btn-solid:hover:not(:disabled) {
+    background: #e5e5e5;
+  }
+
+  /* Botão fantasma: secundário e cancelar. */
+  .lg-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .lg-btn-ghost:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Variantes de risco, no mesmo formato do fantasma. */
+  .lg-btn-danger {
+    border-color: rgba(244, 63, 94, 0.3);
+    background: rgba(244, 63, 94, 0.1);
+    color: #fb7185;
+  }
+
+  .lg-btn-danger:hover:not(:disabled) {
+    background: rgba(244, 63, 94, 0.2);
+  }
+
+  .lg-btn-warning {
+    border-color: rgba(251, 146, 60, 0.3);
+    background: rgba(251, 146, 60, 0.1);
+    color: #fb923c;
+  }
+
+  .lg-btn-warning:hover:not(:disabled) {
+    background: rgba(251, 146, 60, 0.2);
+  }
+
+  .lg-btn-accent:disabled,
+  .lg-btn-solid:disabled,
+  .lg-btn-ghost:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Botão em pílula com contorno (navbar e CTA secundário do hero). */
+  .lg-btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid #171717;
+    border-radius: 9999px;
+    color: #cbd5e1;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .lg-btn-pill:hover {
+    background: #0f172a;
+  }
+
+  /* Botão de ícone. */
+  .lg-icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: #a3a3a3;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      background-color 0.15s;
+  }
+
+  .lg-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  /* Link de texto. */
+  .lg-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #34d399;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+
+  .lg-link:hover {
+    color: #6ee7b7;
+  }
+
+  /* Ações de linha de tabela; a cor segue o risco da ação. */
+  .lg-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #34d399;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .lg-action:hover {
+    color: #ffffff;
+  }
+
+  .lg-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  .lg-action-muted {
+    color: #a3a3a3;
+  }
+
+  .lg-action-warn {
+    color: #fb923c;
+  }
+
+  .lg-action-ok {
+    color: #34d399;
+  }
+
+  .lg-action-danger {
+    color: #fb7185;
+  }
+
+  /* ------------------------------------------------------------ campos */
+
+  /* Campo: #121317, borda 5%, raio 8px; esmeralda no foco. */
+  .lg-input {
+    display: block;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    background-color: #121317;
+    color: #ffffff;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    outline: none;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s;
+  }
+
+  .lg-input:hover {
+    background-color: #16171b;
+  }
+
+  .lg-input:focus,
+  .lg-input:focus-visible {
+    border-color: rgba(16, 185, 129, 0.3);
+    outline: none;
+  }
+
+  .lg-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* O preenchimento automático do navegador pinta o campo por cima do fundo;
+     a sombra interna larga devolve a superfície do design system. */
+  .lg-input:-webkit-autofill,
+  .lg-input:-webkit-autofill:hover,
+  .lg-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff;
+    caret-color: #ffffff;
+    box-shadow: inset 0 0 0 1000px #121317;
+    transition: background-color 9999s ease-out 0s;
+  }
+
+  select.lg-input {
+    cursor: pointer;
+  }
+
+  textarea.lg-input {
+    resize: vertical;
+  }
+
+  /* ------------------------------------------------------------ tabelas */
+
+  .lg-table {
+    width: 100%;
+    font-size: 0.875rem;
+  }
+
+  .lg-table :where(th) {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #737373;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .lg-table :where(td) {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+  }
+
+  .lg-table :where(tbody tr) {
+    transition: background-color 0.15s;
+  }
+
+  .lg-table :where(tbody tr:hover) {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  .lg-table :where(tbody tr:last-child td) {
+    border-bottom: 0;
+  }
+
+  /* ------------------------------------------------------------ etiquetas */
+
+  .lg-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.375rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    font-size: 11px;
+    line-height: 1.25rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .lg-tag-ok {
+    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+  }
+
+  .lg-tag-danger {
+    border-color: rgba(244, 63, 94, 0.2);
+    background: rgba(244, 63, 94, 0.1);
+    color: #fb7185;
+  }
+
+  .lg-tag-warn {
+    border-color: rgba(250, 204, 21, 0.2);
+    background: rgba(250, 204, 21, 0.1);
+    color: #facc15;
+  }
+
+  .lg-tag-info {
+    border-color: rgba(96, 165, 250, 0.2);
+    background: rgba(96, 165, 250, 0.1);
+    color: #93c5fd;
+  }
+
+  .lg-tag-accent {
+    border-color: rgba(168, 85, 247, 0.2);
+    background: rgba(168, 85, 247, 0.1);
+    color: #c084fc;
+  }
+
+  .lg-tag-muted {
+    border-color: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
+    color: #737373;
+  }
+
+  /* Ponto de status; com .animate-pulse, pulsa. */
+  .lg-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background-color: currentColor;
+  }
+
+  /* Contador em pílula (alertas no menu). */
+  .lg-count {
+    display: inline-flex;
+    min-width: 1.25rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.375rem;
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    border-radius: 9999px;
+    background: rgba(244, 63, 94, 0.1);
+    color: #fb7185;
+    font-size: 11px;
+    line-height: 1.25rem;
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------ avisos */
+
+  .lg-alert {
+    border: 1px solid;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .lg-alert-error {
+    border-color: rgba(244, 63, 94, 0.2);
+    background: rgba(244, 63, 94, 0.08);
+    color: #fda4af;
+  }
+
+  .lg-alert-ok {
+    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.08);
+    color: #6ee7b7;
+  }
+
+  .lg-alert-info {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: #cbd5e1;
+  }
+}
+
+/* ============================================================ movimento */
+
+@keyframes border-spin {
+  to {
+    --gradient-angle: 360deg;
+  }
+}
+
+/* Entrada com desfoque, como no hero do design system. */
+@keyframes animationIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* Barra que sobe a partir da base (o barCycle, só a subida: em dado real a
+   barra não pode sumir de tempos em tempos). */
+@keyframes lg-bar-rise {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+}
+
+/* Barra horizontal que cresce da esquerda. */
+@keyframes lg-bar-grow {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+
+/* Entrada imediata, com atraso por --lg-delay (0.1 s a 0.6 s no hero). */
+.lg-in {
+  animation: animationIn 0.8s ease-out var(--lg-delay, 0.1s) both;
+}
+
+/* Entrada ao rolar: pausada até entrar na tela (lib/ledger-motion). */
+.lg-reveal {
+  animation: animationIn 0.8s ease-out var(--lg-delay, 0.1s) both;
+  animation-play-state: paused;
+}
+
+.lg-reveal.animate {
+  animation-play-state: running;
+}
+
+.lg-bar-rise {
+  transform-origin: bottom;
+  animation: lg-bar-rise 1.2s cubic-bezier(0.33, 1, 0.68, 1) var(--lg-delay, 0s) both;
+}
+
+/* Laço decorativo das barras do hero (barCycle): sobe, segura e desce.
+   Só para ilustração — nunca em barra que representa dado real. */
+@keyframes barCycle {
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+
+  20%,
+  80% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+
+  95%,
+  100% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+}
+
+.animate-bar-loop {
+  transform-origin: bottom;
+  animation: barCycle 6s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+}
+
+.lg-bar-grow {
+  transform-origin: left;
+  animation: lg-bar-grow 1.2s cubic-bezier(0.33, 1, 0.68, 1) var(--lg-delay, 0s) both;
 }

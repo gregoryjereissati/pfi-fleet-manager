@@ -62,6 +62,7 @@ fleet-manager/
 │   │                        services · repositories · jobs · lib
 │   └── web/                 Frontend React
 │       └── src/             pages · components · hooks · lib · locales
+│                            components/ledger e index.css: design system Ledger
 ├── packages/
 │   └── shared/              Enumerações e DTOs compartilhados
 ├── api/index.ts             Entrada serverless da Vercel

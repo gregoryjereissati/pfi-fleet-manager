@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCompanies } from '@/hooks/useCompanies'
 import { definirEmpresaAtiva, empresaAtiva } from '@/lib/empresa-ativa'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { RowActions } from '@/components/ledger/RowActions'
 
-const inputClass =
-  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
 /**
  * Empresas da plataforma.
@@ -47,22 +48,16 @@ export function CompanyList() {
     window.location.replace('/dashboard')
   }
 
-  if (loading) return <p className="text-sm text-white/40">{t('common.loading')}</p>
+  if (loading) return <LoadingState label={t('common.loading')} />
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">{t('companies.title')}</h1>
-        <p className="text-sm text-white/40">{t('companies.subtitle')}</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title={t('companies.title')} subtitle={t('companies.subtitle')} />
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="lg-alert lg-alert-error">{error}</p>}
 
-      <form
-        onSubmit={criar}
-        className="space-y-3 rounded-lg border border-white/[0.07] bg-fleet-card p-4"
-      >
-        <h2 className="text-sm font-semibold text-white/80">{t('companies.new')}</h2>
+      <form onSubmit={criar} className="lg-inner lg-reveal space-y-4 p-6">
+        <h2 className="text-base font-semibold tracking-tight text-white">{t('companies.new')}</h2>
 
         <div className="grid gap-3 sm:grid-cols-3">
           <input
@@ -91,30 +86,26 @@ export function CompanyList() {
           />
         </div>
 
-        <p className="text-xs text-white/30">{t('companies.joinCodeHint')}</p>
+        <p className="text-xs text-neutral-500">{t('companies.joinCodeHint')}</p>
 
-        {erroForm && <p className="text-sm text-red-400">{erroForm}</p>}
+        {erroForm && <p className="text-sm text-rose-400">{erroForm}</p>}
 
-        <button
-          type="submit"
-          disabled={salvando}
-          className="rounded-md bg-gold/90 px-4 py-2 text-sm font-semibold text-fleet-black transition-colors hover:bg-gold disabled:opacity-40"
-        >
+        <button type="submit" disabled={salvando} className="lg-btn-accent">
           {salvando ? t('common.saving') : t('companies.create')}
         </button>
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-white/[0.07] bg-fleet-card">
+      <div className="lg-inner lg-reveal overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-fleet-darker">
-              <tr className="border-b border-white/[0.07] text-left text-white/40">
-                <th className="px-4 py-3 font-medium">{t('companies.columns.name')}</th>
-                <th className="px-4 py-3 font-medium">{t('companies.columns.joinCode')}</th>
-                <th className="px-4 py-3 font-medium">{t('companies.columns.people')}</th>
-                <th className="px-4 py-3 font-medium">{t('companies.columns.fleet')}</th>
-                <th className="px-4 py-3 font-medium">{t('companies.columns.status')}</th>
-                <th className="px-4 py-3 font-medium" />
+          <table className="lg-table min-w-full">
+            <thead>
+              <tr>
+                <th>{t('companies.columns.name')}</th>
+                <th>{t('companies.columns.joinCode')}</th>
+                <th>{t('companies.columns.people')}</th>
+                <th>{t('companies.columns.fleet')}</th>
+                <th>{t('companies.columns.status')}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -122,59 +113,55 @@ export function CompanyList() {
                 const inativa = empresa.status === 'INACTIVE'
 
                 return (
-                  <tr key={empresa.id} className="border-b border-white/[0.04] last:border-0">
-                    <td className="px-4 py-3 text-white">
+                  <tr key={empresa.id}>
+                    <td className="font-medium text-white">
                       {empresa.name}
                       {empresa.id === ativa && (
-                        <span className="ml-2 rounded bg-gold/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gold">
+                        <span className="lg-tag lg-tag-accent ml-2">
                           {t('companies.current')}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-white/60">
-                      {empresa.joinCode}
-                    </td>
-                    <td className="px-4 py-3 text-white/60">
+                    <td className="font-mono text-xs text-neutral-400">{empresa.joinCode}</td>
+                    <td className="tabular-nums">
                       {empresa.activeUsers}
                       {empresa.pendingUsers > 0 && (
-                        <span className="ml-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-400">
+                        <span className="lg-tag lg-tag-warn ml-2">
                           {t('companies.pendingBadge', { count: empresa.pendingUsers })}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-white/60">
+                    <td>
                       {t('companies.fleetSummary', {
                         vehicles: empresa.vehicles,
                         drivers: empresa.drivers,
                       })}
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`rounded px-2 py-0.5 text-xs ${
-                          inativa ? 'bg-white/5 text-white/40' : 'bg-green-500/10 text-green-400'
-                        }`}
-                      >
+                    <td>
+                      <span className={`lg-tag ${inativa ? 'lg-tag-muted' : 'lg-tag-ok'}`}>
                         {inativa ? t('companies.inactive') : t('companies.active')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-3">
                         {!inativa && empresa.id !== ativa && (
                           <button
                             onClick={() => entrar(empresa.id)}
-                            className="rounded border border-white/[0.1] px-2 py-1 text-xs text-white/60 transition-colors hover:text-white"
+                            className="lg-btn-ghost px-3 py-1 text-xs"
                           >
                             {t('companies.enter')}
                           </button>
                         )}
-                        <button
-                          onClick={() =>
-                            void setStatus(empresa.id, inativa ? 'ACTIVE' : 'INACTIVE')
-                          }
-                          className="rounded border border-white/[0.1] px-2 py-1 text-xs text-white/40 transition-colors hover:text-white/70"
-                        >
-                          {inativa ? t('companies.activate') : t('companies.deactivate')}
-                        </button>
+                        <RowActions
+                          actions={[
+                            {
+                              label: inativa ? t('companies.activate') : t('companies.deactivate'),
+                              onSelect: () =>
+                                void setStatus(empresa.id, inativa ? 'ACTIVE' : 'INACTIVE'),
+                              tone: inativa ? 'ok' : 'warn',
+                            },
+                          ]}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -185,7 +172,7 @@ export function CompanyList() {
         </div>
       </div>
 
-      <p className="text-xs text-white/30">{t('companies.deactivateHint')}</p>
+      <p className="text-xs text-neutral-500">{t('companies.deactivateHint')}</p>
     </div>
   )
 }

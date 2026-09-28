@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ExternalLink, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { urlDeLeitura } from '@/lib/anexos'
 import { useToken } from '@/hooks/useToken'
+import { LoadingState } from '@/components/ledger/Ui'
 
 interface FilePreviewModalProps {
   isOpen: boolean
@@ -51,19 +53,14 @@ export function FilePreviewModal({ isOpen, documentId, onClose }: FilePreviewMod
   // saber o nome do arquivo para decidir como exibi-lo.
   const isPdf = (url ?? '').split('?')[0].toLowerCase().endsWith('.pdf')
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg bg-fleet-card border border-white/[0.08] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
-          <h2 className="text-sm font-semibold text-white/70">{t('documents.preview.title')}</h2>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+      <div className="lg-in relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-lg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
+          <h2 className="text-base font-semibold tracking-tight text-white">{t('documents.preview.title')}</h2>
           <div className="flex items-center gap-2">
             {url && (
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.12] px-3 py-1.5 text-xs font-medium text-white/55 hover:bg-white/[0.04]"
-              >
+              <a href={url} target="_blank" rel="noopener noreferrer" className="lg-btn-ghost px-3 py-1.5 text-xs">
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 {t('documents.preview.openInTab')}
               </a>
@@ -71,7 +68,7 @@ export function FilePreviewModal({ isOpen, documentId, onClose }: FilePreviewMod
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.12] text-white/55 hover:bg-white/[0.04]"
+              className="lg-icon-btn"
               aria-label={t('actions.close')}
               title={t('actions.close')}
             >
@@ -79,29 +76,32 @@ export function FilePreviewModal({ isOpen, documentId, onClose }: FilePreviewMod
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-4">
-          {erro && <p className="py-10 text-center text-sm text-red-400">{erro}</p>}
+        <div className="flex-1 overflow-auto p-6">
+          {erro && <p className="lg-alert lg-alert-error my-6">{erro}</p>}
 
           {!erro && !url && (
-            <p className="py-10 text-center text-sm text-white/40">{t('common.loading')}</p>
+            <div className="flex justify-center py-10">
+              <LoadingState label={t('common.loading')} />
+            </div>
           )}
 
           {url &&
             (isPdf ? (
               <iframe
                 src={url}
-                className="h-[70vh] w-full rounded border border-white/[0.07]"
+                className="h-[70vh] w-full rounded-2xl border border-white/5 bg-white"
                 title={t('documents.preview.title')}
               />
             ) : (
               <img
                 src={url}
                 alt={t('documents.preview.title')}
-                className="mx-auto max-h-[70vh] max-w-full rounded object-contain"
+                className="mx-auto max-h-[70vh] max-w-full rounded-2xl object-contain"
               />
             ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

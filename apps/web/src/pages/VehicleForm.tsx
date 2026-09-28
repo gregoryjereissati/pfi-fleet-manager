@@ -5,6 +5,7 @@ import type { VehicleDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
+import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 
 interface VehicleFormState {
   plate: string
@@ -28,10 +29,9 @@ function normalizeVehicleText(value: string) {
   return value.toUpperCase()
 }
 
-const inputClass =
-  'w-full rounded-md bg-fleet-input border border-white/[0.08] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold/50'
+const inputClass = 'lg-input w-full'
 
-const labelClass = 'mb-1 block text-sm font-medium text-white/55'
+const labelClass = 'lg-label'
 
 export function VehicleForm() {
   const { id } = useParams<{ id: string }>()
@@ -133,22 +133,17 @@ export function VehicleForm() {
   }
 
   if (loading) {
-    return <p className="text-sm text-white/40">{t('common.loading')}</p>
+    return <LoadingState label={t('common.loading')} />
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          {isEdit ? t('vehicles.edit') : t('vehicles.new')}
-        </h1>
-        <p className="text-sm text-white/40">{t('vehicles.formSubtitle')}</p>
-      </div>
+    <div className="max-w-2xl space-y-6">
+      <PageHeader
+        title={isEdit ? t('vehicles.edit') : t('vehicles.new')}
+        subtitle={t('vehicles.formSubtitle')}
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-white/[0.07] bg-fleet-card p-6"
-      >
+      <form onSubmit={handleSubmit} className="lg-inner lg-reveal space-y-4 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className={labelClass}>{t('vehicles.columns.plate')}</label>
@@ -197,20 +192,16 @@ export function VehicleForm() {
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="lg-alert lg-alert-error">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-fleet-black hover:bg-gold-hover disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="lg-btn-accent">
             {submitting ? t('actions.saving') : t('actions.save')}
           </button>
           <button
             type="button"
             onClick={() => navigate('/vehicles')}
-            className="rounded-md border border-white/[0.12] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.04]"
+            className="lg-btn-ghost"
           >
             {t('actions.cancel')}
           </button>
