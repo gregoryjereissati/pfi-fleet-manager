@@ -4,6 +4,7 @@ import { EntryStatus } from '../types/db';
 import { ExpenseType } from '@fleet-manager/shared';
 import { expenseService } from '../services/expense.service';
 import { getScope } from '../lib/request-scope';
+import { CABECALHO_TOTAL, camposDePaginacao } from '../lib/paginacao';
 
 const expenseQuerySchema = z.object({
   vehicleId: z.string().trim().min(1).optional(),
@@ -13,6 +14,7 @@ const expenseQuerySchema = z.object({
   endDate: z.coerce.date().optional(),
   orderBy: z.enum(['date', 'amount', 'createdAt']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
+  ...camposDePaginacao,
 });
 
 export const expenseController = {
@@ -24,7 +26,13 @@ export const expenseController = {
         return;
       }
 
-      const expenses = await expenseService.listExpenses(getScope(req), parsed.data);
+      const { limit, offset, ...filtros } = parsed.data;
+      const escopo = getScope(req);
+      const [expenses, total] = await Promise.all([
+        expenseService.listExpenses(escopo, filtros, { limit, offset }),
+        expenseService.countExpenses(escopo, filtros),
+      ]);
+      res.setHeader(CABECALHO_TOTAL, String(total));
       res.json(expenses);
     } catch (err) {
       next(err);

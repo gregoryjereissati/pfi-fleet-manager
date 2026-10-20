@@ -28,7 +28,7 @@ interface Registro {
  * Suíte de ponta a ponta da API.
  *
  * Cada caso leva o identificador do plano de testes (INF, AUT, RBAC, ISO, OPE,
- * VEI, DES, MAN, DOC, CAD, VAL), para que o relatório aponte direto para ele.
+ * VEI, DES, MAN, DOC, CAD, VAL, PAG), para que o relatório aponte direto para ele.
  */
 describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () => {
   const tokens = {} as Record<Pessoa, string>;
@@ -64,10 +64,11 @@ describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () =>
 
   // ===========================================================================
   describe('INF — infraestrutura', () => {
-    it('INF-01 GET /health responde ok', async () => {
+    it('INF-01 GET /health responde ok e confirma o banco', async () => {
       const res = await request(app).get('/health');
       expect(res.status).toBe(200);
       expect(res.body.status).toBe('ok');
+      expect(res.body.database).toBe('ok');
     });
 
     it('INF-02 CORS aceita localhost fora de produção', async () => {
@@ -910,6 +911,77 @@ describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () =>
 
     it('VAL-06 período inválido no painel → 400', async () => {
       expect((await como('helena').get('/dashboard/indicators?startDate=ontem')).status).toBe(400);
+    });
+  });
+
+  describe('PAG — paginação das listagens', () => {
+    const criadas: string[] = [];
+
+    beforeAll(async () => {
+      const veiculo = veiculosA[0].id;
+      for (let i = 0; i < 3; i++) {
+        const res = await como('helena').post('/expenses', {
+          vehicleId: veiculo,
+          type: 'OTHER',
+          amount: 10 + i,
+          date: diasAPartirDeHoje(-i),
+          description: `Paginação e2e ${SUFIXO}`,
+        });
+        criadas.push(res.body.id);
+      }
+    });
+
+    afterAll(async () => {
+      await Promise.all(criadas.map((id) => como('helena').delete(`/expenses/${id}`)));
+    });
+
+    it('PAG-01 sem parâmetros, devolve no máximo 50 e o total no cabeçalho', async () => {
+      const res = await como('helena').get('/expenses');
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBeLessThanOrEqual(50);
+      expect(Number(res.headers['x-total-count'])).toBeGreaterThanOrEqual(res.body.length);
+    });
+
+    it('PAG-02 páginas seguidas não repetem registros e somam o total', async () => {
+      const total = Number((await como('helena').get('/expenses?limit=1')).headers['x-total-count']);
+      const vistos = new Set<string>();
+      for (let offset = 0; offset < total; offset += 2) {
+        const pagina = (await como('helena').get(`/expenses?limit=2&offset=${offset}`))
+          .body as Registro[];
+        pagina.forEach((r) => vistos.add(r.id));
+      }
+      expect(vistos.size).toBe(total);
+    });
+
+    it('PAG-03 o total respeita os filtros', async () => {
+      const res = await como('helena').get(`/expenses?vehicleId=${veiculosA[0].id}&type=OTHER&limit=1`);
+      expect(res.body.length).toBe(1);
+      expect(Number(res.headers['x-total-count'])).toBeGreaterThanOrEqual(3);
+    });
+
+    it('PAG-04 o total do motorista conta só os lançamentos dele', async () => {
+      const res = await como('claudia').get('/expenses?limit=200');
+      expect(Number(res.headers['x-total-count'])).toBe(res.body.length);
+      expect(res.body.every((d: Registro) => d.createdById === claudia.userId)).toBe(true);
+    });
+
+    it('PAG-05 manutenções também paginam', async () => {
+      const res = await como('helena').get('/maintenances?limit=1');
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBeLessThanOrEqual(1);
+      expect(res.headers['x-total-count']).toBeDefined();
+    });
+
+    it.each(['limit=0', 'limit=201', 'offset=-1', 'limit=abc'])(
+      'PAG-06 parâmetro de página inválido (%s) → 400',
+      async (consulta) => {
+        expect((await como('helena').get(`/expenses?${consulta}`)).status).toBe(400);
+      },
+    );
+
+    it('PAG-07 o cabeçalho do total fica exposto ao navegador', async () => {
+      const res = await request(app).get('/health').set('Origin', 'http://localhost:5173');
+      expect(res.headers['access-control-expose-headers']).toBe('X-Total-Count');
     });
   });
 });

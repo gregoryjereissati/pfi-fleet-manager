@@ -14,6 +14,9 @@ export interface MaintenanceFilters {
   endDate?: Date;
   orderBy?: 'scheduledDate' | 'createdAt' | 'status';
   order?: 'asc' | 'desc';
+  /** Tamanho da página. Ausente devolve todas as linhas do recorte. */
+  limit?: number;
+  offset?: number;
 }
 
 export interface CreateMaintenanceData {
@@ -80,18 +83,31 @@ export function condicoesManutencao(filters: MaintenanceFilters) {
 
 export const maintenanceRepository = {
   findMany(filters: MaintenanceFilters): Promise<MaintenanceWithVehicle[]> {
-    const { orderBy = 'scheduledDate', order = 'asc' } = filters;
+    const { orderBy = 'scheduledDate', order = 'asc', limit, offset = 0 } = filters;
 
     const coluna = ORDENACOES[orderBy] ?? ORDENACOES.scheduledDate;
     const direcao = order === 'desc' ? 'desc' : 'asc';
 
+    // O identificador desempata registros com a mesma data ou situação, para
+    // que a ordem não mude entre uma página e outra.
     return sql<MaintenanceWithVehicle[]>`
       select m.*, ${veiculoResumido('v')} as vehicle
       from maintenances m
       join vehicles v on v.id = m.vehicle_id
       where ${condicoesManutencao(filters)}
-      order by ${sql.unsafe(coluna)} ${sql.unsafe(direcao)}
+      order by ${sql.unsafe(coluna)} ${sql.unsafe(direcao)}, m.id ${sql.unsafe(direcao)}
+      ${limit !== undefined ? sql`limit ${limit} offset ${offset}` : sql``}
     ` as unknown as Promise<MaintenanceWithVehicle[]>;
+  },
+
+  /** Quantidade de manutenções que atendem aos filtros, sem paginação. */
+  async count(filters: MaintenanceFilters): Promise<number> {
+    const [linha] = await sql<{ total: number }[]>`
+      select count(*)::int as total
+      from maintenances m
+      where ${condicoesManutencao(filters)}
+    `;
+    return linha.total;
   },
 
   async findById(

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { MaintenanceStatus, MaintenanceType } from '@fleet-manager/shared';
 import { maintenanceService } from '../services/maintenance.service';
 import { getScope } from '../lib/request-scope';
+import { CABECALHO_TOTAL, camposDePaginacao } from '../lib/paginacao';
 
 const maintenanceQuerySchema = z.object({
   vehicleId: z.string().trim().min(1).optional(),
@@ -12,6 +13,7 @@ const maintenanceQuerySchema = z.object({
   endDate: z.coerce.date().optional(),
   orderBy: z.enum(['scheduledDate', 'createdAt', 'status']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
+  ...camposDePaginacao,
 });
 
 export const maintenanceController = {
@@ -23,10 +25,13 @@ export const maintenanceController = {
         return;
       }
 
-      const maintenances = await maintenanceService.listMaintenances(
-        getScope(req),
-        parsed.data,
-      );
+      const { limit, offset, ...filtros } = parsed.data;
+      const escopo = getScope(req);
+      const [maintenances, total] = await Promise.all([
+        maintenanceService.listMaintenances(escopo, filtros, { limit, offset }),
+        maintenanceService.countMaintenances(escopo, filtros),
+      ]);
+      res.setHeader(CABECALHO_TOTAL, String(total));
       res.json(maintenances);
     } catch (err) {
       next(err);

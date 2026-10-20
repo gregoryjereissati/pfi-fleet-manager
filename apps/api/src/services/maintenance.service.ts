@@ -11,10 +11,14 @@ import { vehicleRepository } from '../repositories/vehicle.repository';
 import { assignmentService } from './assignment.service';
 import { diffFields, listChanges, pickFields, recordChange } from '../lib/audit';
 import { authorFilter, type AccessScope } from '../lib/access-scope';
+import type { Paginacao } from '../lib/paginacao';
 
 const AUDITED_FIELDS = ['status', 'description', 'scheduledDate', 'completedDate'] as const;
 
-export type MaintenanceQuery = Omit<MaintenanceFilters, 'companyId' | 'createdById'>;
+export type MaintenanceQuery = Omit<
+  MaintenanceFilters,
+  'companyId' | 'createdById' | 'limit' | 'offset'
+>;
 
 export interface CreateMaintenanceInput {
   vehicleId: string;
@@ -24,8 +28,18 @@ export interface CreateMaintenanceInput {
 }
 
 export const maintenanceService = {
-  async listMaintenances(scope: AccessScope, filters: MaintenanceQuery = {}) {
+  async listMaintenances(scope: AccessScope, filters: MaintenanceQuery = {}, pagina?: Paginacao) {
     return maintenanceRepository.findMany({
+      ...filters,
+      ...pagina,
+      companyId: scope.companyId,
+      createdById: authorFilter(scope),
+    });
+  },
+
+  /** Total da listagem com os mesmos filtros e o mesmo recorte, sem paginação. */
+  async countMaintenances(scope: AccessScope, filters: MaintenanceQuery = {}) {
+    return maintenanceRepository.count({
       ...filters,
       companyId: scope.companyId,
       createdById: authorFilter(scope),

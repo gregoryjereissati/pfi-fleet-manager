@@ -18,6 +18,9 @@ export interface ExpenseFilters {
   status?: EntryStatus;
   orderBy?: 'date' | 'amount' | 'createdAt';
   order?: 'asc' | 'desc';
+  /** Tamanho da página. Ausente devolve todas as linhas do recorte. */
+  limit?: number;
+  offset?: number;
 }
 
 export interface CreateExpenseData {
@@ -105,18 +108,53 @@ function condicoes(filters: ExpenseFilters) {
 
 export const expenseRepository = {
   findMany(filters: ExpenseFilters): Promise<ExpenseWithVehicle[]> {
-    const { orderBy = 'date', order = 'desc' } = filters;
+    const { orderBy = 'date', order = 'desc', limit, offset = 0 } = filters;
 
     const coluna = ORDENACOES[orderBy] ?? ORDENACOES.date;
     const direcao = order === 'asc' ? 'asc' : 'desc';
 
+    // O identificador desempata lançamentos com a mesma data ou valor; sem
+    // ele, a ordem entre empatados pode mudar de uma página para a outra e um
+    // registro aparecer duas vezes enquanto outro some.
+    const ordem = sql`order by ${sql.unsafe(coluna)} ${sql.unsafe(direcao)}, e.id ${sql.unsafe(direcao)}`;
+
+    if (limit === undefined) {
+      return sql<ExpenseWithVehicle[]>`
+        select e.*, ${veiculoAninhado}
+        from expenses e
+        join vehicles v on v.id = e.vehicle_id
+        where ${condicoes(filters)}
+        ${ordem}
+      ` as unknown as Promise<ExpenseWithVehicle[]>;
+    }
+
+    // A página é escolhida só pelos identificadores, numa leitura estreita da
+    // tabela; as colunas completas e o veículo são montados apenas para as
+    // linhas da página. Assim uma página distante não monta e descarta todas
+    // as linhas anteriores a ela.
     return sql<ExpenseWithVehicle[]>`
       select e.*, ${veiculoAninhado}
-      from expenses e
+      from (
+        select e.id
+        from expenses e
+        where ${condicoes(filters)}
+        ${ordem}
+        limit ${limit} offset ${offset}
+      ) pagina
+      join expenses e on e.id = pagina.id
       join vehicles v on v.id = e.vehicle_id
-      where ${condicoes(filters)}
-      order by ${sql.unsafe(coluna)} ${sql.unsafe(direcao)}
+      ${ordem}
     ` as unknown as Promise<ExpenseWithVehicle[]>;
+  },
+
+  /** Quantidade de lançamentos que atendem aos filtros, sem paginação. */
+  async count(filters: ExpenseFilters): Promise<number> {
+    const [linha] = await sql<{ total: number }[]>`
+      select count(*)::int as total
+      from expenses e
+      where ${condicoes(filters)}
+    `;
+    return linha.total;
   },
 
   /**

@@ -11,11 +11,12 @@ import { vehicleRepository } from '../repositories/vehicle.repository';
 import { assignmentService } from './assignment.service';
 import { diffFields, listChanges, pickFields, recordChange } from '../lib/audit';
 import { authorFilter, type AccessScope } from '../lib/access-scope';
+import type { Paginacao } from '../lib/paginacao';
 
 const AUDITED_FIELDS = ['vehicleId', 'type', 'amount', 'date', 'description'] as const;
 
 /** Filtros públicos da listagem, antes de receberem o recorte de acesso. */
-export type ExpenseQuery = Omit<ExpenseFilters, 'companyId' | 'createdById'>;
+export type ExpenseQuery = Omit<ExpenseFilters, 'companyId' | 'createdById' | 'limit' | 'offset'>;
 
 export interface CreateExpenseInput {
   vehicleId: string;
@@ -32,8 +33,18 @@ export const expenseService = {
    * O motorista consulta os próprios lançamentos. Compartilhar um veículo com
    * outro motorista não dá acesso aos lançamentos dele.
    */
-  async listExpenses(scope: AccessScope, filters: ExpenseQuery = {}) {
+  async listExpenses(scope: AccessScope, filters: ExpenseQuery = {}, pagina?: Paginacao) {
     return expenseRepository.findMany({
+      ...filters,
+      ...pagina,
+      companyId: scope.companyId,
+      createdById: authorFilter(scope),
+    });
+  },
+
+  /** Total da listagem com os mesmos filtros e o mesmo recorte, sem paginação. */
+  async countExpenses(scope: AccessScope, filters: ExpenseQuery = {}) {
+    return expenseRepository.count({
       ...filters,
       companyId: scope.companyId,
       createdById: authorFilter(scope),
