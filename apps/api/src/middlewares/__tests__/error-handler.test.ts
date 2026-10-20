@@ -91,10 +91,45 @@ describe('errorHandler', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
   });
 
+  it.each(['CONNECT_TIMEOUT', 'ECONNREFUSED', 'ENOTFOUND'])(
+    'banco inalcançável (%s) responde 503',
+    (code) => {
+      const res = responder(Object.assign(new Error(code), { code }));
+
+      expect(res.status).toHaveBeenCalledWith(503);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Service unavailable' });
+    },
+  );
+
   it('erro desconhecido responde 500 sem detalhes', () => {
     const res = responder(new Error('falha qualquer'));
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+  });
+
+  it('com a resposta já enviada, registra o erro tardio sem responder de novo', () => {
+    const res = makeRes();
+    Object.assign(res, { headersSent: true });
+    const erro = Object.assign(new Error('write CONNECT_TIMEOUT'), { code: 'CONNECT_TIMEOUT' });
+
+    errorHandler(erro, {} as Request, res, vi.fn());
+
+    expect(console.error).toHaveBeenCalledWith('[erro após a resposta]', 'CONNECT_TIMEOUT');
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('resposta tardia depois do tempo-limite é descartada em silêncio', () => {
+    const res = makeRes();
+    Object.assign(res, { headersSent: true });
+    const next = vi.fn();
+    const erro = Object.assign(new Error('Cannot set headers after they are sent'), {
+      code: 'ERR_HTTP_HEADERS_SENT',
+    });
+
+    errorHandler(erro, {} as Request, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
   });
 });

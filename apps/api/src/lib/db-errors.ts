@@ -51,6 +51,27 @@ export function ehViolacaoDeUnicidade(erro: unknown, restricao?: string): boolea
  * identificador enviado pelo cliente; as demais continuam sendo erro do
  * servidor, porque a validação deveria tê-las barrado antes.
  */
+/**
+ * Banco inalcançável: a conexão esgotou o prazo, foi recusada ou o endereço
+ * não existe. Não é defeito da requisição nem do código — o serviço está
+ * indisponível, e a resposta certa é 503, não 500.
+ */
+const CONEXAO_INDISPONIVEL = new Set([
+  'CONNECT_TIMEOUT',
+  'CONNECTION_CLOSED',
+  'CONNECTION_ENDED',
+  'CONNECTION_DESTROYED',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'ETIMEDOUT',
+]);
+
+export function ehBancoIndisponivel(erro: unknown): boolean {
+  const postgres = comoErroPostgres(erro);
+  return postgres?.code !== undefined && CONEXAO_INDISPONIVEL.has(postgres.code);
+}
+
 export function ehIdentificadorInvalido(erro: unknown): boolean {
   const postgres = comoErroPostgres(erro);
   return postgres?.code === INVALID_TEXT_REPRESENTATION && postgres.routine === 'string_to_uuid';

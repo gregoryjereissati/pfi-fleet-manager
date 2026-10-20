@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ehIdentificadorInvalido } from '../lib/db-errors';
+import { ehBancoIndisponivel, ehIdentificadorInvalido } from '../lib/db-errors';
 
 export class AppError extends Error {
   constructor(
@@ -17,6 +17,15 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
+  // A resposta já saiu inteira — o tempo-limite respondeu 503 antes de o
+  // handler terminar. Não há o que responder. A tentativa de responder de novo
+  // é esperada e descartada; outro erro tardio fica registrado numa linha.
+  if (res.headersSent) {
+    const { code } = err as Error & { code?: string };
+    if (code !== 'ERR_HTTP_HEADERS_SENT') console.error('[erro após a resposta]', code ?? err.message);
+    return;
+  }
+
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ error: err.message });
     return;
@@ -26,6 +35,13 @@ export function errorHandler(
   // registro fora do alcance de quem pede, sem revelar o motivo.
   if (ehIdentificadorInvalido(err)) {
     res.status(404).json({ error: 'Not found' });
+    return;
+  }
+
+  // Banco fora do alcance: o serviço está indisponível, não com defeito.
+  if (ehBancoIndisponivel(err)) {
+    console.error('[db] banco indisponível:', (err as Error & { code?: string }).code);
+    res.status(503).json({ error: 'Service unavailable' });
     return;
   }
 
