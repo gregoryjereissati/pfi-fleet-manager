@@ -1,0 +1,78 @@
+# Integração contínua do Fleet Manager.
+#
+# Roda a cada pull request e a cada push na main as mesmas verificações da
+# seção "Validação" do README: tipagem, lint, build, a suíte padrão e a suíte
+# de ponta a ponta. O banco é um Supabase local, criado do zero no próprio
+# runner a cada execução — nenhuma credencial de produção entra aqui.
+name: testes
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      SUPABASE_URL: http://127.0.0.1:54321
+      # Senha das contas fictícias do seed, num banco que só existe durante o job.
+      SEED_PASSWORD: senha-local-de-ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependências
+        run: npm ci
+
+      - name: Tipagem
+        run: |
+          npx tsc --noEmit -p apps/api
+          npx tsc --noEmit -p apps/web
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build do frontend
+        run: npm run build --workspace=apps/web
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+
+      - name: Supabase local
+        run: |
+          echo '[]' > supabase/signing_keys.json
+          supabase gen signing-key --algorithm ES256 --append
+          supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,mailpit,supavisor,postgres-meta
+          supabase status -o env > .supabase.env
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(grep '^SERVICE_ROLE_KEY=' .supabase.env | cut -d= -f2- | tr -d '"')" >> "$GITHUB_ENV"
+          # A suíte E2E lê a chave pública do .env do frontend, como no navegador.
+          echo "VITE_SUPABASE_ANON_KEY=$(grep '^ANON_KEY=' .supabase.env | cut -d= -f2- | tr -d '"')" > apps/web/.env
+
+      - name: Migrations e seed
+        run: |
+          npm run db:migrate
+          npm run db:seed
+
+      - name: Suíte padrão
+        run: npm run test:api
+
+      - name: Suíte de ponta a ponta
+        run: npm run test:e2e
+
+      - name: Auditoria de dependências
+        run: npm audit --audit-level=high
