@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* Os tokens continuam em tailwind.config.ts, carregado pelo modo de
+   compatibilidade do Tailwind 4. */
+@config '../tailwind.config.ts';
 
 /*
  * Design system Ledger aplicado ao Fleet Manager.
@@ -48,6 +50,13 @@
 @layer base {
   :root {
     color-scheme: dark;
+  }
+
+  /* O Tailwind 4 passou a usar o cursor padrão em botões; o 3 usava a
+     mãozinha, e é ela que indica ao usuário o que é clicável. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
   }
 
   * {

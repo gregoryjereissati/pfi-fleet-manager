@@ -107,7 +107,7 @@ export function RowActions({ actions }: RowActionsProps) {
 
   const itemClass = (tone: RowActionTone = 'default') =>
     cn(
-      'flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-white/5 focus:bg-white/5 focus:outline-none',
+      'flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-white/5 focus:bg-white/5 focus:outline-hidden',
       TONE_CLASS[tone],
     )
 
@@ -134,7 +134,7 @@ export function RowActions({ actions }: RowActionsProps) {
           <div
             ref={menuRef}
             role="menu"
-            className="fixed z-[55] rounded-xl border border-white/10 bg-lg-inner p-1 shadow-2xl"
+            className="fixed z-55 rounded-xl border border-white/10 bg-lg-inner p-1 shadow-2xl"
             style={{ top: posicao.top, left: posicao.left, width: LARGURA_MENU }}
           >
             {itens.map((acao) =>

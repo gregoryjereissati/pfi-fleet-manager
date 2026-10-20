@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import type { CurrentUserDto, VehicleDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
 import { getAccessToken, supabase } from '@/lib/supabase'
+import { empresaAtiva } from '@/lib/empresa-ativa'
 
 /**
  * Dados que a aplicação inteira compartilha: o perfil de quem está usando e a
@@ -43,10 +44,18 @@ interface SessionData {
 
 const SessionDataContext = createContext<SessionData | null>(null)
 
-/** Identidade do escopo: mudou, o que estava guardado deixa de valer. */
+/**
+ * Identidade do escopo: mudou, o que estava guardado deixa de valer.
+ *
+ * O super administrador não tem empresa no cadastro; a dele é a escolhida.
+ * Antes da escolha não há escopo, e nada é buscado — a API recusaria com
+ * COMPANY_NOT_SELECTED.
+ */
 function scopeKeyOf(user: CurrentUserDto | null): string | null {
   if (!user) return null
-  return `${user.id}:${user.companyId ?? 'sem-empresa'}:${user.role}`
+  const empresa = user.isSuperAdmin ? empresaAtiva() : user.companyId
+  if (user.isSuperAdmin && !empresa) return null
+  return `${user.id}:${empresa ?? 'sem-empresa'}:${user.role}`
 }
 
 export function SessionDataProvider({ children }: { children: React.ReactNode }) {

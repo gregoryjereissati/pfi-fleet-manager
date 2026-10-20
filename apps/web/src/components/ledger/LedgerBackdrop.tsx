@@ -20,10 +20,10 @@ export function LedgerBackdrop({ variant }: { variant: 'hero' | 'app' }) {
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-black">
-      <div className="absolute -left-[10%] -top-[20%] h-[600px] w-[600px] rounded-full bg-emerald-500/10 blur-[120px]" />
-      <div className="absolute -bottom-[20%] -right-[10%] h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px]" />
+      <div className="absolute left-[-10%] top-[-20%] h-[600px] w-[600px] rounded-full bg-emerald-500/10 blur-[120px]" />
+      <div className="absolute bottom-[-20%] right-[-10%] h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_40%)]" />
-      <div className="absolute bottom-0 left-0 h-[300px] w-full bg-gradient-to-t from-emerald-950/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 h-[300px] w-full bg-linear-to-t from-emerald-950/20 to-transparent" />
     </div>
   )
 }

@@ -9,8 +9,12 @@ import { sql } from '../../config/database';
  * execução seguinte.
  */
 
-/** Verdadeiro quando há conexão configurada para rodar contra o banco. */
-export const temBanco = Boolean(process.env.DATABASE_URL);
+/**
+ * Verdadeiro quando há conexão configurada para rodar contra o banco. A
+ * preparação da suíte preenche valores fictícios na falta do `.env` e marca
+ * `TEST_SEM_BANCO`; ver `test-helpers/env-de-teste.ts`.
+ */
+export const temBanco = Boolean(process.env.DATABASE_URL) && !process.env.TEST_SEM_BANCO;
 
 /** Códigos das empresas criadas pelo seed. */
 export const CODIGO_EMPRESA_A = 'LITORAL2026';

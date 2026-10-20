@@ -63,7 +63,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         aria-hidden
         onClick={onClose}
         className={cn(
-          'fixed inset-0 z-30 bg-black/60 backdrop-blur-sm transition-opacity lg:hidden',
+          'fixed inset-0 z-30 bg-black/60 backdrop-blur-xs transition-opacity lg:hidden',
           open ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       />

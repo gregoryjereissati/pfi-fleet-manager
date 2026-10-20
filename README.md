@@ -29,7 +29,7 @@ Autenticação e controle de acesso por perfil · Veículos · Motoristas · Des
 | Camada | Tecnologia |
 |---|---|
 | Linguagem | TypeScript |
-| Frontend | React 18 · Vite · React Router · TailwindCSS · Recharts · i18next |
+| Frontend | React 18 · Vite 8 · React Router 7 · Tailwind CSS 4 · Recharts · i18next |
 | Backend | Node.js · Express 4 |
 | Acesso ao banco | postgres.js — SQL parametrizado, sem ORM |
 | Banco de dados | PostgreSQL (Supabase) |
@@ -37,7 +37,7 @@ Autenticação e controle de acesso por perfil · Veículos · Motoristas · Des
 | Autenticação | Supabase Auth — tokens ES256 verificados por JWKS (`jose`) |
 | Validação | Zod |
 | Agendamento | node-cron (local) · Vercel Cron (produção) |
-| Testes | Vitest |
+| Testes | Vitest 4 |
 | Monorepo | npm workspaces |
 | Publicação | Vercel — projeto único, frontend estático e API serverless no mesmo domínio |
 
@@ -78,7 +78,7 @@ fleet-manager/
 
 ## Pré-requisitos
 
-- **Node.js 20+**
+- **Node.js 20.19+ ou 22.12+** — exigência do Vite 8
 - Conta no **Supabase** (camada gratuita é suficiente)
 
 ---
@@ -384,6 +384,48 @@ operando.
 
 ---
 
+## Ambiente local com Supabase no Docker
+
+Alternativa ao projeto hospedado: o stack do Supabase (PostgreSQL, Auth e
+Storage) roda inteiro no Docker, isolado de produção. A configuração está em
+[`supabase/config.toml`](supabase/config.toml): tokens assinados em **ES256**
+(a API só aceita chave assimétrica, via JWKS), confirmação de e-mail desligada
+e o bucket `documents` privado e sem política.
+
+Requisitos: Docker em execução. O CLI do Supabase roda por `npx`.
+
+```bash
+# 1. Chave de assinatura local — não versionada, cada pessoa gera a sua
+echo '[]' > supabase/signing_keys.json
+npx supabase gen signing-key --algorithm ES256 --append
+
+# 2. Sobe o stack (a primeira vez baixa as imagens)
+npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,mailpit,supavisor,postgres-meta
+npx supabase status -o env   # URLs e chaves locais
+```
+
+`apps/api/.env`:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+DIRECT_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY do status>
+SEED_PASSWORD="<senha>"
+```
+
+`apps/web/.env`: `VITE_SUPABASE_URL=http://127.0.0.1:54321` e
+`VITE_SUPABASE_ANON_KEY=<ANON_KEY do status>`.
+
+> Use aspas em `SEED_PASSWORD` se a senha tiver `#`: sem elas o dotenv lê o
+> resto da linha como comentário e a senha gravada fica truncada.
+
+Depois, `npm run db:migrate` e `npm run db:seed`. Para recriar a base local do
+zero, `npx supabase db reset` substitui o `db:reset` — que só reconhece URLs
+`https://<ref>.supabase.co`. Para desligar: `npx supabase stop`.
+
+---
+
 ## Execução
 
 ```bash
@@ -398,15 +440,34 @@ Verificação rápida: `curl http://localhost:3000/health`
 ## Validação
 
 ```bash
-npm run test:api                    # 220 testes
+npm run test:api                    # 227 testes
 cd apps/api && npx tsc --noEmit     # sem erros
 cd apps/web && npx tsc --noEmit     # sem erros
 cd apps/web && npm run build        # gera o pacote de produção
-npm run lint                        # sem erros (API e frontend, .ts e .tsx)
+npm run lint                        # sem erros (API e frontend, .ts, .tsx e .mts)
 ```
 
 Tudo deve passar limpo — **não há erro nem aviso pré-existente**. Se algum
 aparecer, é regressão.
+
+### Testes de ponta a ponta
+
+```bash
+npm run test:e2e                    # 117 casos, só contra o Supabase local
+```
+
+Exercitam o app Express inteiro — rotas, middlewares, controllers, serviços e
+repositórios — com tokens reais do Supabase Auth: autenticação e tokens
+forjados, permissões por papel, isolamento entre empresas, recorte do
+motorista, ciclos de vida, anexos no Storage, cadastro e aprovação, e entradas
+hostis. Ficam em [`apps/api/e2e/`](apps/api/e2e/), fora da suíte padrão,
+porque **gravam no banco** (veículos, lançamentos, uma empresa e uma conta a
+cada execução). Recusam rodar se `SUPABASE_URL` não for local. São
+re-executáveis sem reset; para voltar ao estado do seed, recrie a base local.
+
+Sem `.env`, a suíte padrão continua executável: a preparação em
+`src/test-helpers/env-de-teste.ts` preenche valores fictícios, e os testes de
+integração com o banco são pulados em vez de falhar.
 
 ### Demais comandos
 

@@ -47,7 +47,7 @@ export function Landing() {
   const { t } = useTranslation()
 
   return (
-    <div className="relative flex h-[100dvh] items-center justify-center overflow-hidden px-6">
+    <div className="relative flex h-dvh items-center justify-center overflow-hidden px-6">
       <Vitrine t={t} />
 
       {/* Penumbra atrás do texto: a vitrine continua visível, a leitura não sofre. */}
@@ -60,7 +60,7 @@ export function Landing() {
         <div className="lg-in relative mb-10" style={delay(0.1)}>
           <div className="absolute inset-0 -z-10 scale-150 rounded-full bg-emerald-500/25 blur-[60px]" />
           <div className="lg-orbit shadow-[0_0_40px_-8px_rgba(16,185,129,0.6)]">
-            <div className="flex h-28 w-28 items-center justify-center rounded-[calc(2rem-1.5px)] bg-gradient-to-br from-[#10131a] to-black">
+            <div className="flex h-28 w-28 items-center justify-center rounded-[calc(2rem-1.5px)] bg-linear-to-br from-[#10131a] to-black">
               <img
                 src="/logo.svg"
                 width={68}
@@ -199,7 +199,7 @@ function ExpensesCard({ t }: { t: T }) {
             return (
               <div
                 key={indice}
-                className="relative z-10 h-full w-full overflow-hidden rounded-lg bg-white/[0.02] ring-1 ring-white/5"
+                className="relative z-10 h-full w-full overflow-hidden rounded-lg bg-white/2 ring-1 ring-white/5"
               >
                 <div
                   className="absolute inset-0 opacity-10"
@@ -209,7 +209,7 @@ function ExpensesCard({ t }: { t: T }) {
                   }}
                 />
                 <div
-                  className={`animate-bar-loop absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t ${
+                  className={`animate-bar-loop absolute bottom-0 left-0 right-0 rounded-lg bg-linear-to-t ${
                     pico
                       ? 'from-emerald-500 to-emerald-300 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
                       : 'from-emerald-600 to-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
@@ -299,7 +299,7 @@ function MaintenanceTimeline() {
   return (
     <div className="relative flex items-center justify-between px-2">
       <div className="absolute left-4 right-4 top-1/2 h-px -translate-y-1/2 bg-white/10" />
-      <div className="lg-bar-grow absolute left-4 top-1/2 h-px w-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+      <div className="lg-bar-grow absolute left-4 top-1/2 h-px w-1/2 -translate-y-1/2 bg-linear-to-r from-emerald-600 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
       <span className="relative flex h-9 w-9 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
         <Check size={15} strokeWidth={2.5} />
       </span>

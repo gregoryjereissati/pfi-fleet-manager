@@ -154,7 +154,7 @@ function SummaryCard({
           {icon}
         </span>
       </div>
-      <p className="relative z-10 mt-auto break-words text-3xl font-semibold tracking-tight text-white tabular-nums">
+      <p className="relative z-10 mt-auto wrap-break-word text-3xl font-semibold tracking-tight text-white tabular-nums">
         {value}
       </p>
       {delta !== undefined && delta !== null ? (
@@ -615,7 +615,7 @@ export function Dashboard() {
                       </div>
                       <div className="ml-6 h-1.5 overflow-hidden rounded-full bg-white/5">
                         <div
-                          className="lg-bar-grow h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                          className="lg-bar-grow h-full rounded-full bg-linear-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
                           style={{
                             width: `${vehiclePeak > 0 ? (entry.total / vehiclePeak) * 100 : 0}%`,
                             ...delay(index * 0.08),

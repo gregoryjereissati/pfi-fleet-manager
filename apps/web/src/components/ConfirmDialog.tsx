@@ -32,7 +32,7 @@ export function ConfirmDialog({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-xs" onClick={onCancel} />
       <div className="lg-in relative z-10 w-full max-w-sm rounded-3xl border border-white/10 bg-lg-card p-7 shadow-2xl">
         <h2 className="text-xl font-semibold tracking-tight text-white">{title}</h2>
         <p className="lg-muted mt-2 text-sm leading-relaxed">{message}</p>

@@ -12,7 +12,8 @@
     "build:api": "npm run build --workspace=apps/api",
     "test": "npm run test --workspaces --if-present",
     "test:api": "npm run test --workspace=apps/api",
-    "lint": "eslint . --ext .ts,.tsx",
+    "test:e2e": "npm run test:e2e --workspace=apps/api",
+    "lint": "eslint . --ext .ts,.tsx,.mts",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "vercel-build": "npm run build:shared && npm run build --workspace=apps/web",
     "postinstall": "npm run build:shared",
@@ -23,8 +24,8 @@
     "db:reset": "npm run db:reset --workspace @fleet-manager/api --"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.72.0",
+    "@typescript-eslint/parser": "^8.72.0",
     "eslint": "^8.57.0",
     "prettier": "^3.0.0",
     "typescript": "^5.7.0"

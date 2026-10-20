@@ -13,9 +13,14 @@
 
 /** Violação de restrição de unicidade. */
 const UNIQUE_VIOLATION = '23505';
+
+/** Texto que não converte para o tipo da coluna. */
+const INVALID_TEXT_REPRESENTATION = '22P02';
+
 interface ErroPostgres {
   code?: string;
   constraint_name?: string;
+  routine?: string;
 }
 
 function comoErroPostgres(erro: unknown): ErroPostgres | null {
@@ -36,4 +41,17 @@ export function ehViolacaoDeUnicidade(erro: unknown, restricao?: string): boolea
   if (!restricao) return true;
 
   return postgres.constraint_name === restricao;
+}
+
+/**
+ * Texto que não é UUID usado onde o banco espera um.
+ *
+ * O código `22P02` cobre qualquer conversão de texto que falhe — valor de enum
+ * inclusive. Só a rotina `string_to_uuid` indica que o problema é o
+ * identificador enviado pelo cliente; as demais continuam sendo erro do
+ * servidor, porque a validação deveria tê-las barrado antes.
+ */
+export function ehIdentificadorInvalido(erro: unknown): boolean {
+  const postgres = comoErroPostgres(erro);
+  return postgres?.code === INVALID_TEXT_REPRESENTATION && postgres.routine === 'string_to_uuid';
 }

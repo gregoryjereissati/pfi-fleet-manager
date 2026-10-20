@@ -57,7 +57,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {createPortal(
         <div
           aria-live="polite"
-          className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-3"
+          className="pointer-events-none fixed bottom-4 right-4 z-60 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-3"
         >
           {toasts.map((toast) => {
             const erro = toast.tone === 'error'

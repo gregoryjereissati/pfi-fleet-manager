@@ -69,7 +69,7 @@ export function AccessGate({ children }: AccessGateProps) {
           <div className="flex justify-center">
             <span
               className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-3xl ${
-                alerta ? 'border-rose-500/20 bg-rose-500/10' : 'border-white/5 bg-white/[0.03]'
+                alerta ? 'border-rose-500/20 bg-rose-500/10' : 'border-white/5 bg-white/3'
               }`}
             >
               {bloqueio.icon}

@@ -31,7 +31,7 @@ export function CancelEntryDialog({ onConfirm, onClose }: CancelEntryDialogProps
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
       <div className="lg-in w-full max-w-md space-y-5 rounded-3xl border border-white/10 bg-lg-card p-7 shadow-2xl">
         <div className="space-y-2">
           <h2 className="text-xl font-semibold tracking-tight text-white">{t('entries.cancelTitle')}</h2>

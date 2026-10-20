@@ -54,7 +54,7 @@ export function FilePreviewModal({ isOpen, documentId, onClose }: FilePreviewMod
   const isPdf = (url ?? '').split('?')[0].toLowerCase().endsWith('.pdf')
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs">
       <div className="lg-in relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-lg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
           <h2 className="text-base font-semibold tracking-tight text-white">{t('documents.preview.title')}</h2>

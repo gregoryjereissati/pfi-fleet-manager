@@ -52,7 +52,7 @@ export function CompanyPicker() {
         {error && <p className="lg-alert lg-alert-error">{error}</p>}
 
         {companies.length === 0 && !error && (
-          <p className="rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-8 text-center text-sm text-neutral-500">
+          <p className="rounded-2xl border border-white/5 bg-white/2 px-4 py-8 text-center text-sm text-neutral-500">
             {t('companyPicker.empty')}
           </p>
         )}
