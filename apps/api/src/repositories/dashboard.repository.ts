@@ -154,12 +154,9 @@ export const dashboardRepository = {
           where ${condicaoMotorista(filters)} and dr.status = ${DriverStatus.ACTIVE})
           as active_drivers,
 
-        (select sum(e.amount) from expenses e where ${condicaoDespesa(filters)})
-          as total_expenses,
-        (select avg(e.amount) from expenses e where ${condicaoDespesa(filters)})
-          as average_expense,
-        (select count(*) from expenses e where ${condicaoDespesa(filters)})
-          as expense_count,
+        despesas.total_expenses,
+        despesas.average_expense,
+        despesas.expense_count,
 
         (select count(*) from maintenances m
           where ${condicaoManutencao(filters)} and m.status = ${MaintenanceStatus.SCHEDULED})
@@ -176,6 +173,17 @@ export const dashboardRepository = {
         (select count(*) from documents d
           where ${condicaoDocumento(filters)} and d.expiry_date < current_date)
           as expired_documents
+      -- Total, média e contagem saem de uma única leitura das despesas do
+      -- período: são os indicadores mais caros, e cada subconsulta separada
+      -- percorria as mesmas linhas outra vez.
+      from (
+        select
+          sum(e.amount) as total_expenses,
+          avg(e.amount) as average_expense,
+          count(*) as expense_count
+        from expenses e
+        where ${condicaoDespesa(filters)}
+      ) despesas
     `;
 
     return {
@@ -224,15 +232,25 @@ export const dashboardRepository = {
           (select fim from intervalo),
           interval '1 month'
         ) as mes
+      ),
+      selecionados as (
+        select mes from meses order by mes desc limit ${quantidade}
       )
+      -- As despesas são somadas por mês uma única vez, já restritas aos meses
+      -- do gráfico, e só então encaixadas na série. Juntar cada despesa à série
+      -- pela expressão do mês impedia o uso do índice de data.
       select
         to_char(m.mes, 'YYYY-MM') as month,
-        sum(e.amount) as total
-      from (select mes from meses order by mes desc limit ${quantidade}) m
-      left join expenses e
-        on date_trunc('month', e.date) = m.mes
-       and ${condicaoDespesa(filters)}
-      group by m.mes
+        t.total
+      from selecionados m
+      left join (
+        select date_trunc('month', e.date) as mes, sum(e.amount) as total
+        from expenses e
+        where ${condicaoDespesa(filters)}
+          and e.date >= (select min(mes) from selecionados)
+          and e.date < (select max(mes) from selecionados) + interval '1 month'
+        group by 1
+      ) t on t.mes = m.mes
       order by m.mes asc
     `;
 
@@ -260,18 +278,24 @@ export const dashboardRepository = {
     const linhas = await sql<
       { vehicleId: string; plate: string | null; label: string; total: string | null }[]
     >`
+      -- Soma primeiro e junta o veículo depois: o join passa a acontecer só
+      -- com as poucas linhas do ranking, e não com cada despesa do período.
       select
-        e.vehicle_id,
+        t.vehicle_id,
         v.plate,
-        coalesce(v.plate || ' - ' || v.brand || ' ' || v.model, e.vehicle_id::text) as label,
-        sum(e.amount) as total
-      from expenses e
+        coalesce(v.plate || ' - ' || v.brand || ' ' || v.model, t.vehicle_id::text) as label,
+        t.total
+      from (
+        select e.vehicle_id, sum(e.amount) as total
+        from expenses e
+        where ${condicaoDespesa(filters)}
+        group by e.vehicle_id
+        order by sum(e.amount) desc
+        limit ${limit}
+      ) t
       left join vehicles v
-        on v.id = e.vehicle_id and v.company_id = ${filters.companyId}
-      where ${condicaoDespesa(filters)}
-      group by e.vehicle_id, v.plate, v.brand, v.model
-      order by sum(e.amount) desc
-      limit ${limit}
+        on v.id = t.vehicle_id and v.company_id = ${filters.companyId}
+      order by t.total desc
     `;
 
     return linhas.map((linha) => ({
