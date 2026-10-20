@@ -55,9 +55,11 @@ A camada de serviços não conhece Express, e o SQL vive apenas na de repositór
 
 ```text
 fleet-manager/
+├── .github/workflows/       Integração contínua: tipagem, lint, build e testes
 ├── apps/
 │   ├── api/                 Backend — a aplicação Express
 │   │   ├── db/             Migrations SQL, executor, seed e limpeza
+│   │   ├── e2e/            Suíte de ponta a ponta (Supabase local)
 │   │   └── src/             config · routes · middlewares · controllers
 │   │                        services · repositories · jobs · lib
 │   └── web/                 Frontend React
@@ -435,12 +437,26 @@ npm run dev:web    # Interface em http://localhost:5173
 
 Verificação rápida: `curl http://localhost:3000/health`
 
+O `/health` consulta o banco com prazo de 3 s: responde `200` com
+`"database": "ok"` quando ele atende e `503` com `"database": "unavailable"`
+quando não — é o endereço para um monitor externo. Cada requisição atendida
+gera uma linha de log (`[req] GET /api/vehicles 200 12ms`), e uma requisição
+que passe de 10 s recebe `503` em vez de ficar presa.
+
+### Listagens paginadas
+
+`GET /api/expenses` e `GET /api/maintenances` devolvem uma página por vez:
+`limit` (1 a 200, padrão 50) e `offset` (padrão 0). O corpo continua sendo a
+lista; o total de registros que atendem aos filtros vem no cabeçalho
+`X-Total-Count`. Assim a resposta tem tamanho fixo, qualquer que seja o volume
+de lançamentos da empresa.
+
 ---
 
 ## Validação
 
 ```bash
-npm run test:api                    # 227 testes
+npm run test:api                    # 246 testes
 cd apps/api && npx tsc --noEmit     # sem erros
 cd apps/web && npx tsc --noEmit     # sem erros
 cd apps/web && npm run build        # gera o pacote de produção
@@ -453,14 +469,14 @@ aparecer, é regressão.
 ### Testes de ponta a ponta
 
 ```bash
-npm run test:e2e                    # 117 casos, só contra o Supabase local
+npm run test:e2e                    # 127 casos, só contra o Supabase local
 ```
 
 Exercitam o app Express inteiro — rotas, middlewares, controllers, serviços e
 repositórios — com tokens reais do Supabase Auth: autenticação e tokens
 forjados, permissões por papel, isolamento entre empresas, recorte do
-motorista, ciclos de vida, anexos no Storage, cadastro e aprovação, e entradas
-hostis. Ficam em [`apps/api/e2e/`](apps/api/e2e/), fora da suíte padrão,
+motorista, ciclos de vida, anexos no Storage, cadastro e aprovação, entradas
+hostis e paginação. Ficam em [`apps/api/e2e/`](apps/api/e2e/), fora da suíte padrão,
 porque **gravam no banco** (veículos, lançamentos, uma empresa e uma conta a
 cada execução). Recusam rodar se `SUPABASE_URL` não for local. São
 re-executáveis sem reset; para voltar ao estado do seed, recrie a base local.
@@ -468,6 +484,13 @@ re-executáveis sem reset; para voltar ao estado do seed, recrie a base local.
 Sem `.env`, a suíte padrão continua executável: a preparação em
 `src/test-helpers/env-de-teste.ts` preenche valores fictícios, e os testes de
 integração com o banco são pulados em vez de falhar.
+
+### Integração contínua
+
+[`.github/workflows/testes.yml`](.github/workflows/testes.yml) roda a cada
+pull request e a cada push na `main`: tipagem, lint, build do frontend, um
+Supabase local criado do zero no runner, migrations e seed, as duas suítes e
+`npm audit`. Nenhuma credencial de produção é usada.
 
 ### Demais comandos
 
