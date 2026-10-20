@@ -89,6 +89,18 @@ describe('authenticate', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it('repassa ao errorHandler a falha do banco, sem rejeitar a promessa', async () => {
+    vi.mocked(verifySupabaseToken).mockResolvedValue(authUser);
+    const falha = Object.assign(new Error('write CONNECT_TIMEOUT'), { code: 'CONNECT_TIMEOUT' });
+    vi.mocked(userRepository.findForAuthentication).mockRejectedValue(falha);
+    const res = makeRes();
+
+    await expect(authenticate(makeReq('Bearer token'), res, next)).resolves.toBeUndefined();
+
+    expect(next).toHaveBeenCalledWith(falha);
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
   it('retorna 401 quando o token do Supabase é inválido', async () => {
     vi.mocked(verifySupabaseToken).mockRejectedValue(new Error('invalid'));
     const res = makeRes();

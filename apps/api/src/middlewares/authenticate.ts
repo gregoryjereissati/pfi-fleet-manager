@@ -53,12 +53,24 @@ export async function requireSupabaseSession(
  * alterações de papel tenham efeito imediato, sem depender da expiração do
  * token emitido pelo Supabase. A mesma consulta traz a empresa e a ficha de
  * motorista, que compõem o recorte de acesso.
+ *
+ * Uma falha nessa consulta — banco fora do ar, conexão que esgota o prazo —
+ * segue para o `errorHandler`. O Express 4 não captura a rejeição de um
+ * middleware assíncrono: sem este repasse, ela derrubava o processo inteiro.
  */
 export async function authenticate(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  try {
+    await autenticar(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function autenticar(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = extractBearerToken(req);
 
   if (!token) {

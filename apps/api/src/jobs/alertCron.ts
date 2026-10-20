@@ -34,6 +34,16 @@ const internalCronDisabled =
 
 export const alertCronTask = internalCronDisabled
   ? null
-  : cron.schedule('0 0 * * *', () => {
-      void markExpiringDocuments();
-    });
+  : cron.schedule('0 0 * * *', executarRotina);
+
+/**
+ * Execução agendada. A falha fica registrada, como na rota da Vercel; sem o
+ * `catch`, uma rejeição — banco fora do ar à meia-noite — ficaria sem
+ * tratamento e encerraria o processo.
+ */
+export function executarRotina(): Promise<void> {
+  return markExpiringDocuments().then(
+    () => undefined,
+    (error) => console.error('[alertCron] falha na execução', error),
+  );
+}
