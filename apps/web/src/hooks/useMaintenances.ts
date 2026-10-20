@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MaintenanceStatus, MaintenanceType } from '@fleet-manager/shared'
-import { apiFetch } from '@/lib/api'
+import { apiFetchPage } from '@/lib/api'
+import { parametrosDaPagina } from '@/lib/paginacao'
 import { useToken } from '@/hooks/useToken'
 
 interface MaintenanceVehicleSummary {
@@ -35,9 +36,11 @@ export interface MaintenanceFilters {
   order?: 'asc' | 'desc'
 }
 
-export function useMaintenances(filters: MaintenanceFilters = {}) {
+/** `page` começa em zero; cada página traz `TAMANHO_PAGINA` manutenções. */
+export function useMaintenances(filters: MaintenanceFilters = {}, page = 0) {
   const getToken = useToken()
   const [maintenances, setMaintenances] = useState<MaintenanceItem[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
@@ -59,14 +62,17 @@ export function useMaintenances(filters: MaintenanceFilters = {}) {
         Object.entries(queryFilters).forEach(([key, value]) => {
           if (value) params.set(key, value)
         })
+        Object.entries(parametrosDaPagina(page)).forEach(([key, value]) => params.set(key, value))
 
-        const queryString = params.toString()
-        const data = await apiFetch<MaintenanceItem[]>(
-          `/maintenances${queryString ? `?${queryString}` : ''}`,
+        const { items, total } = await apiFetchPage<MaintenanceItem>(
+          `/maintenances?${params.toString()}`,
           token,
         )
 
-        if (!cancelled) setMaintenances(data)
+        if (!cancelled) {
+          setMaintenances(items)
+          setTotal(total)
+        }
       } catch (err) {
         if (!cancelled) setError((err as Error).message)
       } finally {
@@ -79,10 +85,11 @@ export function useMaintenances(filters: MaintenanceFilters = {}) {
     return () => {
       cancelled = true
     }
-  }, [filterKey, getToken, reloadToken])
+  }, [filterKey, page, getToken, reloadToken])
 
   return {
     maintenances,
+    total,
     loading,
     error,
     reload: () => setReloadToken((value) => value + 1),

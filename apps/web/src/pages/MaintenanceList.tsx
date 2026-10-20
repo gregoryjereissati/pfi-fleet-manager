@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, Wrench } from 'lucide-react'
 import { MaintenanceStatus, MaintenanceType } from '@fleet-manager/shared'
-import { useMaintenances } from '@/hooks/useMaintenances'
+import { useMaintenances, type MaintenanceFilters } from '@/hooks/useMaintenances'
+import { usePagina } from '@/hooks/usePagina'
+import { TAMANHO_PAGINA } from '@/lib/paginacao'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -11,7 +13,7 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CancelEntryDialog } from '@/components/CancelEntryDialog'
-import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { EmptyState, LoadingState, PageHeader, Pagination } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
 
@@ -47,11 +49,19 @@ export function MaintenanceList() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const { maintenances, loading, error, reload } = useMaintenances({
+  const filters: MaintenanceFilters = {
     vehicleId: vehicleId || undefined,
     type,
     status,
-  })
+  }
+  const [page, setPage] = usePagina(JSON.stringify(filters))
+  const { maintenances, total, loading, error, reload } = useMaintenances(filters, page)
+
+  // Excluir a última manutenção da última página deixaria a tela vazia com
+  // registros nas páginas anteriores; volta uma página.
+  useEffect(() => {
+    if (!loading && maintenances.length === 0 && page > 0) setPage(page - 1)
+  }, [loading, maintenances.length, page, setPage])
 
   function closeDialog() {
     setDialog(null)
@@ -317,6 +327,19 @@ export function MaintenanceList() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            pageSize={TAMANHO_PAGINA}
+            total={total}
+            onChange={setPage}
+            summary={t('pagination.summary', {
+              from: (page * TAMANHO_PAGINA + 1).toLocaleString('pt-BR'),
+              to: (page * TAMANHO_PAGINA + maintenances.length).toLocaleString('pt-BR'),
+              total: total.toLocaleString('pt-BR'),
+            })}
+            previousLabel={t('pagination.previous')}
+            nextLabel={t('pagination.next')}
+          />
         </div>
       )}
 

@@ -102,6 +102,63 @@ export function EmptyState({ icon, message, action, className }: EmptyStateProps
   )
 }
 
+interface PaginationProps {
+  /** Página atual, começando em zero. */
+  page: number
+  pageSize: number
+  total: number
+  onChange: (page: number) => void
+  /** Já traduzidos: o resumo ("1–50 de 320") e os dois botões. */
+  summary: React.ReactNode
+  previousLabel: string
+  nextLabel: string
+  className?: string
+}
+
+/** Rodapé de listagem paginada: resumo à esquerda, anterior e próxima à direita. */
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  onChange,
+  summary,
+  previousLabel,
+  nextLabel,
+  className,
+}: PaginationProps) {
+  if (total <= pageSize) return null
+  const ultima = Math.ceil(total / pageSize) - 1
+
+  return (
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-3 border-t border-white/5 px-4 py-3',
+        className,
+      )}
+    >
+      <p className="text-xs tabular-nums text-neutral-500">{summary}</p>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(page - 1)}
+          disabled={page === 0}
+          className="lg-btn-ghost px-3 py-1.5 text-xs"
+        >
+          {previousLabel}
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(page + 1)}
+          disabled={page >= ultima}
+          className="lg-btn-ghost px-3 py-1.5 text-xs"
+        >
+          {nextLabel}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /** Campo de busca do design system: lupa à esquerda, que acende no hover. */
 export function SearchField({
   className,

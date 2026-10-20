@@ -23,6 +23,34 @@ export async function apiFetch<T>(
   token: string,
   options?: RequestInit,
 ): Promise<T> {
+  const { payload } = await requisitar<T>(path, token, options)
+  return payload
+}
+
+/** Uma página de uma listagem e o total de registros que atendem aos filtros. */
+export interface Pagina<T> {
+  items: T[]
+  total: number
+}
+
+/**
+ * Busca uma página de uma listagem paginada.
+ *
+ * O corpo é a lista da página; o total vem no cabeçalho `X-Total-Count`. Sem o
+ * cabeçalho, a página é tratada como a lista inteira.
+ */
+export async function apiFetchPage<T>(path: string, token: string): Promise<Pagina<T>> {
+  const { payload, response } = await requisitar<T[]>(path, token)
+  const items = Array.isArray(payload) ? payload : []
+  const total = Number(response.headers.get('X-Total-Count') ?? items.length)
+  return { items, total: Number.isFinite(total) ? total : items.length }
+}
+
+async function requisitar<T>(
+  path: string,
+  token: string,
+  options?: RequestInit,
+): Promise<{ payload: T; response: Response }> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
 
   const response = await fetch(`${API_URL}/api${normalizedPath}`, {
@@ -43,7 +71,7 @@ export async function apiFetch<T>(
       throw new Error(`HTTP ${response.status}`)
     }
 
-    return {} as T
+    return { payload: {} as T, response }
   }
 
   let payload: { error?: string } | null = null
@@ -58,7 +86,7 @@ export async function apiFetch<T>(
     throw new Error(payload?.error ?? text ?? `HTTP ${response.status}`)
   }
 
-  return (payload ?? ({ raw: text } as T)) as T
+  return { payload: (payload ?? ({ raw: text } as T)) as T, response }
 }
 
 /**

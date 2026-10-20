@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { EntryStatus, ExpenseType } from '@fleet-manager/shared'
-import { apiFetch } from '@/lib/api'
+import { apiFetchPage } from '@/lib/api'
+import { parametrosDaPagina } from '@/lib/paginacao'
 import { useToken } from '@/hooks/useToken'
 
 interface ExpenseVehicleSummary {
@@ -36,9 +37,11 @@ export interface ExpenseFilters {
   order?: 'asc' | 'desc'
 }
 
-export function useExpenses(filters: ExpenseFilters = {}) {
+/** `page` começa em zero; cada página traz `TAMANHO_PAGINA` lançamentos. */
+export function useExpenses(filters: ExpenseFilters = {}, page = 0) {
   const getToken = useToken()
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
@@ -60,14 +63,17 @@ export function useExpenses(filters: ExpenseFilters = {}) {
         Object.entries(queryFilters).forEach(([key, value]) => {
           if (value) params.set(key, value)
         })
+        Object.entries(parametrosDaPagina(page)).forEach(([key, value]) => params.set(key, value))
 
-        const queryString = params.toString()
-        const data = await apiFetch<ExpenseItem[]>(
-          `/expenses${queryString ? `?${queryString}` : ''}`,
+        const { items, total } = await apiFetchPage<ExpenseItem>(
+          `/expenses?${params.toString()}`,
           token,
         )
 
-        if (!cancelled) setExpenses(data)
+        if (!cancelled) {
+          setExpenses(items)
+          setTotal(total)
+        }
       } catch (err) {
         if (!cancelled) setError((err as Error).message)
       } finally {
@@ -80,10 +86,11 @@ export function useExpenses(filters: ExpenseFilters = {}) {
     return () => {
       cancelled = true
     }
-  }, [filterKey, getToken, reloadToken])
+  }, [filterKey, page, getToken, reloadToken])
 
   return {
     expenses,
+    total,
     loading,
     error,
     reload: () => setReloadToken((value) => value + 1),

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, Receipt } from 'lucide-react'
 import { EntryStatus, ExpenseType } from '@fleet-manager/shared'
-import { useExpenses } from '@/hooks/useExpenses'
+import { useExpenses, type ExpenseFilters } from '@/hooks/useExpenses'
+import { usePagina } from '@/hooks/usePagina'
+import { TAMANHO_PAGINA } from '@/lib/paginacao'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -11,7 +13,7 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CancelEntryDialog } from '@/components/CancelEntryDialog'
-import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { EmptyState, LoadingState, PageHeader, Pagination } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
 import { formatDate } from '@/lib/utils'
@@ -50,7 +52,7 @@ export function ExpenseList() {
 
   const canDelete = canManageFleet(currentUser?.role)
 
-  const { expenses, loading, error, reload } = useExpenses({
+  const filters: ExpenseFilters = {
     vehicleId: vehicleId || undefined,
     type,
     // Sem o filtro, a API devolve ativos e cancelados; os cancelados vêm
@@ -58,7 +60,15 @@ export function ExpenseList() {
     status: showCancelled ? '' : EntryStatus.ACTIVE,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
-  })
+  }
+  const [page, setPage] = usePagina(JSON.stringify(filters))
+  const { expenses, total, loading, error, reload } = useExpenses(filters, page)
+
+  // Excluir o último lançamento da última página deixaria a tela vazia com
+  // registros nas páginas anteriores; volta uma página.
+  useEffect(() => {
+    if (!loading && expenses.length === 0 && page > 0) setPage(page - 1)
+  }, [loading, expenses.length, page, setPage])
 
   async function executar(acao: (token: string) => Promise<unknown>) {
     try {
@@ -294,6 +304,19 @@ export function ExpenseList() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            pageSize={TAMANHO_PAGINA}
+            total={total}
+            onChange={setPage}
+            summary={t('pagination.summary', {
+              from: (page * TAMANHO_PAGINA + 1).toLocaleString('pt-BR'),
+              to: (page * TAMANHO_PAGINA + expenses.length).toLocaleString('pt-BR'),
+              total: total.toLocaleString('pt-BR'),
+            })}
+            previousLabel={t('pagination.previous')}
+            nextLabel={t('pagination.next')}
+          />
         </div>
       )}
 
