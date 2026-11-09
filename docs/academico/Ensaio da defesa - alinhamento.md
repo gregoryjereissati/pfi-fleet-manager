@@ -19,11 +19,11 @@
 ### O que ainda depende de vocês
 
 1. **Gerar o PDF** na máquina Windows: `python scripts/gerar-pdf.py`. O `.docx` e os diagramas não são versionados. Leve o `.docx` desta máquina, ou regenere lá com `gerar-diagramas.py` e `gerar-documento.py`; as duas capturas de tela ficam versionadas em `docs/academico/telas/`. Depois, revisar o PDF página a página (quebras, tabelas largas, Figuras 8 e 9).
-2. **CI × publicação.** A `main` não tem proteção. A Vercel publica a cada push sem esperar o GitHub Actions, então um teste vermelho não impede a publicação. O slide de outubro dizia "só então vai ao ar", e isso não é verdade hoje. O documento já registra isso como limitação (seções 4.11 e 5.7). Para corrigir, é preciso ativar a proteção de branch no GitHub (exigindo o check `validar`) e trabalhar por pull request, ou configurar a Vercel para aguardar os checks.
-3. **Zod com vulnerabilidade alta** (GHSA-mrhx-c7xc-m3w5). Corrigir exige migrar o Zod da versão 3 para a 4, o que é mudança de stack. Enquanto isso, o `npm audit --audit-level=high` do CI vai falhar no próximo push. Apliquei o `npm audit fix` sem mudança de versão principal, que resolveu `body-parser` e `qs`.
+2. **Cadastrar os segredos da publicação no GitHub** antes do próximo push na `main`: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` e, opcionalmente, `PRODUCAO_DIRECT_URL`. A tabela está no README, em "Integração e entrega contínuas". Sem eles, o job `publicar` falha de propósito e a produção fica parada na última versão. A publicação agora só acontece depois do CI (corrigido em 09/11).
+3. ~~Zod com vulnerabilidade alta~~: **corrigido**. Migrado para o Zod 4.6.7, com APIs obsoletas substituídas, e o `minimatch` das ferramentas de lint forçado para a versão 11. `npm audit`: 0 vulnerabilidades.
 4. **Cronograma (Apêndice A).** Mantive a linha "Entrega e apresentação — Agosto de 2026" e acrescentei setembro a novembro. Confiram as datas e se a natureza do trabalho continua "Projeto Final Integrador I".
 5. **Referências novas.** Humble e Farley (2010), Nielsen (1993) e ISO/IEC 25010 (2011) são obras reais, citadas de forma indireta (paráfrase). Conferir edição e dados antes da entrega.
-6. **Banco de produção.** A migration `0007` (coluna `alert_sent_at`) só foi aplicada no banco local. Em produção, rodar `npm run db:migrate` com o `.env` de produção antes de publicar o código novo.
+6. **Banco de produção.** A migration `0007` (coluna `alert_sent_at`) só foi aplicada no banco local. Com o segredo `PRODUCAO_DIRECT_URL` cadastrado, o job `publicar` a aplica antes de publicar. Sem ele, rode `npm run db:migrate` com o `.env` de produção antes do push.
 7. **Relatório de Testes de 20/10** (PDF separado): continua com os números daquela rodada. O Documento Técnico agora traz as duas rodadas, cada tabela com a data.
 
 ---
@@ -54,7 +54,7 @@ O Quadro 7 do documento lista as 23 regras de negócio, cada uma com o motivo de
 | Anotação | Onde está resolvida |
 |---|---|
 | Conferir os objetivos específicos | Objetivo 7 reescrito (1.3); Quadro 10 liga objetivo, entrega e evidência (5.6); conclusão responde a cada um |
-| CI/CD: colocar o fluxo | Seção 4.11 e Figura 12, com as nove etapas e o paralelo com a Vercel |
+| CI/CD: colocar o fluxo | Seção 4.11 e Figura 12: nove etapas de validação, depois a publicação, só na `main` e só com sucesso |
 | Estilo de aprovação / marketing | Texto técnico: cada número com como foi medido, máquina, data e limite (5.4, 5.7) |
 | Todos devem falar | Roteiro na seção 4 deste arquivo |
 | O que é migrations | Definida em 2.4; somente adição e soma de verificação em 3.2; também no glossário |
@@ -77,7 +77,7 @@ O Quadro 7 do documento lista as 23 regras de negócio, cada uma com o motivo de
 | Sistema funcionando | 4.6 | Demonstração: painel e central de alertas (manutenção atrasada sem ninguém marcar; CNH) | Quem estiver mais seguro |
 | CI/CD e observabilidade | 4.11, 4.12 | Figura 12, etapa por etapa; health, tempo-limite, log | André |
 | Resultados | 5.1 a 5.6 | Regras e motivos (Quadro 7), testes (Quadro 9), workload (Tabelas 2 e 3), resiliência, objetivos (Quadro 10) | André |
-| Limitações e conclusão | 5.7, 6 | O que não foi feito e por quê; CI paralelo; Zod; validação real | Gregory |
+| Limitações e conclusão | 5.7, 6 | O que não foi feito e por quê; o que a revisão corrigiu (publicação e Zod); validação real | Gregory |
 
 Para os slides: toda sigla com legenda, todo número com data e máquina, caminho real das rotas, resultados no corpo.
 
@@ -92,10 +92,11 @@ Para os slides: toda sigla com legenda, todo número com data e máquina, caminh
 | O que a rotina diária faz? | Registra quando cada documento entrou na janela de 30 dias; a central mostra a data; renovar limpa | 4.8, RN13 |
 | Por que a vazão cai de 1.452 para 790 req/s? | Fila no pool de 10 conexões com o banco, mais as 16 mil despesas gravadas durante o teste; em base limpa, 890 | 5.4 |
 | Por que POST é a rota mais lenta? | Grava despesa e histórico na mesma transação | 5.4 |
-| Um teste vermelho impede a publicação? | Hoje não: CI e Vercel correm em paralelo; está declarado como limitação | 4.11, 5.7 |
+| Um teste vermelho impede a publicação? | Sim: o job `publicar` depende do `validar`, e a Vercel não publica sozinha a `main` | 4.11, Figura 12 |
 | Onde está o script de carga? | `apps/api/carga/workload.ts`; resultado em `docs/testes/workload-misto.json` | Apêndice C |
 | Por que a mesma CNH não aparece duas vezes? | A ficha só entra se nenhum documento CNH do motorista já está sendo avisado | 4.6, RN12 |
 | Por que não bloquear o vínculo existente quando a CNH vence? | Desfazer vínculos sozinho tiraria do gestor uma decisão que é dele; a central avisa | RN14 |
 | Por que sem ORM? | A condição de empresa fica visível em cada consulta; custo: verbosidade | 2.4, 5.7 |
 | Foi validado com usuário real? | Não; declarado como limitação | 5.7 |
-| E a vulnerabilidade do Zod? | Exige migrar para a versão 4; risco contido pelo limite de 100 KB do corpo (teste VAL-07) | 5.7 |
+| E a vulnerabilidade do Zod? | Corrigida com a migração para a versão 4; auditoria zerada | 5.7 |
+| Como as migrations chegam à produção? | O job `publicar` as aplica antes de publicar o código; são somente de adição | 4.11 |

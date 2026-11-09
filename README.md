@@ -527,15 +527,33 @@ npm run carga:workload --workspace=apps/api -- --conexoes=10,50,100 --duracao=30
 Só roda contra o Supabase local, porque grava despesas; ao final apaga as que
 criou (`--manter` as preserva). O resultado vai para `docs/testes/` em JSON.
 
-### Integração contínua
+### Integração e entrega contínuas
 
-[`.github/workflows/testes.yml`](.github/workflows/testes.yml) roda a cada
-pull request e a cada push na `main`: tipagem, lint, build do frontend, um
-Supabase local criado do zero no runner, migrations e seed, as duas suítes e
-`npm audit`. Nenhuma credencial de produção é usada.
+[`.github/workflows/testes.yml`](.github/workflows/testes.yml) tem dois jobs.
 
-> A `main` não tem proteção de branch: a Vercel publica a cada push sem esperar
-> o resultado do CI. As duas esteiras correm em paralelo.
+**`validar`** roda a cada pull request e a cada push na `main`: tipagem, lint,
+build do frontend, um Supabase local criado do zero no runner, migrations e
+seed, as duas suítes e `npm audit --audit-level=high`. Nenhuma credencial de
+produção é usada.
+
+**`publicar`** só existe num push na `main` e só começa depois que `validar`
+passa — **teste vermelho não vai ao ar**. Ele aplica as migrations pendentes à
+produção (se o segredo `PRODUCAO_DIRECT_URL` existir) e então publica pela CLI
+da Vercel. A publicação automática da Vercel na `main` está desligada em
+[`vercel.json`](vercel.json) (`git.deploymentEnabled.main: false`); os demais
+branches continuam recebendo prévias automáticas.
+
+Segredos do repositório (Settings → Secrets and variables → Actions):
+
+| Segredo | Obrigatório | Onde obter |
+|---|:---:|---|
+| `VERCEL_TOKEN` | ✅ | Vercel → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | ✅ | `.vercel/project.json` depois de `npx vercel link`, campo `orgId` |
+| `VERCEL_PROJECT_ID` | ✅ | o mesmo arquivo, campo `projectId` |
+| `PRODUCAO_DIRECT_URL` | — | conexão direta (porta 5432) do Supabase de produção |
+
+Sem os três obrigatórios, o job `publicar` falha com a mensagem do segredo
+ausente e a produção fica na última versão publicada.
 
 ### Demais comandos
 

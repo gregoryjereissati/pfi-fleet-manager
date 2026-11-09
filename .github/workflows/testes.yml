@@ -1,9 +1,21 @@
-# Integração contínua do Fleet Manager.
+# Integração e entrega contínuas do Fleet Manager.
 #
-# Roda a cada pull request e a cada push na main as mesmas verificações da
-# seção "Validação" do README: tipagem, lint, build, a suíte padrão e a suíte
-# de ponta a ponta. O banco é um Supabase local, criado do zero no próprio
-# runner a cada execução — nenhuma credencial de produção entra aqui.
+# `validar` roda a cada pull request e a cada push na main as mesmas
+# verificações da seção "Validação" do README: tipagem, lint, build, a suíte
+# padrão e a suíte de ponta a ponta. O banco é um Supabase local, criado do
+# zero no próprio runner a cada execução — nenhuma credencial de produção
+# entra nesse job.
+#
+# `publicar` só existe num push na main e só começa depois que `validar`
+# termina com sucesso: um teste vermelho impede a publicação. A publicação
+# automática da Vercel na main está desligada em vercel.json; a produção sai
+# daqui, pela CLI da Vercel. Branches que não são a main continuam recebendo
+# prévias automáticas da própria Vercel.
+#
+# Segredos do repositório usados por `publicar`:
+#   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID  obrigatórios;
+#   PRODUCAO_DIRECT_URL                             opcional — quando existe,
+#     as migrations pendentes são aplicadas à produção antes da publicação.
 name: testes
 
 on:
@@ -76,3 +88,61 @@ jobs:
 
       - name: Auditoria de dependências
         run: npm audit --audit-level=high
+
+  publicar:
+    needs: validar
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Uma publicação por vez: duas em paralelo poderiam chegar fora de ordem.
+    concurrency:
+      group: publicar-producao
+      cancel-in-progress: false
+    environment:
+      name: producao
+      url: https://pfi-fleet-manager-api.vercel.app
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      PRODUCAO_DIRECT_URL: ${{ secrets.PRODUCAO_DIRECT_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # A mesma versão do Node configurada no projeto da Vercel (24.x): o
+      # build sai daqui, e as funções rodam lá.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Credenciais da Vercel
+        run: |
+          for segredo in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!segredo}" ]; then
+              echo "::error::Segredo $segredo ausente. Cadastre-o em Settings > Secrets and variables > Actions."
+              exit 1
+            fi
+          done
+
+      - name: Dependências
+        run: npm ci
+
+      # A migration vem antes do código que depende dela. As migrations são
+      # somente de adição, e o executor recusa arquivo já aplicado que tenha
+      # sido alterado; sem o segredo, a etapa não faz nada.
+      - name: Migrations de produção
+        if: env.PRODUCAO_DIRECT_URL != ''
+        run: npm run db:migrate
+        env:
+          DIRECT_URL: ${{ secrets.PRODUCAO_DIRECT_URL }}
+
+      - name: Configuração do projeto na Vercel
+        run: npx --yes vercel@65.12.1 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build
+        run: npx --yes vercel@65.12.1 build --prod --token="$VERCEL_TOKEN"
+
+      - name: Publicação
+        run: npx --yes vercel@65.12.1 deploy --prebuilt --prod --token="$VERCEL_TOKEN"

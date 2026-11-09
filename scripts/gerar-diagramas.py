@@ -535,14 +535,14 @@ def fig09():
 # Figura 10 — Integração e entrega contínuas
 # ---------------------------------------------------------------------------
 def fig10():
-    s = cab(900, 560)
+    s = cab(900, 600)
     s += texto(450, 22, 'Integração e entrega contínuas', 15, '600')
 
     s += ator(60, 70, 'Desenvolvedor')
     s += caixa(150, 85, 150, 56, ['GitHub', 'push ou pull request'], FUNDO_B)
     s += linha(88, 113, 148, 113)
 
-    # Ramo de integração contínua: as nove etapas do job, em ordem.
+    # Job de validação: as nove etapas, em ordem.
     s += (f'<rect x="360" y="60" width="300" height="440" rx="5" fill="{FUNDO_A}" '
           f'stroke="{TINTA}" stroke-width="1.4"/>')
     s += texto(510, 84, 'GitHub Actions — job "validar"', 13, '600')
@@ -560,24 +560,33 @@ def fig10():
         if i < len(etapas) - 1:
             s += linha(510, y + 30, 510, y + 40, seta=True)
     s += polilinha([(300, 105), (330, 105), (330, 135), (378, 135)], seta=True)
-    s += rotulo_esq(304, 98, 'CI')
 
-    # Ramo de entrega contínua: a Vercel publica a partir do mesmo push.
-    s += caixa(710, 85, 170, 70, ['Vercel', 'build a cada push'], FUNDO_C)
-    s += caixa(710, 200, 170, 56, ['Prévia', 'um endereço por branch'], FUNDO_B)
-    s += caixa(710, 300, 170, 56, ['Produção', 'push na main'], FUNDO_C)
-    s += caixa(710, 400, 170, 56, ['Reversão', 'qualquer versão anterior'], FUNDO_B)
-    s += polilinha([(260, 85), (260, 46), (795, 46), (795, 83)], seta=True)
-    s += rotulo(528, 50, 'CD — o mesmo push dispara a publicação')
-    s += linha(795, 155, 795, 198)
-    s += linha(795, 256, 795, 298)
-    s += linha(795, 356, 795, 398)
+    # Job de publicação: só depois do sucesso, e só na main.
+    s += (f'<rect x="700" y="230" width="180" height="270" rx="5" fill="{FUNDO_C}" '
+          f'stroke="{TINTA}" stroke-width="1.4"/>')
+    s += texto(790, 254, 'job "publicar"', 13, '600')
+    s += texto(790, 272, 'só push na main', 11, '400', BORDA)
+    for i, etapa in enumerate(['migrations de produção', 'build na Vercel',
+                               'publicação em produção']):
+        y = 290 + i * 62
+        s += caixa(715, y, 150, 40, etapa, BRANCO, BORDA, tam=11.5)
+        if i < 2:
+            s += linha(790, y + 40, 790, y + 62)
+    s += texto(790, 480, 'migrations: só com o segredo', 10.5, '400', BORDA)
+    s += polilinha([(660, 280), (680, 280), (680, 310), (713, 310)], seta=True)
+    s += rotulo(680, 250, 'sucesso')
 
-    s += texto(450, 535,
-               'CI e publicação correm em paralelo: a main não exige que o job termine '
-               'com sucesso antes de publicar.', 11, '400', BORDA)
+    # Prévias: a Vercel continua construindo os demais branches sozinha.
+    s += caixa(700, 85, 180, 70, ['Vercel', 'prévia por branch'], FUNDO_B)
+    s += polilinha([(260, 85), (260, 46), (790, 46), (790, 83)], seta=True)
+    s += rotulo(528, 50, 'branches que não são a main')
+
+    s += caixa(360, 530, 300, 46, ['Falha em qualquer etapa', 'a produção não muda'],
+               FUNDO_D, tam=12)
+    s += linha(510, 500, 510, 528)
+    s += caixa(715, 530, 150, 46, ['Reversão', 'versão anterior'], FUNDO_B, tam=12)
+    s += linha(790, 500, 790, 528)
     salvar('fig10-ci-cd', s)
-
 
 if __name__ == '__main__':
     print('Gerando figuras em', SAIDA)

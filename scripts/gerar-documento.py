@@ -427,7 +427,8 @@ def cap2():
       'cada alteração enviada ao repositório, de modo que um defeito seja detectado no momento '
       'em que é introduzido; a entrega contínua estende a prática para que toda versão '
       'aprovada esteja pronta para publicação (Humble; Farley, 2010). O sistema adota as duas, '
-      'com as ressalvas descritas na seção 4.11.')
+      'encadeadas: a produção só recebe a versão que passou em todos os testes, conforme a '
+      'seção 4.11.')
     p('O desempenho é caracterizado por duas grandezas: a vazão, quantidade de requisições '
       'atendidas por segundo, e o tempo de resposta, expresso por percentis. A mediana (p50) é '
       'o tempo dentro do qual metade das respostas chegou; o p99, aquele dentro do qual chegaram '
@@ -500,11 +501,12 @@ def cap3():
             ['Banco de dados', 'PostgreSQL gerenciado pelo Supabase'],
             ['Autenticação', 'Supabase Auth, com verificação de *token* por JWKS'],
             ['Armazenamento de arquivos', 'Supabase Storage'],
-            ['Validação', 'Zod'],
+            ['Validação', 'Zod 4'],
             ['Agendamento', 'node-cron em ambiente local; agendador da plataforma em produção'],
             ['Testes', 'Vitest e Supertest; gerador de carga próprio, versionado no '
                        'repositório'],
-            ['Integração contínua', 'GitHub Actions'],
+            ['Integração e entrega contínuas', 'GitHub Actions, com publicação na Vercel pela '
+                                               'interface de linha de comando'],
             ['Organização do repositório', '*Monorepo* com npm workspaces'],
             ['Publicação', 'Vercel, em projeto único']],
            larguras=[5.0, 11.0])
@@ -846,13 +848,19 @@ def cap4():
       'de ponta a ponta e auditoria de dependências. O banco é criado do zero e descartado ao '
       'fim, e nenhuma credencial de produção é usada. A execução completa leva cerca de dois '
       'minutos.')
-    p('A entrega contínua é feita pela Vercel, que constrói e publica a cada envio: uma prévia '
-      'com endereço próprio para cada ramificação e a produção para a ramificação principal. '
-      'Qualquer versão anterior pode voltar ao ar sem nova construção. Registra-se, por '
-      'precisão, que as duas esteiras correm em paralelo: a ramificação principal não exige que '
-      'a integração contínua termine com sucesso antes da publicação. A proteção da '
-      'ramificação, que condiciona a publicação ao resultado dos testes, depende de '
-      'configuração no GitHub e na Vercel e consta como evolução na seção 5.7.')
+    p('A entrega contínua é o segundo trabalho do mesmo fluxo, chamado publicar. Ele existe '
+      'apenas nos envios à ramificação principal e só começa depois que a validação termina '
+      'com sucesso: se qualquer etapa falhar, a produção não muda. A publicação automática da '
+      'Vercel na ramificação principal foi desligada na configuração do projeto, de modo que '
+      'esse trabalho é o único caminho até a produção. Ele aplica as *migrations* pendentes ao '
+      'banco de produção, quando a credencial correspondente está cadastrada, e só então '
+      'constrói e publica a versão — a ordem garante que o código nunca chegue antes da '
+      'estrutura de que depende. As demais ramificações continuam recebendo da Vercel uma '
+      'prévia com endereço próprio, sem tocar na produção, e qualquer versão anterior pode '
+      'voltar ao ar sem nova construção.')
+    p('A versão anterior do fluxo publicava a cada envio, em paralelo com os testes, e um '
+      'teste reprovado não impedia a publicação. A correção foi identificada na revisão '
+      'descrita na seção 3.1.')
 
     h2('4.12 Observabilidade e tratamento de falhas')
     p('Observabilidade é a capacidade de saber, de fora, se o sistema está no ar, onde falha e '
@@ -1034,9 +1042,9 @@ def cap5():
             ['Testes de integração com o banco', '52 aprovados'],
             ['Testes de ponta a ponta', '137 aprovados'],
             ['Construção do pacote de produção', 'Concluída'],
-            ['Auditoria de dependências', 'Uma vulnerabilidade alta e seis moderadas '
-                                          'conhecidas, discutidas na seção 5.7'],
-            ['Integração contínua', 'Nove etapas, cerca de dois minutos']],
+            ['Auditoria de dependências', 'Nenhuma vulnerabilidade conhecida'],
+            ['Integração contínua', 'Nove etapas, cerca de dois minutos; a publicação só '
+                                    'ocorre depois delas']],
            larguras=[8.0, 8.0])
     p('Os testes unitários exercitam as regras de negócio sem banco de dados, substituindo os '
       'repositórios por dublês: cobrem os serviços de veículos, motoristas, vínculos, despesas, '
@@ -1287,20 +1295,21 @@ def cap5():
       'sem coleta de dado pessoal identificável. O procedimento está descrito por permitir sua '
       'execução, não por ter sido executado — nenhuma entrevista foi conduzida até o fechamento '
       'deste texto.')
-    p('Quanto aos testes, cinco limites devem ser considerados na leitura dos resultados. '
+    p('Quanto aos testes, três limites devem ser considerados na leitura dos resultados. '
       'Primeiro, a verificação das telas no navegador foi executada, mas o *script* que a '
       'realiza não está no repositório nem na integração contínua: a verificação automatizada '
       'permanente alcança o servidor, e não a camada de apresentação. Segundo, nos testes de '
       'carga locais, o gerador, a aplicação e o banco dividiram a mesma máquina, de modo que os '
       'números absolutos dependem do equipamento e servem para comparar cenários, e não para '
       'prever a capacidade da produção. Terceiro, a produção só recebeu carga moderada e de '
-      'leitura. Quarto, a integração contínua e a publicação correm em paralelo, como descrito '
-      'na seção 4.11: um teste que falhe não impede, hoje, a publicação. Quinto, a auditoria de '
-      'dependências de 9 de novembro aponta uma vulnerabilidade alta na biblioteca de '
-      'validação, cuja correção exige migrar para a versão seguinte da biblioteca, e seis '
-      'moderadas em ferramentas usadas apenas no desenvolvimento; o risco da primeira, consumo '
-      'de memória ao validar coleções muito grandes, é contido pelo limite de tamanho do corpo '
-      'das requisições, verificado pelos testes de validação.')
+      'leitura.')
+    p('Dois problemas encontrados na revisão foram corrigidos antes do fechamento deste texto. '
+      'O primeiro era a publicação em paralelo com os testes, tratada na seção 4.11. O segundo '
+      'foi uma vulnerabilidade alta publicada para a biblioteca de validação depois da rodada '
+      'de outubro — consumo excessivo de memória ao validar coleções muito grandes —, '
+      'corrigida pela migração do Zod para a versão 4, com os 402 testes aprovados após a '
+      'troca; na mesma ocasião, as vulnerabilidades moderadas em ferramentas de '
+      'desenvolvimento foram eliminadas, e a auditoria passou a não apontar nenhuma.')
     p('Do ponto de vista funcional, registram-se as seguintes limitações. A verificação de posse '
       'do endereço de correio eletrônico está desativada no cadastro, decorrência da exclusão '
       'do envio de mensagens do escopo; o risco é mitigado pela aprovação manual exigida antes '
@@ -1369,10 +1378,8 @@ def cap6():
     p('Como delimitação, reitera-se que o sistema não foi aplicado em organização real, razão '
       'pela qual os benefícios pretendidos permanecem como expectativas fundamentadas. A '
       'continuidade natural do trabalho compreende a validação em frota real, com medição '
-      'comparativa; a proteção da ramificação principal, para que a publicação dependa do '
-      'resultado dos testes; a inclusão dos testes de tela na integração contínua; a migração '
-      'da biblioteca de validação para a versão que corrige a vulnerabilidade apontada; e a '
-      'unificação da validade da habilitação entre a ficha do motorista e o documento.')
+      'comparativa; a inclusão dos testes de tela na integração contínua; e a unificação da '
+      'validade da habilitação entre a ficha do motorista e o documento.')
 
 
 # ===========================================================================
@@ -1623,7 +1630,7 @@ def apendice_b():
              'Português brasileiro e inglês, com preferência persistida no navegador.'],
             ['Qualidade',
              'Testes em três níveis executados em integração contínua no GitHub Actions; '
-             'publicação contínua na Vercel.'],
+             'publicação na Vercel apenas após a aprovação de todos eles.'],
             ['Custo',
              'Restrição a serviços com camada gratuita permanente.']],
            larguras=[4.2, 11.8])
