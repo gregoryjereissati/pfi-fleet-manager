@@ -534,6 +534,12 @@ def cap3():
             ['Produção', 'O sistema publicado responde como o testado?',
              'Rotas, permissões, telas e carga moderada na Vercel']],
            larguras=[3.4, 6.0, 6.6])
+    p('Para a demonstração e os testes de interface, um *script* acrescenta às duas empresas '
+      'fictícias um ano de operação com datas relativas ao dia da execução: em cada uma, '
+      'dezoito veículos, catorze motoristas, solicitações de acesso pendentes e cerca de 1.250 '
+      'despesas, cem manutenções e sessenta documentos, com uma parte vencida ou atrasada. O '
+      '*script* usa semente fixa, de modo que repetir a execução gera os mesmos dados; não '
+      'altera o que já existe e pode ser desfeito por completo.')
     p('Os testes que gravam dados — os de ponta a ponta e os de carga — só executam contra o '
       'ambiente local, um Supabase completo em contêineres, isolado da produção; a suíte '
       'recusa iniciar se o endereço configurado não for local. Na produção, a verificação '
@@ -736,14 +742,17 @@ def cap4():
       'cinquenta registros por vez, com o total informado no cabeçalho X-Total-Count da '
       'resposta.')
     p('O painel de indicadores, apresentado na Figura {fig:tela_painel}, apura custo total, '
-      'custo médio, quantidade de lançamentos, evolução mensal, distribuição por categoria e '
-      'custo por veículo, com filtros por período, veículo e categoria. Todas as somas são '
-      'feitas no banco, que devolve apenas os totais.')
+      'custo médio, quantidade de lançamentos, evolução mensal, distribuição por categoria, os '
+      'veículos de maior custo e os lançamentos mais recentes, com filtros por período, '
+      'veículo e categoria. Cada indicador financeiro vem acompanhado da variação em relação '
+      'ao período imediatamente anterior, de mesma duração, o que mostra se o custo subiu ou '
+      'caiu sem exigir outra consulta. Todas as somas são feitas no banco, que devolve apenas '
+      'os totais.')
     # Capturas da interface, feitas no ambiente local com os dados fictícios do
     # seed. Ficam em docs/academico/telas/, versionadas: não são geradas por
     # script, ao contrário dos diagramas.
     figura('tela_painel', os.path.join('..', 'telas', 'tela-painel.png'),
-           'Painel de indicadores, visto pelo administrador')
+           'Painel de indicadores com um ano de operação fictícia')
     p('A central de alertas, apresentada na Figura {fig:tela_alertas}, responde à pergunta '
       '"o que precisa ser resolvido agora" em três frentes: documentos vencidos ou que vencem '
       'em até trinta dias; manutenções atrasadas ou previstas para os próximos sete dias; e '
@@ -751,13 +760,24 @@ def cap4():
       'porque a data é escolhida pela própria empresa, com antecedência curta; a de documentos '
       'e habilitações é maior porque a renovação depende de terceiros. Quando a mesma '
       'habilitação existe como documento anexado e como validade na ficha do motorista, ela '
-      'aparece uma única vez. O menu exibe a contagem de cada frente.')
+      'aparece uma única vez. O menu lateral exibe o total de alertas e o de documentos.')
+    p('O sino do cabeçalho abre, por cima da tela em que se está, um painel de notificações '
+      'com a contagem de cada frente e os três alertas mais urgentes — primeiro o que já '
+      'venceu ou atrasou, depois o prazo mais próximo. Cada item leva à tela correspondente, '
+      'e o rodapé leva à central completa. São duas visões do mesmo dado: o painel responde '
+      'ao que é mais urgente sem tirar o usuário do que estava fazendo; a central mostra '
+      'tudo.')
     figura('tela_alertas', os.path.join('..', 'telas', 'tela-central-alertas.png'),
-           'Central de alertas, com documentos e manutenções que exigem ação')
+           'Central de alertas, com o painel de notificações do cabeçalho aberto')
     p('A administração de usuários permite aprovar e recusar solicitações, alterar papel e '
       'situação e excluir contas; o perfil de administração da plataforma dispõe ainda de tela '
       'para cadastrar empresas. A interface segue o *design system* Ledger, de fundo escuro e '
-      'um único destaque de cor, e está disponível em português brasileiro e em inglês.')
+      'um único destaque de cor, e está disponível em português brasileiro e em inglês. As '
+      'listas de seleção dos filtros e formulários são componentes do próprio sistema, e não '
+      'as do navegador: a lista nativa é desenhada pelo sistema operacional e destoava da '
+      'interface. O componente mantém o uso por teclado — setas, Enter, Esc e a busca pela '
+      'primeira letra — e a validação de campo obrigatório. Trocar de tela pelo menu é '
+      'imediato; a animação de entrada fica restrita à primeira tela depois do login.')
 
     h2('4.7 Armazenamento de arquivos')
     p('O anexo de arquivos aos documentos utiliza o serviço de armazenamento do Supabase. O '
@@ -1282,7 +1302,8 @@ def cap5():
     h2('5.7 Limitações e discussão')
     p('A principal limitação do trabalho é de natureza metodológica: o sistema não foi aplicado '
       'em uma organização real. A validação empregou base de dados fictícia, ainda que '
-      'consistente e gerada por rotina automatizada. Em consequência, os benefícios pretendidos '
+      'consistente, gerada por rotina automatizada e com volume de um ano de operação. Em '
+      'consequência, os benefícios pretendidos '
       '— redução de sanções por documentação vencida, migração da manutenção corretiva para a '
       'preventiva e visibilidade do custo por veículo — permanecem como expectativas '
       'fundamentadas, e não como resultados medidos. A comprovação empírica demandaria adoção '
@@ -1691,6 +1712,8 @@ def apendice_c():
         'criar o banco e os dados fictícios: npm run db:migrate e npm run db:seed;',
         'suíte padrão, com os testes unitários e de integração: npm run test:api;',
         'suíte de ponta a ponta: npm run test:e2e;',
+        'volume de demonstração, com um ano de operação: npm run db:popular, desfeito por npm '
+        'run db:popular -- --remover;',
         'cobertura das duas suítes juntas: npx vitest run --config '
         'vitest.cobertura.config.mts --coverage, na pasta apps/api;',
         '*workload* misto, com a aplicação compilada no ar: npm run carga:workload, na pasta '

@@ -26,6 +26,14 @@
 6. **Banco de produção.** A migration `0007` (coluna `alert_sent_at`) só foi aplicada no banco local. Com o segredo `PRODUCAO_DIRECT_URL` cadastrado, o job `publicar` a aplica antes de publicar. Sem ele, rode `npm run db:migrate` com o `.env` de produção antes do push.
 7. **Relatório de Testes de 20/10** (PDF separado): continua com os números daquela rodada. O Documento Técnico agora traz as duas rodadas, cada tabela com a data.
 
+### Melhorias de 09/11 (tarde)
+
+- **Listas de seleção no design system.** As 23 seleções nativas foram trocadas por um componente próprio (`components/ledger/Select.tsx`), com teclado, busca pela primeira letra e validação de obrigatório.
+- **Sino com painel de notificações.** Mostra a contagem por frente e os três alertas mais urgentes, sem sair da tela, com atalho para a central.
+- **Troca de aba imediata.** A animação de entrada ficou só na primeira tela.
+- **Volume de demonstração.** `npm run db:popular` cria um ano de operação nas duas empresas. Para a apresentação, rode-o contra a produção (passo a passo no README).
+- **Documento.** Seções 3.4, 4.6 e 5.7 e as Figuras 8 e 9 atualizadas.
+
 ---
 
 ## 2. A balança: o que foi para cada lado

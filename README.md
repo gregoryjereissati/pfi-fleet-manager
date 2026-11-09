@@ -422,7 +422,17 @@ SEED_PASSWORD="<senha>"
 > Use aspas em `SEED_PASSWORD` se a senha tiver `#`: sem elas o dotenv lê o
 > resto da linha como comentário e a senha gravada fica truncada.
 
-Depois, `npm run db:migrate` e `npm run db:seed`. Para recriar a base local do
+Depois, `npm run db:migrate` e `npm run db:seed`.
+
+**Volume de demonstração.** `npm run db:popular` acrescenta às duas empresas do
+seed um ano de operação, com datas relativas a hoje: em cada uma, 18 veículos
+(placas `LTD…`/`STD…`), 14 motoristas, 5 solicitações de acesso e cerca de
+1.250 despesas, 100 manutenções e 66 documentos, com uma parte vencida ou
+atrasada para a central de alertas. Usa semente fixa, não altera o que já
+existe, pula a empresa já populada e é desfeito por
+`npm run db:popular -- --remover`.
+
+Para recriar a base local do
 zero, `npx supabase db reset` substitui o `db:reset` — que só reconhece URLs
 `https://<ref>.supabase.co`. Para desligar: `npx supabase stop`.
 
