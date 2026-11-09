@@ -13,6 +13,7 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CancelEntryDialog } from '@/components/CancelEntryDialog'
+import { HistoryDialog } from '@/components/HistoryDialog'
 import { EmptyState, LoadingState, PageHeader, Pagination } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
@@ -48,6 +49,7 @@ export function MaintenanceList() {
 
   const canDelete = canManageFleet(currentUser?.role)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [historicoDe, setHistoricoDe] = useState<{ id: string; titulo: string } | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const filters: MaintenanceFilters = {
@@ -275,6 +277,14 @@ export function MaintenanceList() {
                             </button>
                             <RowActions
                               actions={[
+                                {
+                                  label: t('history.open'),
+                                  onSelect: () =>
+                                    setHistoricoDe({
+                                      id: maintenance.id,
+                                      titulo: `${maintenance.vehicle.plate} — ${maintenance.description}`,
+                                    }),
+                                },
                                 canDelete && {
                                   label: t('actions.remove'),
                                   onSelect: () => handleDelete(maintenance.id),
@@ -293,6 +303,14 @@ export function MaintenanceList() {
                             </Link>
                             <RowActions
                               actions={[
+                                {
+                                  label: t('history.open'),
+                                  onSelect: () =>
+                                    setHistoricoDe({
+                                      id: maintenance.id,
+                                      titulo: `${maintenance.vehicle.plate} — ${maintenance.description}`,
+                                    }),
+                                },
                                 maintenance.status !== MaintenanceStatus.DONE && {
                                   label: t('maintenances.actions.complete'),
                                   onSelect: () =>
@@ -342,6 +360,16 @@ export function MaintenanceList() {
             nextLabel={t('pagination.next')}
           />
         </div>
+      )}
+
+      {historicoDe && (
+        <HistoryDialog
+          entidade="maintenances"
+          id={historicoDe.id}
+          titulo={historicoDe.titulo}
+          rotularVeiculo={(id) => vehicles.find((vehicle) => vehicle.id === id)?.plate}
+          onClose={() => setHistoricoDe(null)}
+        />
       )}
 
       {cancellingId && (
