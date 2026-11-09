@@ -19,10 +19,7 @@ const envSchema = z.object({
    * URL do projeto Supabase, sem barra ao final.
    * Usada para localizar o JWKS e validar o emissor dos tokens de acesso.
    */
-  SUPABASE_URL: z
-    .string()
-    .url()
-    .transform((value) => value.replace(/\/$/, '')),
+  SUPABASE_URL: z.url().transform((value) => value.replace(/\/$/, '')),
 
   /**
    * Chave `service_role` do projeto Supabase.
@@ -48,9 +45,8 @@ const envSchema = z.object({
 const result = envSchema.safeParse(process.env);
 
 if (!result.success) {
-  const faltando = Object.entries(result.error.format())
-    .filter(([chave]) => chave !== '_errors')
-    .map(([chave, valor]) => `${chave}: ${(valor as { _errors: string[] })._errors.join(', ')}`)
+  const faltando = Object.entries(z.flattenError(result.error).fieldErrors)
+    .map(([chave, erros]) => `${chave}: ${(erros ?? []).join(', ')}`)
     .join(' | ');
 
   const mensagem = `Variáveis de ambiente inválidas -> ${faltando}`;

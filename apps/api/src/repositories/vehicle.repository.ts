@@ -2,6 +2,7 @@ import { VehicleStatus } from '@fleet-manager/shared';
 import { sql, type Sql } from '../config/database';
 import type { Vehicle } from '../types/db';
 import { instanteIso, motoristaComIdentidade } from './fragments';
+import { situacaoDaManutencao } from './maintenance.repository';
 
 export interface VehicleFilters {
   plate?: string;
@@ -201,7 +202,7 @@ export const vehicleRepository = {
               'companyId', m.company_id,
               'vehicleId', m.vehicle_id,
               'type', m.type,
-              'status', m.status,
+              'status', ${situacaoDaManutencao},
               'description', m.description,
               'scheduledDate', ${instanteIso('m.scheduled_date')},
               'completedDate', case when m.completed_date is null then null

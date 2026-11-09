@@ -176,6 +176,18 @@ describe('maintenanceService — conclusão e cancelamento', () => {
     expect(maintenanceRepository.update).not.toHaveBeenCalled();
   });
 
+  it('"atrasada" não é escolhida: decorre da data prevista', async () => {
+    vi.mocked(maintenanceRepository.findById).mockResolvedValue(maintenance as never);
+
+    await expect(
+      maintenanceService.updateMaintenance(makeScope(), 'maintenance-1', {
+        status: MaintenanceStatus.OVERDUE,
+      }),
+    ).rejects.toMatchObject({ statusCode: 400, message: 'OVERDUE_IS_COMPUTED' });
+
+    expect(maintenanceRepository.update).not.toHaveBeenCalled();
+  });
+
   it('cancelar preserva o registro e guarda o motivo', async () => {
     vi.mocked(maintenanceRepository.findById).mockResolvedValue(maintenance as never);
     vi.mocked(maintenanceRepository.cancel).mockResolvedValue(maintenance as never);

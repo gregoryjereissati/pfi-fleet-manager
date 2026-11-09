@@ -24,3 +24,6 @@ __pycache__/
 # sai de scripts/gerar-documento.py e as figuras, de scripts/gerar-diagramas.py.
 docs/academico/*.docx
 docs/academico/figuras/
+
+# Vínculo local com o projeto na Vercel (npx vercel link)
+.vercel/

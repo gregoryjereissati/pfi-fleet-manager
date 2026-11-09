@@ -628,7 +628,9 @@ async function semearOperacao(
        ${emDias(25)}, null, ${gerente}),
       (${companyId}, ${veiculoB}, 'CORRECTIVE', 'SCHEDULED', 'Ruído na suspensão dianteira',
        ${emDias(6)}, null, ${usuarioMotorista2}),
-      (${companyId}, ${veiculoB}, 'CORRECTIVE', 'OVERDUE', 'Vazamento no sistema de arrefecimento',
+      -- Gravada como programada: a data já passou, e a situação "atrasada" é
+      -- calculada na consulta.
+      (${companyId}, ${veiculoB}, 'CORRECTIVE', 'SCHEDULED', 'Vazamento no sistema de arrefecimento',
        ${emDias(-15)}, null, ${usuarioMotorista2})
   `;
 

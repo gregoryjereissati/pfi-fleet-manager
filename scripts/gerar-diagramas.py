@@ -188,7 +188,7 @@ def fig01():
     s += linha(530, 128, 618, 155)
     s += rotulo(578, 150, 'upload')
     s += linha(530, 265, 618, 268)
-    s += rotulo(575, 258, 'Prisma')
+    s += rotulo(575, 258, 'SQL')
     s += linha(530, 250, 618, 95, tracejada=True)
     s += rotulo(566, 178, 'JWKS')
 
@@ -254,7 +254,7 @@ def fig03():
         ('Rotas e middlewares', 'Express · autenticação, autorização e validação', FUNDO_B),
         ('Controladores', 'tradução entre HTTP e serviços', FUNDO_B),
         ('Serviços', 'regras de negócio — sem dependência de HTTP', FUNDO_D),
-        ('Repositórios', 'única camada que acessa o Prisma', FUNDO_B),
+        ('Repositórios', 'única camada com SQL (postgres.js)', FUNDO_B),
         ('Persistência', 'PostgreSQL no Supabase', FUNDO_C),
     ]
     y = 62
@@ -285,7 +285,7 @@ def fig04():
                 'React + Vite'], FUNDO_A)
     s += caixa(445, 100, 300, 130,
                ['apps/api', 'routes · middlewares · controllers',
-                'services · repositories · jobs', 'Express + Prisma'], FUNDO_A)
+                'services · repositories · jobs', 'Express + postgres.js'], FUNDO_A)
     s += caixa(260, 285, 300, 90,
                ['packages/shared', 'enumerações e DTOs',
                 'compartilhados entre as aplicações'], FUNDO_D)
@@ -531,8 +531,65 @@ def fig09():
     salvar('fig09-ciclo-usuario', s)
 
 
+# ---------------------------------------------------------------------------
+# Figura 10 — Integração e entrega contínuas
+# ---------------------------------------------------------------------------
+def fig10():
+    s = cab(900, 600)
+    s += texto(450, 22, 'Integração e entrega contínuas', 15, '600')
+
+    s += ator(60, 70, 'Desenvolvedor')
+    s += caixa(150, 85, 150, 56, ['GitHub', 'push ou pull request'], FUNDO_B)
+    s += linha(88, 113, 148, 113)
+
+    # Job de validação: as nove etapas, em ordem.
+    s += (f'<rect x="360" y="60" width="300" height="440" rx="5" fill="{FUNDO_A}" '
+          f'stroke="{TINTA}" stroke-width="1.4"/>')
+    s += texto(510, 84, 'GitHub Actions — job "validar"', 13, '600')
+    s += texto(510, 102, 'banco criado do zero, sem credencial de produção', 11, '400', BORDA)
+    etapas = ['1  npm ci — dependências', '2  tsc — tipagem da API e da interface',
+              '3  ESLint — padrões de código', '4  build da interface',
+              '5  Supabase local no runner', '6  migrations e seed',
+              '7  suíte padrão — unitários e integração', '8  suíte de ponta a ponta',
+              '9  npm audit — vulnerabilidades']
+    for i, etapa in enumerate(etapas):
+        y = 120 + i * 40
+        s += (f'<rect x="380" y="{y}" width="260" height="30" rx="3" fill="{BRANCO}" '
+              f'stroke="{BORDA}" stroke-width="1.1"/>')
+        s += texto(392, y + 20, etapa, 11.5, '400', anc='start')
+        if i < len(etapas) - 1:
+            s += linha(510, y + 30, 510, y + 40, seta=True)
+    s += polilinha([(300, 105), (330, 105), (330, 135), (378, 135)], seta=True)
+
+    # Job de publicação: só depois do sucesso, e só na main.
+    s += (f'<rect x="700" y="230" width="180" height="270" rx="5" fill="{FUNDO_C}" '
+          f'stroke="{TINTA}" stroke-width="1.4"/>')
+    s += texto(790, 254, 'job "publicar"', 13, '600')
+    s += texto(790, 272, 'só push na main', 11, '400', BORDA)
+    for i, etapa in enumerate(['migrations de produção', 'build na Vercel',
+                               'publicação em produção']):
+        y = 290 + i * 62
+        s += caixa(715, y, 150, 40, etapa, BRANCO, BORDA, tam=11.5)
+        if i < 2:
+            s += linha(790, y + 40, 790, y + 62)
+    s += texto(790, 480, 'migrations: só com o segredo', 10.5, '400', BORDA)
+    s += polilinha([(660, 280), (680, 280), (680, 310), (713, 310)], seta=True)
+    s += rotulo(680, 250, 'sucesso')
+
+    # Prévias: a Vercel continua construindo os demais branches sozinha.
+    s += caixa(700, 85, 180, 70, ['Vercel', 'prévia por branch'], FUNDO_B)
+    s += polilinha([(260, 85), (260, 46), (790, 46), (790, 83)], seta=True)
+    s += rotulo(528, 50, 'branches que não são a main')
+
+    s += caixa(360, 530, 300, 46, ['Falha em qualquer etapa', 'a produção não muda'],
+               FUNDO_D, tam=12)
+    s += linha(510, 500, 510, 528)
+    s += caixa(715, 530, 150, 46, ['Reversão', 'versão anterior'], FUNDO_B, tam=12)
+    s += linha(790, 500, 790, 528)
+    salvar('fig10-ci-cd', s)
+
 if __name__ == '__main__':
     print('Gerando figuras em', SAIDA)
-    for f in (fig01, fig02, fig03, fig04, fig05, fig06, fig07, fig08, fig09):
+    for f in (fig01, fig02, fig03, fig04, fig05, fig06, fig07, fig08, fig09, fig10):
         f()
     print('Concluído.')

@@ -242,6 +242,21 @@ export const userRepository = {
     return usuario;
   },
 
+  /**
+   * Administradores ativos da empresa, com as linhas travadas até o fim da
+   * transação. Usado para garantir que a empresa não fique sem nenhum.
+   */
+  lockActiveAdmins(client: Sql, companyId: string): Promise<{ id: string }[]> {
+    return client<{ id: string }[]>`
+      select id
+      from users
+      where company_id = ${companyId}
+        and role = ${UserRole.ADMIN}
+        and status = ${UserStatus.ACTIVE}
+      for update
+    ` as unknown as Promise<{ id: string }[]>;
+  },
+
   async updateRole(client: Sql, id: string, role: UserRole): Promise<User> {
     const [usuario] = await client<User[]>`
       update users set role = ${role} where id = ${id} returning *

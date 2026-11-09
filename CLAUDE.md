@@ -37,11 +37,11 @@ Sistema web de gestão de frotas: veículos, motoristas, despesas, manutenções
 | Banco | PostgreSQL (Supabase) | Gerenciado |
 | Autenticação | **Supabase Auth** | Token ES256 verificado pelo JWKS. A API não guarda senha. Papel e situação ficam na tabela `User` |
 | Armazenamento | Supabase Storage | Anexos de documentos |
-| Validação | Zod | Body das rotas e variáveis de ambiente na inicialização |
+| Validação | Zod 4 | Body das rotas e variáveis de ambiente na inicialização |
 | Controle de acesso | RBAC **por empresa** | ADMIN, MANAGER, OPERATOR, sempre dentro de uma `Company`. Acima delas, o super administrador da plataforma |
-| Deploy | **Vercel, projeto único** | Frontend estático e API serverless no mesmo domínio — sem CORS |
+| Deploy | **Vercel, projeto único** | Frontend estático e API serverless no mesmo domínio — sem CORS. A produção só é publicada pelo job `publicar` do CI, depois dos testes |
 | Monorepo | **npm workspaces** | Sem Turborepo nem Nx |
-| Testes | Vitest | 246 testes: regras do backend e integração com o banco. Mais 127 de ponta a ponta contra o Supabase local (`npm run test:e2e`). As duas suítes rodam no CI (`.github/workflows/testes.yml`) |
+| Testes | Vitest | 265 testes: regras do backend e integração com o banco. Mais 137 de ponta a ponta contra o Supabase local (`npm run test:e2e`). As duas suítes rodam no CI (`.github/workflows/testes.yml`). Carga com workload misto em `apps/api/carga/` |
 
 > Material anterior a agosto de 2026 pode citar Auth0, autenticação própria com `bcryptjs`, Turborepo, Railway, Redis ou AWS. **Nada disso está no projeto.** A tabela acima prevalece.
 

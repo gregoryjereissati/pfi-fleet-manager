@@ -28,7 +28,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { t } = useTranslation()
-  const { count: alertCount } = useAlertCount()
+  const { counts: alertCounts } = useAlertCount()
   const { currentUser } = useCurrentUser()
   const isAdmin = isAdminRole(currentUser?.role)
 
@@ -102,8 +102,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               >
                 <Icon size={16} strokeWidth={1.5} />
                 <span className="flex-1">{t(labelKey)}</span>
-                {(to === '/documents' || to === '/alerts') && alertCount > 0 && (
-                  <span className="lg-count">{alertCount}</span>
+                {to === '/documents' && alertCounts.documents > 0 && (
+                  <span className="lg-count">{alertCounts.documents}</span>
+                )}
+                {to === '/alerts' && alertCounts.count > 0 && (
+                  <span className="lg-count">{alertCounts.count}</span>
                 )}
               </NavLink>
             ) : (

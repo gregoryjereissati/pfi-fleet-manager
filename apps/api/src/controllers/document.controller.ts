@@ -7,7 +7,7 @@ import { getScope } from '../lib/request-scope';
 const documentQuerySchema = z.object({
   vehicleId: z.string().trim().min(1).optional(),
   driverId: z.string().trim().min(1).optional(),
-  type: z.nativeEnum(DocumentType).optional(),
+  type: z.enum(DocumentType).optional(),
   status: z
     .enum(['OK', 'EXPIRING_SOON', 'EXPIRED'] satisfies [DocumentStatus, ...DocumentStatus[]])
     .optional(),

@@ -12,7 +12,7 @@ const createDocumentSchema = z
   .object({
     vehicleId: z.string().trim().min(1).optional(),
     driverId: z.string().trim().min(1).optional(),
-    type: z.nativeEnum(DocumentType),
+    type: z.enum(DocumentType),
     expiryDate: dataCivil,
     fileUrl: caminhoDeAnexo.optional(),
   })
@@ -22,7 +22,7 @@ const createDocumentSchema = z
 
 const updateDocumentSchema = z
   .object({
-    type: z.nativeEnum(DocumentType).optional(),
+    type: z.enum(DocumentType).optional(),
     expiryDate: dataCivil.optional(),
     fileUrl: caminhoDeAnexo.optional(),
   })

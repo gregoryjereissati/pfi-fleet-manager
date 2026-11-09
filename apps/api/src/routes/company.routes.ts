@@ -30,7 +30,7 @@ const createCompanySchema = z.object({
 });
 
 const setStatusSchema = z.object({
-  status: z.nativeEnum(CompanyStatus),
+  status: z.enum(CompanyStatus),
 });
 
 companyRouter.use(authenticate, authorizePlatform());

@@ -114,6 +114,16 @@ export const assignmentService = {
 
     const start = startDate ?? new Date();
 
+    // Motorista com habilitação vencida não assume veículo novo: dirigir assim
+    // é infração, e o objetivo do sistema é reduzir esse risco. Um vínculo que
+    // já existe não é desfeito quando a CNH vence — a central de alertas avisa,
+    // e a decisão de encerrá-lo fica com o gestor.
+    const vencidas = new Set(
+      (await driverRepository.findExpiredLicenseIds(scope.companyId, uniqueIds)).map(
+        (ficha) => ficha.id,
+      ),
+    );
+
     await emTransacao(async (tx) => {
       for (const driverId of uniqueIds) {
         const active = await assignmentRepository.findActive(
@@ -124,6 +134,7 @@ export const assignmentService = {
         );
 
         if (active) continue;
+        if (vencidas.has(driverId)) throw new AppError(409, 'DRIVER_LICENSE_EXPIRED');
 
         try {
           const created = await assignmentRepository.create(tx, {

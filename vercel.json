@@ -5,6 +5,11 @@
   "installCommand": "npm install",
   "framework": null,
   "regions": ["gru1"],
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",

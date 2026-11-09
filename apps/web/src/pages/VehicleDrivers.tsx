@@ -8,6 +8,7 @@ import { useAssignments } from '@/hooks/useAssignments'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
+import { mensagemDeErro } from '@/lib/erros'
 import { formatDate } from '@/lib/utils'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 import { ArrowLeft } from 'lucide-react'
@@ -56,7 +57,7 @@ export function VehicleDrivers() {
       reload()
       reloadAssignments()
     } catch (err) {
-      setActionError((err as Error).message)
+      setActionError(mensagemDeErro(err, t))
     } finally {
       setActionLoading(false)
     }

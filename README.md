@@ -426,6 +426,14 @@ Depois, `npm run db:migrate` e `npm run db:seed`. Para recriar a base local do
 zero, `npx supabase db reset` substitui o `db:reset` — que só reconhece URLs
 `https://<ref>.supabase.co`. Para desligar: `npx supabase stop`.
 
+> **Sem tocar no `.env` de produção.** Os scripts da API carregam o ambiente
+> por `dotenv/config`, que aceita `DOTENV_CONFIG_PATH`. Guarde as variáveis
+> locais em outro arquivo (fora do repositório) e aponte para ele:
+> `DOTENV_CONFIG_PATH=/caminho/local.env npm run test:e2e`. A suíte de ponta a
+> ponta usa `VITE_SUPABASE_ANON_KEY` do ambiente, quando definida, antes de ler
+> `apps/web/.env`. No frontend, variáveis `VITE_*` definidas no shell
+> prevalecem sobre o `.env`.
+
 ---
 
 ## Execução
@@ -443,6 +451,16 @@ quando não — é o endereço para um monitor externo. Cada requisição atendi
 gera uma linha de log (`[req] GET /api/vehicles 200 12ms`), e uma requisição
 que passe de 10 s recebe `503` em vez de ficar presa.
 
+### Central de alertas
+
+`GET /api/alerts` devolve as três frentes que pedem ação — documentos vencidos
+ou que vencem em até 30 dias, manutenções atrasadas ou previstas para os
+próximos 7 dias e CNH vencida ou que vence em até 30 dias — no mesmo recorte
+das telas correspondentes. `GET /api/alerts/count` devolve a contagem de cada
+frente e o total, usada no menu. Nenhuma situação é gravada: "atrasada",
+"vencido" e "a vencer" são calculados a cada consulta. A CNH da ficha só entra
+quando nenhum documento CNH do mesmo motorista já está sendo avisado.
+
 ### Listagens paginadas
 
 `GET /api/expenses` e `GET /api/maintenances` devolvem uma página por vez:
@@ -456,7 +474,7 @@ de lançamentos da empresa.
 ## Validação
 
 ```bash
-npm run test:api                    # 246 testes
+npm run test:api                    # 265 testes (213 unitários, 52 de integração)
 cd apps/api && npx tsc --noEmit     # sem erros
 cd apps/web && npx tsc --noEmit     # sem erros
 cd apps/web && npm run build        # gera o pacote de produção
@@ -469,7 +487,7 @@ aparecer, é regressão.
 ### Testes de ponta a ponta
 
 ```bash
-npm run test:e2e                    # 127 casos, só contra o Supabase local
+npm run test:e2e                    # 137 casos, só contra o Supabase local
 ```
 
 Exercitam o app Express inteiro — rotas, middlewares, controllers, serviços e
@@ -485,12 +503,57 @@ Sem `.env`, a suíte padrão continua executável: a preparação em
 `src/test-helpers/env-de-teste.ts` preenche valores fictícios, e os testes de
 integração com o banco são pulados em vez de falhar.
 
-### Integração contínua
+Cobertura das duas suítes juntas (a camada HTTP só é percorrida pela de ponta a
+ponta), também contra o Supabase local:
 
-[`.github/workflows/testes.yml`](.github/workflows/testes.yml) roda a cada
-pull request e a cada push na `main`: tipagem, lint, build do frontend, um
-Supabase local criado do zero no runner, migrations e seed, as duas suítes e
-`npm audit`. Nenhuma credencial de produção é usada.
+```bash
+cd apps/api && npx vitest run --config vitest.cobertura.config.mts --coverage
+```
+
+### Teste de carga com workload misto
+
+[`apps/api/carga/workload.ts`](apps/api/carga/workload.ts) dispara, contra a API
+compilada no ar, um cenário em que todas as rotas disputam a API e o banco ao
+mesmo tempo: 60% `GET /api/expenses`, 15% `POST /api/expenses`, 8%
+`GET /api/documents`, 8% `GET /health`, 5% `GET /api/dashboard/indicators` e
+4% `GET /api/vehicles`, com tokens reais de administrador, gerente e motorista.
+Mede vazão e mediana, p90 e p99 **por rota** dentro do cenário.
+
+```bash
+npm run build:api && npm start --workspace=apps/api     # em outro terminal
+npm run carga:workload --workspace=apps/api -- --conexoes=10,50,100 --duracao=30
+```
+
+Só roda contra o Supabase local, porque grava despesas; ao final apaga as que
+criou (`--manter` as preserva). O resultado vai para `docs/testes/` em JSON.
+
+### Integração e entrega contínuas
+
+[`.github/workflows/testes.yml`](.github/workflows/testes.yml) tem dois jobs.
+
+**`validar`** roda a cada pull request e a cada push na `main`: tipagem, lint,
+build do frontend, um Supabase local criado do zero no runner, migrations e
+seed, as duas suítes e `npm audit --audit-level=high`. Nenhuma credencial de
+produção é usada.
+
+**`publicar`** só existe num push na `main` e só começa depois que `validar`
+passa — **teste vermelho não vai ao ar**. Ele aplica as migrations pendentes à
+produção (se o segredo `PRODUCAO_DIRECT_URL` existir) e então publica pela CLI
+da Vercel. A publicação automática da Vercel na `main` está desligada em
+[`vercel.json`](vercel.json) (`git.deploymentEnabled.main: false`); os demais
+branches continuam recebendo prévias automáticas.
+
+Segredos do repositório (Settings → Secrets and variables → Actions):
+
+| Segredo | Obrigatório | Onde obter |
+|---|:---:|---|
+| `VERCEL_TOKEN` | ✅ | Vercel → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | ✅ | `.vercel/project.json` depois de `npx vercel link`, campo `orgId` |
+| `VERCEL_PROJECT_ID` | ✅ | o mesmo arquivo, campo `projectId` |
+| `PRODUCAO_DIRECT_URL` | — | conexão direta (porta 5432) do Supabase de produção |
+
+Sem os três obrigatórios, o job `publicar` falha com a mensagem do segredo
+ausente e a produção fica na última versão publicada.
 
 ### Demais comandos
 
@@ -521,7 +584,11 @@ administrador de todas as empresas.
 | Aprovar, recusar e bloquear acessos | ✅ | ❌ | ❌ |
 | Listar usuários da empresa | ✅ | ✅ | ❌ |
 
-Dois pontos que a tabela não mostra e o código garante:
+Três pontos que a tabela não mostra e o código garante:
+
+- **a empresa nunca fica sem administrador ativo.** Rebaixar, bloquear ou
+  excluir o último é recusado com `409 LAST_ACTIVE_ADMIN`. Ninguém altera a
+  situação da própria conta nem a exclui;
 
 - **o recorte é do servidor.** A empresa vem sempre do perfil consultado no
   banco a cada requisição; um identificador de empresa enviado pelo cliente
@@ -536,10 +603,10 @@ serviços em `apps/api/src/services/`.
 
 ## Documentação
 
-O **Documento Técnico** em [`docs/academico/Documento Tecnico - Fleet Manager.pdf`](docs/academico/Documento%20Tecnico%20-%20Fleet%20Manager.pdf) é a referência acadêmica do projeto: fundamentação, arquitetura, modelo de dados e requisitos.
+O **Documento Técnico** em [`docs/academico/Documento Tecnico - Fleet Manager (ABNT).pdf`](docs/academico/Documento%20Tecnico%20-%20Fleet%20Manager%20(ABNT).pdf) é a referência acadêmica do projeto: fundamentação, arquitetura, modelo de dados e requisitos. A apresentação segue o perfil ABNT descrito em [`GUIA_ABNT_TCC_PARA_CLAUDE.md`](docs/academico/GUIA_ABNT_TCC_PARA_CLAUDE.md). A versão anterior, sem essa normalização, permanece em `Documento Tecnico - Fleet Manager.pdf`.
 
 > Ele descreve o sistema no momento em que foi escrito. Onde divergir do código, **o código é a referência do comportamento atual** — a divergência não autoriza, por si só, alterar a aplicação.
 
 Para quem for trabalhar no repositório: [`CLAUDE.md`](CLAUDE.md) e [`AGENTS.md`](AGENTS.md).
 
-Os scripts em `scripts/` regeneram o documento técnico (`gerar-diagramas.py` → `gerar-documento.py` → `gerar-pdf.py`).
+Os scripts em `scripts/` regeneram o documento técnico (`gerar-diagramas.py` → `gerar-documento.py` → `gerar-pdf.py`). O último usa o Word para preencher sumário, listas, numeração de figuras e quadros e referências cruzadas; sem ele, o `.docx` sai com esses campos por atualizar.

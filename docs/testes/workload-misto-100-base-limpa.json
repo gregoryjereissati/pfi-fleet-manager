@@ -1,0 +1,127 @@
+{
+  "data": "2026-11-09T16:43:16.655Z",
+  "alvo": "http://localhost:3000",
+  "duracaoS": 30,
+  "aquecimentoS": 3,
+  "maquina": {
+    "cpu": "Apple M5",
+    "nucleos": 10,
+    "memoriaGb": 16,
+    "node": "v26.13.0"
+  },
+  "pesos": [
+    {
+      "rota": "GET /api/expenses",
+      "peso": 60
+    },
+    {
+      "rota": "POST /api/expenses",
+      "peso": 15
+    },
+    {
+      "rota": "GET /api/documents",
+      "peso": 8
+    },
+    {
+      "rota": "GET /health",
+      "peso": 8
+    },
+    {
+      "rota": "GET /api/dashboard/indicators",
+      "peso": 5
+    },
+    {
+      "rota": "GET /api/vehicles",
+      "peso": 4
+    }
+  ],
+  "niveis": [
+    {
+      "conexoes": 100,
+      "total": {
+        "requisicoes": 26686,
+        "reqPorSegundo": 890,
+        "participacao": 0,
+        "erros": 0,
+        "medianaMs": 102.1,
+        "p90Ms": 168.4,
+        "p99Ms": 230.1,
+        "maximoMs": 364.2
+      },
+      "porRota": [
+        {
+          "rota": "GET /api/expenses",
+          "pesoAlvo": 60,
+          "requisicoes": 15812,
+          "reqPorSegundo": 527,
+          "participacao": 59.3,
+          "erros": 0,
+          "medianaMs": 99.9,
+          "p90Ms": 121.2,
+          "p99Ms": 147.9,
+          "maximoMs": 224
+        },
+        {
+          "rota": "POST /api/expenses",
+          "pesoAlvo": 15,
+          "requisicoes": 4069,
+          "reqPorSegundo": 136,
+          "participacao": 15.2,
+          "erros": 0,
+          "medianaMs": 179.7,
+          "p90Ms": 219.9,
+          "p99Ms": 275.3,
+          "maximoMs": 364.2
+        },
+        {
+          "rota": "GET /api/documents",
+          "pesoAlvo": 8,
+          "requisicoes": 2167,
+          "reqPorSegundo": 72,
+          "participacao": 8.1,
+          "erros": 0,
+          "medianaMs": 104.4,
+          "p90Ms": 152.7,
+          "p99Ms": 201.4,
+          "maximoMs": 293
+        },
+        {
+          "rota": "GET /health",
+          "pesoAlvo": 8,
+          "requisicoes": 2142,
+          "reqPorSegundo": 71,
+          "participacao": 8,
+          "erros": 0,
+          "medianaMs": 47.6,
+          "p90Ms": 59.6,
+          "p99Ms": 72.9,
+          "maximoMs": 137.3
+        },
+        {
+          "rota": "GET /api/dashboard/indicators",
+          "pesoAlvo": 5,
+          "requisicoes": 1388,
+          "reqPorSegundo": 46,
+          "participacao": 5.2,
+          "erros": 0,
+          "medianaMs": 114.1,
+          "p90Ms": 161.6,
+          "p99Ms": 203.3,
+          "maximoMs": 274.7
+        },
+        {
+          "rota": "GET /api/vehicles",
+          "pesoAlvo": 4,
+          "requisicoes": 1108,
+          "reqPorSegundo": 37,
+          "participacao": 4.2,
+          "erros": 0,
+          "medianaMs": 105.1,
+          "p90Ms": 152.1,
+          "p99Ms": 187.3,
+          "maximoMs": 288.4
+        }
+      ]
+    }
+  ]
+}

@@ -12,6 +12,8 @@ export interface DocumentDto {
   expiryDate: string;
   fileUrl: string | null;
   alertSent: boolean;
+  /** Quando a rotina diária sinalizou o documento; nulo se não houve registro. */
+  alertSentAt: string | null;
   status: DocumentStatus;
   createdById: string | null;
   createdAt: string;

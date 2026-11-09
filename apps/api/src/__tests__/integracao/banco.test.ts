@@ -1,10 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ExpenseType } from '@fleet-manager/shared';
+import { ExpenseType, MaintenanceStatus } from '@fleet-manager/shared';
 import { sql } from '../../config/database';
 import { dashboardRepository } from '../../repositories/dashboard.repository';
 import { expenseRepository } from '../../repositories/expense.repository';
 import { documentRepository } from '../../repositories/document.repository';
-import { maintenanceRepository } from '../../repositories/maintenance.repository';
+import {
+  maintenanceRepository,
+  situacaoDaManutencao,
+} from '../../repositories/maintenance.repository';
+import { alertRepository } from '../../repositories/alert.repository';
 import { assignmentRepository } from '../../repositories/assignment.repository';
 import { vehicleRepository } from '../../repositories/vehicle.repository';
 import { driverRepository } from '../../repositories/driver.repository';
@@ -561,6 +565,177 @@ describe.skipIf(!temBanco)('integração com o banco', () => {
           select updated_by_id as "updatedById" from documents where id = ${documento.id}
         `;
         expect(linha.updatedById).toBe(a.gerenteId);
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('manutenção atrasada', () => {
+    async function situacaoGravandoComo(
+      tx: typeof sql,
+      status: string,
+      diasAPartirDeHoje: number,
+    ): Promise<string> {
+      const [criada] = await tx<{ status: string }[]>`
+        with nova as (
+          insert into maintenances
+            (company_id, vehicle_id, type, status, description, scheduled_date, completed_date)
+          values (
+            ${a.companyId}, ${a.segundoVeiculoId}, 'PREVENTIVE', ${status}, 'teste',
+            now() + make_interval(days => ${diasAPartirDeHoje}),
+            ${status === 'DONE' ? sql`now()` : null}
+          )
+          returning *
+        )
+        select ${situacaoDaManutencao} as status from nova m
+      `;
+      return criada.status;
+    }
+
+    it('programada com data passada é devolvida como atrasada', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        expect(await situacaoGravandoComo(tx, 'SCHEDULED', -2)).toBe('OVERDUE');
+      });
+    });
+
+    it('programada com data futura continua programada', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        expect(await situacaoGravandoComo(tx, 'SCHEDULED', 3)).toBe('SCHEDULED');
+      });
+    });
+
+    it('concluída com data passada não vira atrasada', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        expect(await situacaoGravandoComo(tx, 'DONE', -2)).toBe('DONE');
+      });
+    });
+
+    it('registro antigo gravado como OVERDUE é reclassificado pela data', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        expect(await situacaoGravandoComo(tx, 'OVERDUE', 5)).toBe('SCHEDULED');
+      });
+    });
+
+    it('o filtro de atrasadas, a situação devolvida e o painel concordam', async () => {
+      const atrasadas = await maintenanceRepository.findMany({
+        companyId: a.companyId,
+        status: MaintenanceStatus.OVERDUE,
+      });
+      const hoje = new Date().toISOString().slice(0, 10);
+
+      expect(atrasadas.length).toBeGreaterThan(0);
+      for (const manutencao of atrasadas) {
+        expect(manutencao.status).toBe(MaintenanceStatus.OVERDUE);
+        expect(manutencao.scheduledDate.toISOString().slice(0, 10) < hoje).toBe(true);
+      }
+
+      const resumo = await dashboardRepository.getSummary({ companyId: a.companyId });
+      expect(resumo.overdueMaintenances).toBe(atrasadas.length);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('central de alertas', () => {
+    it('as listas e as contagens usam o mesmo critério', async () => {
+      const recorte = { companyId: a.companyId };
+      const [documentos, manutencoes, habilitacoes, contagens] = await Promise.all([
+        alertRepository.documents(recorte),
+        alertRepository.maintenances(recorte),
+        alertRepository.licenses(recorte),
+        alertRepository.counts(recorte),
+      ]);
+
+      expect(contagens).toEqual({
+        documents: documentos.length,
+        maintenances: manutencoes.length,
+        licenses: habilitacoes.length,
+      });
+    });
+
+    it('reúne a manutenção atrasada do seed', async () => {
+      const manutencoes = await alertRepository.maintenances({ companyId: a.companyId });
+      expect(manutencoes.some((m) => m.status === 'OVERDUE')).toBe(true);
+    });
+
+    it('a CNH que vence em breve aparece uma vez só', async () => {
+      const recorte = { companyId: a.companyId };
+      const documentos = await alertRepository.documents(recorte);
+      const habilitacoes = await alertRepository.licenses(recorte);
+
+      // O seed tem o documento CNH da motorista na janela: ele é o aviso, e a
+      // ficha não repete.
+      expect(
+        documentos.some((d) => d.driverId === a.motorista1Id && d.type === 'CNH'),
+      ).toBe(true);
+      expect(habilitacoes.map((h) => h.driverId)).not.toContain(a.motorista1Id);
+    });
+
+    it('a ficha entra quando nenhum documento CNH está sendo avisado', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        await tx`
+          update documents set expiry_date = current_date + 400
+          where driver_id = ${a.motorista1Id} and type = 'CNH'
+        `;
+        await tx`update drivers set cnh_expiry = current_date - 1 where id = ${a.motorista1Id}`;
+
+        const [linha] = await tx<{ status: string }[]>`
+          select case when d.cnh_expiry < current_date then 'EXPIRED' end as status
+          from drivers d
+          where d.id = ${a.motorista1Id}
+            and not exists (
+              select 1 from documents doc
+              where doc.driver_id = d.id and doc.type = 'CNH'
+                and doc.expiry_date <= current_date + 30
+            )
+        `;
+        expect(linha?.status).toBe('EXPIRED');
+      });
+    });
+
+    it('o motorista não vê a CNH de um colega', async () => {
+      const proprio = await alertRepository.licenses({
+        companyId: a.companyId,
+        driverScope: { driverId: a.motorista2Id, vehicleIds: [] },
+      });
+
+      expect(proprio.every((h) => h.driverId === a.motorista2Id)).toBe(true);
+    });
+
+    it('as manutenções do motorista são só as que ele registrou', async () => {
+      const doMotorista = await alertRepository.maintenances({
+        companyId: a.companyId,
+        createdById: a.motorista1UserId,
+      });
+      const todas = await alertRepository.maintenances({ companyId: a.companyId });
+
+      expect(doMotorista.length).toBeLessThan(todas.length);
+    });
+
+    it('renovar o documento limpa a sinalização da rotina diária', async () => {
+      await emTransacaoRevertida(async (tx) => {
+        const [documento] = await documentRepository.findMany({ companyId: a.companyId });
+        await tx`
+          update documents set alert_sent = true, alert_sent_at = now()
+          where id = ${documento.id}
+        `;
+
+        const mesmaData = await documentRepository.update(
+          tx,
+          documento.id,
+          { expiryDate: documento.expiryDate },
+          a.gerenteId,
+        );
+        expect(mesmaData.alertSent).toBe(true);
+        expect(mesmaData.alertSentAt).not.toBeNull();
+
+        const renovado = await documentRepository.update(
+          tx,
+          documento.id,
+          { expiryDate: '2099-12-31' },
+          a.gerenteId,
+        );
+        expect(renovado.alertSent).toBe(false);
+        expect(renovado.alertSentAt).toBeNull();
       });
     });
   });
