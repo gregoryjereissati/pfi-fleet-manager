@@ -619,4 +619,9 @@ O **Documento Técnico** em [`docs/academico/Documento Tecnico - Fleet Manager (
 
 Para quem for trabalhar no repositório: [`CLAUDE.md`](CLAUDE.md) e [`AGENTS.md`](AGENTS.md).
 
-Os scripts em `scripts/` regeneram o documento técnico (`gerar-diagramas.py` → `gerar-documento.py` → `gerar-pdf.py`). O último usa o Word para preencher sumário, listas, numeração de figuras e quadros e referências cruzadas; sem ele, o `.docx` sai com esses campos por atualizar.
+Os scripts em `scripts/` regeneram o documento técnico (`gerar-diagramas.py` → `gerar-documento.py` → `gerar-pdf.py`). O último preenche sumário, listas, numeração de figuras, quadros e tabelas e as referências cruzadas, e exporta o PDF:
+
+- **no Windows**, pelo Word (pacote `pywin32`), que também grava o `.docx` com os campos preenchidos;
+- **no macOS e no Linux**, pelo LibreOffice, sem abrir janela (`brew install --cask libreoffice` no macOS). Uma macro atualiza campos e índices e exporta o PDF em poucos segundos. O `.docx` não é regravado.
+
+`python scripts/gerar-pdf.py --libreoffice` força o LibreOffice também no Windows.

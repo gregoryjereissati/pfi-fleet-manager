@@ -18,7 +18,7 @@
 
 ### O que ainda depende de vocês
 
-1. **Gerar o PDF** na máquina Windows: `python scripts/gerar-pdf.py`. O `.docx` e os diagramas não são versionados. Leve o `.docx` desta máquina, ou regenere lá com `gerar-diagramas.py` e `gerar-documento.py`; as duas capturas de tela ficam versionadas em `docs/academico/telas/`. Depois, revisar o PDF página a página (quebras, tabelas largas, Figuras 8 e 9).
+1. ~~Gerar o PDF no Windows~~: **resolvido**. `python3 scripts/gerar-pdf.py` gera o PDF também no Mac, pelo LibreOffice. São 63 páginas, com sumário, listas e referências preenchidos e números de página conferidos. Vale revisar o PDF página a página (quebras e tabelas largas).
 2. **Cadastrar os segredos da publicação no GitHub** antes do próximo push na `main`: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` e, opcionalmente, `PRODUCAO_DIRECT_URL`. A tabela está no README, em "Integração e entrega contínuas". Sem eles, o job `publicar` falha de propósito e a produção fica parada na última versão. A publicação agora só acontece depois do CI (corrigido em 09/11).
 3. ~~Zod com vulnerabilidade alta~~: **corrigido**. Migrado para o Zod 4.6.7, com APIs obsoletas substituídas, e o `minimatch` das ferramentas de lint forçado para a versão 11. `npm audit`: 0 vulnerabilidades.
 4. **Cronograma (Apêndice A).** Mantive a linha "Entrega e apresentação — Agosto de 2026" e acrescentei setembro a novembro. Confiram as datas e se a natureza do trabalho continua "Projeto Final Integrador I".
