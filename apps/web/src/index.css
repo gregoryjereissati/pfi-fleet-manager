@@ -879,6 +879,13 @@
   animation-play-state: running;
 }
 
+/* Depois da primeira tela, trocar de aba não repete a entrada: nem a da
+   página, nem a dos cartões dentro dela (layouts/AppLayout). */
+.lg-sem-entrada .lg-in,
+.lg-sem-entrada .lg-reveal {
+  animation: none;
+}
+
 .lg-bar-rise {
   transform-origin: bottom;
   animation: lg-bar-rise 1.2s cubic-bezier(0.33, 1, 0.68, 1) var(--lg-delay, 0s) both;

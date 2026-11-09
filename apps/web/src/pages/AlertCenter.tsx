@@ -146,7 +146,7 @@ function HabilitacaoEmAlerta({ license, t }: { license: LicenseAlert; t: Traduzi
 
 export function AlertCenter() {
   const { t } = useTranslation()
-  const { alerts, loading } = useAlerts()
+  const { alerts, loading, error } = useAlerts()
   const { documents, maintenances, licenses } = alerts
 
   const total = documents.length + maintenances.length + licenses.length
@@ -157,6 +157,9 @@ export function AlertCenter() {
 
       {loading ? (
         <LoadingState label={t('common.loading')} />
+      ) : error ? (
+        // Sem isto, uma falha da API aparecia como "Nenhum alerta ativo".
+        <p className="lg-alert lg-alert-error">{error}</p>
       ) : total === 0 ? (
         <div className="lg-alert lg-alert-ok px-6 py-8 text-center">
           <p className="text-sm font-medium">{t('alerts.empty')}</p>
