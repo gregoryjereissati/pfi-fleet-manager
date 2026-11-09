@@ -13,6 +13,7 @@ import { apiFetch } from '@/lib/api'
 import { canManageFleet } from '@/lib/roles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CancelEntryDialog } from '@/components/CancelEntryDialog'
+import { HistoryDialog } from '@/components/HistoryDialog'
 import { EmptyState, LoadingState, PageHeader, Pagination } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
@@ -42,6 +43,7 @@ export function ExpenseList() {
   const [endDate, setEndDate] = useState('')
   const [showCancelled, setShowCancelled] = useState(true)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [historicoDe, setHistoricoDe] = useState<{ id: string; titulo: string } | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [dialog, setDialog] = useState<{
     title: string
@@ -284,6 +286,14 @@ export function ExpenseList() {
                             )}
                             <RowActions
                               actions={[
+                                {
+                                  label: t('history.open'),
+                                  onSelect: () =>
+                                    setHistoricoDe({
+                                      id: expense.id,
+                                      titulo: `${expense.vehicle.plate} — ${t(`expenses.types.${expense.type}`)}`,
+                                    }),
+                                },
                                 !cancelled && {
                                   label: t('actions.cancelEntry'),
                                   onSelect: () => setCancellingId(expense.id),
@@ -319,6 +329,16 @@ export function ExpenseList() {
             nextLabel={t('pagination.next')}
           />
         </div>
+      )}
+
+      {historicoDe && (
+        <HistoryDialog
+          entidade="expenses"
+          id={historicoDe.id}
+          titulo={historicoDe.titulo}
+          rotularVeiculo={(id) => vehicles.find((vehicle) => vehicle.id === id)?.plate}
+          onClose={() => setHistoricoDe(null)}
+        />
       )}
 
       {cancellingId && (

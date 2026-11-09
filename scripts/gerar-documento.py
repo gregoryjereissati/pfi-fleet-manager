@@ -738,7 +738,8 @@ def cap4():
       'de vencimento, classifica automaticamente a situação e permite anexar o arquivo digital. '
       'Nos três, um lançamento errado é cancelado com motivo, sem ser apagado: permanece na '
       'lista, marcado, sai dos totais e pode ser reativado, e cada alteração fica no histórico '
-      'com autor e campos alterados. As listagens de despesas e manutenções são paginadas, '
+      'com autor, data, campos alterados e motivo, consultável pela opção Histórico de cada '
+      'linha de despesas e manutenções. As listagens de despesas e manutenções são paginadas, '
       'cinquenta registros por vez, com o total informado no cabeçalho X-Total-Count da '
       'resposta.')
     p('O painel de indicadores, apresentado na Figura {fig:tela_painel}, apura custo total, '

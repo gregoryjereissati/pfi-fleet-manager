@@ -76,6 +76,14 @@ O Quadro 7 do documento lista as 23 regras de negócio, cada uma com o motivo de
 
 ## 4. Roteiro da defesa (cada bloco aponta para o documento)
 
+> **Formato final: 10 minutos, focado no resultado.** A apresentação
+> `docs/apresentacao/Fleet Manager - Defesa.pptx` tem 9 slides: capa · problema e
+> entrega (Gregory, 1 min 30 s) · três demonstrações em vídeo (Luiz, 4 min 30 s) ·
+> resultados em números e objetivos cumpridos (André, 2 min 30 s) · limitações e
+> perguntas (Gregory, 1 min 30 s). Os slides técnicos ficam na seção "Apoio para
+> perguntas". Roteiro de gravação: `docs/apresentacao/Roteiro dos videos.md`.
+> A tabela abaixo é o mapa completo, útil para as perguntas.
+
 | Bloco | Seções | Conteúdo | Quem fala (sugestão) |
 |---|---|---|---|
 | Problema e objetivos | 1 | Problema, objetivo geral, os sete objetivos específicos | Gregory |
