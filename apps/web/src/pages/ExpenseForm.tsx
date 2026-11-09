@@ -7,6 +7,7 @@ import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
 import { hojeCivil } from '@/lib/utils'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { Select } from '@/components/ledger/Select'
 
 interface ExpenseFormState {
   vehicleId: string
@@ -170,7 +171,7 @@ export function ExpenseForm() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className={labelClass}>{t('expenses.columns.vehicle')}</label>
-            <select
+            <Select
               required
               disabled={loadingVehicles}
               value={form.vehicleId}
@@ -183,14 +184,14 @@ export function ExpenseForm() {
                   {vehicle.plate} • {vehicle.brand} {vehicle.model}
                 </option>
               ))}
-            </select>
+            </Select>
             {isEdit && (
               <p className="mt-1.5 text-xs text-neutral-500">{t('expenses.changeVehicleHint')}</p>
             )}
           </div>
           <div>
             <label className={labelClass}>{t('expenses.columns.type')}</label>
-            <select
+            <Select
               value={form.type}
               onChange={(event) => updateField('type', event.target.value as ExpenseType)}
               className={inputClass}
@@ -200,7 +201,7 @@ export function ExpenseForm() {
                   {t(`expenses.types.${expenseType}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <label className={labelClass}>{t('expenses.columns.amount')}</label>

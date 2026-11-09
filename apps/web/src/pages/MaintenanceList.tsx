@@ -16,6 +16,7 @@ import { CancelEntryDialog } from '@/components/CancelEntryDialog'
 import { EmptyState, LoadingState, PageHeader, Pagination } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
+import { Select } from '@/components/ledger/Select'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
@@ -152,7 +153,7 @@ export function MaintenanceList() {
       />
 
       <div className="lg-inner grid gap-3 p-4 md:grid-cols-3">
-        <select
+        <Select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
           className={inputClass}
@@ -163,8 +164,8 @@ export function MaintenanceList() {
               {vehicle.plate} • {vehicle.brand} {vehicle.model}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={type}
           onChange={(event) => setType(event.target.value as MaintenanceType | '')}
           className={inputClass}
@@ -175,8 +176,8 @@ export function MaintenanceList() {
               {t(`maintenances.types.${maintenanceType}`)}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={status}
           onChange={(event) => setStatus(event.target.value as MaintenanceStatus | '')}
           className={inputClass}
@@ -187,7 +188,7 @@ export function MaintenanceList() {
               {t(`maintenances.statuses.${maintenanceStatus}`)}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {actionError && <p className="lg-alert lg-alert-error">{actionError}</p>}

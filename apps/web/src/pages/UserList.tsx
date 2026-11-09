@@ -8,6 +8,7 @@ import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
 import { mensagemDeErro } from '@/lib/erros'
+import { Select } from '@/components/ledger/Select'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
@@ -146,7 +147,7 @@ export function UserList() {
                       */}
                       <td className="text-neutral-500">{t(`users.roles.${user.requestedRole}`)}</td>
                       <td>
-                        <select
+                        <Select
                           value={user.role}
                           disabled={isSaving || user.status !== UserStatus.ACTIVE}
                           onChange={(e) =>
@@ -159,7 +160,7 @@ export function UserList() {
                               {t(`users.roles.${role}`)}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </td>
                       <td className="tabular-nums text-neutral-500">
                         {new Date(user.createdAt).toLocaleDateString('pt-BR')}
@@ -168,7 +169,7 @@ export function UserList() {
                         <div className="flex items-center justify-end gap-3">
                           {user.status === UserStatus.PENDING && (
                             <div className="flex items-center gap-3">
-                              <select
+                              <Select
                                 value={approveRole[user.id] ?? user.role}
                                 onChange={(e) =>
                                   setApproveRole((prev) => ({
@@ -184,7 +185,7 @@ export function UserList() {
                                     {t(`users.roles.${role}`)}
                                   </option>
                                 ))}
-                              </select>
+                              </Select>
                               <button
                                 disabled={isSaving}
                                 onClick={() =>

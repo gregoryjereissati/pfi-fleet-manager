@@ -14,6 +14,7 @@ import { EmptyState, LoadingState, PageHeader, SearchField } from '@/components/
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
 import { Plus, Users } from 'lucide-react'
+import { Select } from '@/components/ledger/Select'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
@@ -114,7 +115,7 @@ export function DriverList() {
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('drivers.searchPlaceholder')}
         />
-        <select
+        <Select
           value={status}
           onChange={(event) => setStatus(event.target.value)}
           className={inputClass}
@@ -122,7 +123,7 @@ export function DriverList() {
           <option value="">{t('filters.allStatuses')}</option>
           <option value={DriverStatus.ACTIVE}>{t('status.active')}</option>
           <option value={DriverStatus.INACTIVE}>{t('status.inactive')}</option>
-        </select>
+        </Select>
       </div>
 
       {loading ? (

@@ -3,38 +3,9 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { DocumentDto } from '@fleet-manager/shared'
 import { useAlerts, type LicenseAlert, type MaintenanceAlert } from '@/hooks/useAlerts'
-import { formatDate, hojeCivil } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
+import { prazoDeManutencao, prazoDeVencimento, type Traduzir } from '@/lib/alertas'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
-
-type Traduzir = (key: string, options?: Record<string, unknown>) => string
-
-/**
- * Diferença em dias de calendário entre uma data civil e hoje.
- *
- * Ambas as pontas viram meia-noite UTC do dia civil correspondente, de modo
- * que o resultado não dependa da hora em que a tela foi aberta nem do fuso de
- * quem a abriu.
- */
-function diasAte(dataCivil: string): number {
-  const emUtc = (dia: string) => Date.parse(`${dia}T00:00:00Z`)
-  return Math.round((emUtc(dataCivil) - emUtc(hojeCivil())) / (1000 * 60 * 60 * 24))
-}
-
-/** Rótulo de prazo de um vencimento: vencido há N dias, vence hoje, vence em N dias. */
-function prazoDeVencimento(dataCivil: string, t: Traduzir): string {
-  const dias = diasAte(dataCivil)
-  if (dias < 0) return t('alerts.daysOverdue', { count: Math.abs(dias) })
-  if (dias === 0) return t('alerts.dueToday')
-  return t('alerts.daysRemaining', { count: dias })
-}
-
-/** Rótulo de prazo de uma manutenção: atrasada há N dias, hoje, em N dias. */
-function prazoDeManutencao(dataCivil: string, t: Traduzir): string {
-  const dias = diasAte(dataCivil)
-  if (dias < 0) return t('alerts.maintenanceLate', { count: Math.abs(dias) })
-  if (dias === 0) return t('alerts.maintenanceToday')
-  return t('alerts.maintenanceIn', { count: dias })
-}
 
 function AlertCard({
   urgente,

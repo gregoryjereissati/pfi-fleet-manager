@@ -26,6 +26,7 @@ import {
 import { useDashboard, type DashboardFilters } from '@/hooks/useDashboard'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { LoadingState, PageHeader, Segmented } from '@/components/ledger/Ui'
+import { Select } from '@/components/ledger/Select'
 
 /**
  * Painel no idioma visual do design system Ledger: cartões de indicador em
@@ -425,7 +426,7 @@ export function Dashboard() {
 
           <label>
             <span className="lg-label">{t('dashboard.filters.vehicle')}</span>
-            <select
+            <Select
               value={filters.vehicleId ?? ''}
               onChange={(event) => updateFilter('vehicleId', event.target.value)}
               className={fieldClass}
@@ -436,12 +437,12 @@ export function Dashboard() {
                   {vehicle.plate} - {vehicle.brand} {vehicle.model}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label>
             <span className="lg-label">{t('dashboard.filters.type')}</span>
-            <select
+            <Select
               value={filters.type ?? ''}
               onChange={(event) => updateFilter('type', event.target.value)}
               className={fieldClass}
@@ -452,7 +453,7 @@ export function Dashboard() {
                   {t(`expenses.types.${type}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <div className="flex items-end">

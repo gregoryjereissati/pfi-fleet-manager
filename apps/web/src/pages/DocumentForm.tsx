@@ -10,6 +10,7 @@ import { enviarAnexo, extensaoAceita } from '@/lib/anexos'
 import { FilePreviewModal } from '@/components/FilePreviewModal'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 import type { DocumentItem } from '@/hooks/useDocuments'
+import { Select } from '@/components/ledger/Select'
 
 type EntityType = 'vehicle' | 'driver'
 
@@ -223,7 +224,7 @@ export function DocumentForm() {
               {form.entityType === 'vehicle' ? (
                 <div className="md:col-span-2">
                   <label className={labelClass}>{t('documents.entity.vehicle')}</label>
-                  <select
+                  <Select
                     value={form.vehicleId}
                     disabled={loadingVehicles}
                     onChange={(event) => updateField('vehicleId', event.target.value)}
@@ -235,12 +236,12 @@ export function DocumentForm() {
                         {vehicle.plate} - {vehicle.brand} {vehicle.model}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               ) : (
                 <div className="md:col-span-2">
                   <label className={labelClass}>{t('documents.entity.driver')}</label>
-                  <select
+                  <Select
                     value={form.driverId}
                     disabled={loadingDrivers}
                     onChange={(event) => updateField('driverId', event.target.value)}
@@ -252,7 +253,7 @@ export function DocumentForm() {
                         {driver.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
             </>
@@ -260,7 +261,7 @@ export function DocumentForm() {
 
           <div>
             <label className={labelClass}>{t('documents.columns.type')}</label>
-            <select
+            <Select
               value={form.type}
               onChange={(event) => updateField('type', event.target.value as DocumentType)}
               className={inputClass}
@@ -270,7 +271,7 @@ export function DocumentForm() {
                   {t(`documents.types.${documentType}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
