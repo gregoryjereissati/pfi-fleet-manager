@@ -231,14 +231,15 @@ async function popular(sql: postgres.Sql, empresa: Empresa, config: (typeof EMPR
     return;
   }
 
-  const autores = await sql<{ id: string; role: string }[]>`
-    select id, role from users
+  const autores = await sql<{ id: string; role: string; name: string }[]>`
+    select id, role, name from users
     where company_id = ${empresa.id} and status = 'ACTIVE' and role in ('ADMIN', 'MANAGER')
     order by role desc
   `;
   if (autores.length === 0) throw new Error(`${empresa.name} não tem administrador nem gerente.`);
   const gerente = autores.find((a) => a.role === 'MANAGER')?.id ?? autores[0].id;
   const admin = autores.find((a) => a.role === 'ADMIN')?.id ?? gerente;
+  const nomeDe = (id: unknown) => autores.find((a) => a.id === id)?.name ?? 'Gestor';
 
   await sql.begin(async (tx) => {
     // ---- veículos ----------------------------------------------------------
@@ -450,10 +451,114 @@ async function popular(sql: postgres.Sql, empresa: Empresa, config: (typeof EMPR
       }
     });
 
+    // ---- histórico: o mesmo que a API grava a cada ação --------------------
+    // Sem ele, a janela "Histórico" dos lançamentos de demonstração viria
+    // vazia. Cada registro leva o nome do autor por cópia, como na aplicação.
+    const historico: Record<string, unknown>[] = [];
+    const registrar = (
+      entityType: string,
+      entityId: string,
+      action: string,
+      autor: unknown,
+      quando: Date,
+      changes: Record<string, unknown>,
+      reason: string | null = null,
+    ) => {
+      historico.push({
+        company_id: empresa.id,
+        entity_type: entityType,
+        entity_id: entityId,
+        action,
+        changes: tx.json(changes as postgres.JSONValue),
+        reason,
+        actor_id: autor,
+        actor_name: nomeDe(autor),
+        created_at: quando,
+      });
+    };
+
     for (let i = 0; i < despesas.length; i += 500) {
-      await tx`insert into expenses ${tx(despesas.slice(i, i + 500))}`;
+      const inseridas = await tx<
+        {
+          id: string;
+          vehicle_id: string;
+          amount: string;
+          date: Date;
+          status: string;
+          created_by_id: string;
+          cancelled_at: Date | null;
+          cancelled_by_id: string | null;
+          cancel_reason: string | null;
+        }[]
+      >`
+        insert into expenses ${tx(despesas.slice(i, i + 500))}
+        returning id, vehicle_id, amount, date, status, created_by_id, cancelled_at,
+                  cancelled_by_id, cancel_reason
+      `;
+      for (const d of inseridas) {
+        registrar('EXPENSE', d.id, 'CREATE', d.created_by_id, d.date, {
+          vehicleId: { de: null, para: d.vehicle_id },
+          amount: { de: null, para: d.amount },
+          date: { de: null, para: d.date.toISOString() },
+        });
+        if (d.status === 'CANCELLED' && d.cancelled_at) {
+          registrar(
+            'EXPENSE',
+            d.id,
+            'CANCEL',
+            d.cancelled_by_id,
+            d.cancelled_at,
+            { status: { de: 'ACTIVE', para: 'CANCELLED' } },
+            d.cancel_reason,
+          );
+        }
+      }
     }
-    await tx`insert into maintenances ${tx(manutencoes)}`;
+
+    const manutencoesInseridas = await tx<
+      {
+        id: string;
+        vehicle_id: string;
+        status: string;
+        scheduled_date: Date;
+        completed_date: Date | null;
+        created_by_id: string;
+        cancelled_at: Date | null;
+        cancel_reason: string | null;
+      }[]
+    >`
+      insert into maintenances ${tx(manutencoes)}
+      returning id, vehicle_id, status, scheduled_date, completed_date, created_by_id,
+                cancelled_at, cancel_reason
+    `;
+    for (const m of manutencoesInseridas) {
+      const criada = new Date(m.scheduled_date.getTime() - 7 * 86_400_000);
+      registrar('MAINTENANCE', m.id, 'CREATE', m.created_by_id, criada, {
+        vehicleId: { de: null, para: m.vehicle_id },
+        scheduledDate: { de: null, para: m.scheduled_date.toISOString() },
+      });
+      if (m.status === 'DONE' && m.completed_date) {
+        registrar('MAINTENANCE', m.id, 'UPDATE', m.created_by_id, m.completed_date, {
+          status: { de: 'SCHEDULED', para: 'DONE' },
+          completedDate: { de: null, para: m.completed_date.toISOString() },
+        });
+      }
+      if (m.status === 'CANCELLED' && m.cancelled_at) {
+        registrar(
+          'MAINTENANCE',
+          m.id,
+          'CANCEL',
+          m.created_by_id,
+          m.cancelled_at,
+          { status: { de: 'SCHEDULED', para: 'CANCELLED' } },
+          m.cancel_reason,
+        );
+      }
+    }
+
+    for (let i = 0; i < historico.length; i += 500) {
+      await tx`insert into change_logs ${tx(historico.slice(i, i + 500))}`;
+    }
 
     // ---- documentos --------------------------------------------------------
     // A maior parte em dia; uma parte vencida ou vencendo, para a central.
@@ -523,6 +628,7 @@ async function popular(sql: postgres.Sql, empresa: Empresa, config: (typeof EMPR
       `  ${empresa.name}: ${veiculos.length} veículos, ${fichas.length} motoristas, ` +
         `${vinculos.length} vínculos, ${despesas.length} despesas, ` +
         `${manutencoes.length} manutenções, ${documentos.length} documentos, ` +
+        `${historico.length} registros de histórico, ` +
         `${contas.length} solicitações de acesso.`,
     );
   });
@@ -530,6 +636,19 @@ async function popular(sql: postgres.Sql, empresa: Empresa, config: (typeof EMPR
 
 async function remover(sql: postgres.Sql, empresa: Empresa, config: (typeof EMPRESAS)[number]) {
   await sql.begin(async (tx) => {
+    // O histórico não tem chave estrangeira — remover um registro não apaga o
+    // que se disse sobre ele —, então sai antes, explicitamente.
+    await tx`
+      delete from change_logs
+      where company_id = ${empresa.id}
+        and entity_id in (
+          select e.id from expenses e join vehicles v on v.id = e.vehicle_id
+          where v.company_id = ${empresa.id} and v.plate like ${`${config.prefixoPlaca}%`}
+          union all
+          select m.id from maintenances m join vehicles v on v.id = m.vehicle_id
+          where v.company_id = ${empresa.id} and v.plate like ${`${config.prefixoPlaca}%`}
+        )
+    `;
     // Despesas, manutenções, documentos e vínculos dos veículos saem em cascata.
     const veiculos = await tx`
       delete from vehicles
