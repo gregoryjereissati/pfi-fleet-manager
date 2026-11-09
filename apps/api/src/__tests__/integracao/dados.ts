@@ -72,7 +72,10 @@ export async function carregarEmpresa(joinCode: string): Promise<EmpresaDeTeste>
   `;
 
   const veiculos = await sql<{ id: string; plate: string }[]>`
-    select id, plate from vehicles where company_id = ${empresa.id} order by plate
+    select id, plate from vehicles where company_id = ${empresa.id}
+    -- Os do seed são os primeiros criados; a ordem por placa misturava os do
+    -- volume de demonstração (db:popular), cujas placas vêm antes.
+    order by created_at, plate
   `;
 
   if (!admin || !gerente || motoristas.length < 2 || veiculos.length < 2) {
