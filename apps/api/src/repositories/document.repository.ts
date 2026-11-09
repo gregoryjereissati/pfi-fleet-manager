@@ -48,7 +48,7 @@ export interface UpdateDocumentData {
  * Janela de aviso, em dias. Documento que vence dentro dela aparece na central
  * de alertas.
  */
-const DIAS_DE_AVISO = 30;
+export const DIAS_DE_AVISO = 30;
 
 const ORDENACOES = {
   expiryDate: 'd.expiry_date',
@@ -138,6 +138,8 @@ export interface DocumentDto {
   expiryDate: string;
   fileUrl: string | null;
   alertSent: boolean;
+  /** Quando a rotina diária sinalizou o documento, em ISO; nulo se não houve registro. */
+  alertSentAt: string | null;
   status: DocumentStatus;
   createdById: string | null;
   createdAt: string;
@@ -158,6 +160,7 @@ interface DocumentRow {
   expiryDate: string;
   fileUrl: string | null;
   alertSent: boolean;
+  alertSentAt: Date | null;
   status: DocumentStatus;
   createdById: string | null;
   createdAt: Date;
@@ -174,6 +177,7 @@ function mapDocument(row: DocumentRow): DocumentDto {
     expiryDate: row.expiryDate,
     fileUrl: row.fileUrl,
     alertSent: row.alertSent,
+    alertSentAt: row.alertSentAt ? row.alertSentAt.toISOString() : null,
     status: row.status,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
@@ -196,6 +200,7 @@ const colunas = sql`
   d.expiry_date,
   d.file_url,
   d.alert_sent,
+  d.alert_sent_at,
   ${situacaoDoDocumento} as status,
   d.created_by_id,
   d.created_at
@@ -281,9 +286,20 @@ export const documentRepository = {
       'updatedById',
     ] as (keyof UpdateDocumentData | 'updatedById')[];
 
+    // Nova data de vencimento é renovação: a sinalização anterior dizia
+    // respeito ao prazo antigo, e a rotina precisa voltar a avisar quando o
+    // novo se aproximar. Só limpa se a data de fato mudou.
+    const renovacao =
+      data.expiryDate !== undefined
+        ? client`, alert_sent = case when expiry_date = ${data.expiryDate}::date
+                                     then alert_sent else false end,
+                   alert_sent_at = case when expiry_date = ${data.expiryDate}::date
+                                        then alert_sent_at else null end`
+        : client``;
+
     await client`
       update documents
-      set ${client(alteracoes, ...chaves)}
+      set ${client(alteracoes, ...chaves)} ${renovacao}
       where id = ${id}
     `;
 
@@ -304,6 +320,21 @@ export const documentRepository = {
     await client`delete from documents where id = ${id}`;
 
     return mapDocument(linha);
+  },
+
+  /**
+   * Documentos da central de alertas: vencidos e a vencer dentro da janela,
+   * do vencimento mais antigo ao mais distante.
+   */
+  async findAlerts(companyId: string, driverScope?: DocumentDriverScope): Promise<DocumentDto[]> {
+    const linhas = await sql<DocumentRow[]>`
+      select ${colunas}
+      where ${condicoesDocumento({ companyId, driverScope })}
+        and d.expiry_date <= current_date + ${DIAS_DE_AVISO}::int
+      order by d.expiry_date asc, d.id asc
+    `;
+
+    return linhas.map(mapDocument);
   },
 
   /**
@@ -339,7 +370,9 @@ export const documentRepository = {
     if (ids.length === 0) return { count: 0 };
 
     const alteradas = await sql`
-      update documents set alert_sent = true where id = any(${ids}::uuid[])
+      update documents
+      set alert_sent = true, alert_sent_at = now()
+      where id = any(${ids}::uuid[])
     `;
 
     return { count: alteradas.count };

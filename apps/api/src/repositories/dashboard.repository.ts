@@ -1,7 +1,8 @@
 import { ExpenseType } from '@fleet-manager/shared';
 import { sql } from '../config/database';
-import { DriverStatus, EntryStatus, MaintenanceStatus, VehicleStatus } from '../types/db';
+import { DriverStatus, EntryStatus, VehicleStatus } from '../types/db';
 import type { DocumentDriverScope } from './document.repository';
+import { manutencaoAtrasada, manutencaoProgramada } from './maintenance.repository';
 
 export interface DashboardFilters {
   /** Empresa do usuário autenticado. Define o recorte de todos os números. */
@@ -158,11 +159,13 @@ export const dashboardRepository = {
         despesas.average_expense,
         despesas.expense_count,
 
+        -- Programada e atrasada saem da data prevista, com o mesmo critério
+        -- da listagem de manutenções.
         (select count(*) from maintenances m
-          where ${condicaoManutencao(filters)} and m.status = ${MaintenanceStatus.SCHEDULED})
+          where ${condicaoManutencao(filters)} and ${manutencaoProgramada})
           as pending_maintenances,
         (select count(*) from maintenances m
-          where ${condicaoManutencao(filters)} and m.status = ${MaintenanceStatus.OVERDUE})
+          where ${condicaoManutencao(filters)} and ${manutencaoAtrasada})
           as overdue_maintenances,
 
         (select count(*) from documents d

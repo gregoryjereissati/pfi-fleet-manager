@@ -27,6 +27,10 @@ export const SENHA = process.env.SEED_PASSWORD ?? '';
  * frontend; a API não precisa dela.
  */
 function lerChavePublica(): string {
+  // Definida no ambiente, prevalece: permite apontar a suíte para o Supabase
+  // local sem tocar no `.env` do frontend.
+  if (process.env.VITE_SUPABASE_ANON_KEY) return process.env.VITE_SUPABASE_ANON_KEY;
+
   try {
     const web = parse(readFileSync(resolve(__dirname, '../../web/.env')));
     return web.VITE_SUPABASE_ANON_KEY ?? SERVICE_ROLE;

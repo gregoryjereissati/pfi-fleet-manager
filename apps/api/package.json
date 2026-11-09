@@ -16,7 +16,8 @@
     "db:reset": "tsx db/reset.ts",
     "db:seed": "tsx db/seed.ts",
     "provisionar": "tsx scripts/provisionar-empresa.ts",
-    "provisionar-super-admin": "tsx scripts/provisionar-super-admin.ts"
+    "provisionar-super-admin": "tsx scripts/provisionar-super-admin.ts",
+    "carga:workload": "tsx carga/workload.ts"
   },
   "dependencies": {
     "@fleet-manager/shared": "*",

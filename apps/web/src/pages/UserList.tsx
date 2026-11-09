@@ -6,10 +6,10 @@ import { useUsers } from '@/hooks/useUsers'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
+import { useToast } from '@/components/ledger/Toast'
+import { mensagemDeErro } from '@/lib/erros'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
-
-const PROTECTED_ADMIN_EMAIL = 'admin@fleet-manager.com'
 
 // Seletores dentro da tabela: o campo do design system em tamanho compacto.
 const inputClass = 'lg-input px-2 py-1 text-xs'
@@ -23,8 +23,32 @@ const statusColors: Record<UserStatus, string> = {
 
 export function UserList() {
   const { t } = useTranslation()
-  const { users, loading, error, savingId, updateRole, updateStatus, deleteUser, roles } =
-    useUsers()
+  const {
+    users,
+    loading,
+    error,
+    savingId,
+    updateRole: alterarPapel,
+    updateStatus: alterarSituacao,
+    deleteUser: excluirUsuario,
+    roles,
+  } = useUsers()
+  const toast = useToast()
+
+  // Uma recusa da API — por exemplo, deixar a empresa sem administrador
+  // ativo — vira aviso, em vez de falhar em silêncio.
+  async function executar(acao: Promise<unknown>) {
+    try {
+      await acao
+    } catch (err) {
+      toast.error(mensagemDeErro(err, t))
+    }
+  }
+
+  const updateRole = (id: string, role: UserRole) => executar(alterarPapel(id, role))
+  const updateStatus = (id: string, status: UserStatus, role?: UserRole) =>
+    executar(alterarSituacao(id, status, role))
+  const deleteUser = (id: string) => executar(excluirUsuario(id))
   const [approveRole, setApproveRole] = useState<Record<string, UserRole>>({})
   const [dialog, setDialog] = useState<{
     title: string
@@ -98,7 +122,6 @@ export function UserList() {
               ) : (
                 users.map((user) => {
                   const isSaving = savingId === user.id
-                  const isProtectedAdmin = user.email === PROTECTED_ADMIN_EMAIL
 
                   return (
                     <tr key={user.id}>
@@ -121,117 +144,107 @@ export function UserList() {
                         efetivo: um pedido não vira permissão sozinho, e quem
                         aprova precisa ver os dois para decidir.
                       */}
-                      <td className="text-neutral-500">
-                        {t(`users.roles.${user.requestedRole}`)}
-                      </td>
+                      <td className="text-neutral-500">{t(`users.roles.${user.requestedRole}`)}</td>
                       <td>
-                        {isProtectedAdmin ? (
-                          <span className="lg-tag">
-                            {t(`users.roles.${user.role}`)}
-                          </span>
-                        ) : (
-                          <select
-                            value={user.role}
-                            disabled={isSaving || user.status !== UserStatus.ACTIVE}
-                            onChange={(e) =>
-                              void updateRole(user.id, e.target.value as typeof user.role)
-                            }
-                            className={inputClass}
-                          >
-                            {roles.map((role) => (
-                              <option key={role} value={role}>
-                                {t(`users.roles.${role}`)}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                        <select
+                          value={user.role}
+                          disabled={isSaving || user.status !== UserStatus.ACTIVE}
+                          onChange={(e) =>
+                            void updateRole(user.id, e.target.value as typeof user.role)
+                          }
+                          className={inputClass}
+                        >
+                          {roles.map((role) => (
+                            <option key={role} value={role}>
+                              {t(`users.roles.${role}`)}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="tabular-nums text-neutral-500">
                         {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                       </td>
                       <td>
-                        {!isProtectedAdmin && (
-                          <div className="flex items-center justify-end gap-3">
-                            {user.status === UserStatus.PENDING && (
-                              <div className="flex items-center gap-3">
-                                <select
-                                  value={approveRole[user.id] ?? user.role}
-                                  onChange={(e) =>
-                                    setApproveRole((prev) => ({
-                                      ...prev,
-                                      [user.id]: e.target.value as UserRole,
-                                    }))
-                                  }
-                                  disabled={isSaving}
-                                  className={inputClass}
-                                >
-                                  {roles.map((role) => (
-                                    <option key={role} value={role}>
-                                      {t(`users.roles.${role}`)}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  disabled={isSaving}
-                                  onClick={() =>
-                                    void updateStatus(
-                                      user.id,
-                                      UserStatus.ACTIVE,
-                                      approveRole[user.id] ?? user.role,
-                                    )
-                                  }
-                                  className="lg-action lg-action-ok"
-                                >
-                                  {t('users.actions.approve')}
-                                </button>
-                              </div>
-                            )}
-                            {/*
+                        <div className="flex items-center justify-end gap-3">
+                          {user.status === UserStatus.PENDING && (
+                            <div className="flex items-center gap-3">
+                              <select
+                                value={approveRole[user.id] ?? user.role}
+                                onChange={(e) =>
+                                  setApproveRole((prev) => ({
+                                    ...prev,
+                                    [user.id]: e.target.value as UserRole,
+                                  }))
+                                }
+                                disabled={isSaving}
+                                className={inputClass}
+                              >
+                                {roles.map((role) => (
+                                  <option key={role} value={role}>
+                                    {t(`users.roles.${role}`)}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                disabled={isSaving}
+                                onClick={() =>
+                                  void updateStatus(
+                                    user.id,
+                                    UserStatus.ACTIVE,
+                                    approveRole[user.id] ?? user.role,
+                                  )
+                                }
+                                className="lg-action lg-action-ok"
+                              >
+                                {t('users.actions.approve')}
+                              </button>
+                            </div>
+                          )}
+                          {/*
                               Os itens do menu não têm estado desabilitado; enquanto
                               a linha salva, a escolha é ignorada, como faziam os
                               botões desabilitados.
                             */}
-                            <RowActions
-                              actions={[
-                                user.status === UserStatus.PENDING && {
-                                  label: t('users.actions.reject'),
-                                  onSelect: () => {
-                                    if (!isSaving) handleReject(user.id)
-                                  },
-                                  tone: 'danger',
+                          <RowActions
+                            actions={[
+                              user.status === UserStatus.PENDING && {
+                                label: t('users.actions.reject'),
+                                onSelect: () => {
+                                  if (!isSaving) handleReject(user.id)
                                 },
-                                user.status === UserStatus.REJECTED && {
-                                  label: t('users.actions.unblock'),
-                                  onSelect: () => {
-                                    if (!isSaving) void updateStatus(user.id, UserStatus.PENDING)
-                                  },
-                                  tone: 'ok',
+                                tone: 'danger',
+                              },
+                              user.status === UserStatus.REJECTED && {
+                                label: t('users.actions.unblock'),
+                                onSelect: () => {
+                                  if (!isSaving) void updateStatus(user.id, UserStatus.PENDING)
                                 },
-                                user.status === UserStatus.ACTIVE && {
-                                  label: t('users.actions.block'),
-                                  onSelect: () => {
-                                    if (!isSaving) void updateStatus(user.id, UserStatus.BLOCKED)
-                                  },
-                                  tone: 'warn',
+                                tone: 'ok',
+                              },
+                              user.status === UserStatus.ACTIVE && {
+                                label: t('users.actions.block'),
+                                onSelect: () => {
+                                  if (!isSaving) void updateStatus(user.id, UserStatus.BLOCKED)
                                 },
-                                user.status === UserStatus.BLOCKED && {
-                                  label: t('users.actions.unblock'),
-                                  onSelect: () => {
-                                    if (!isSaving) void updateStatus(user.id, UserStatus.ACTIVE)
-                                  },
-                                  tone: 'ok',
+                                tone: 'warn',
+                              },
+                              user.status === UserStatus.BLOCKED && {
+                                label: t('users.actions.unblock'),
+                                onSelect: () => {
+                                  if (!isSaving) void updateStatus(user.id, UserStatus.ACTIVE)
                                 },
-                                {
-                                  label: t('users.actions.delete'),
-                                  onSelect: () => {
-                                    if (!isSaving) handleDelete(user.id, user.name)
-                                  },
-                                  tone: 'danger',
+                                tone: 'ok',
+                              },
+                              {
+                                label: t('users.actions.delete'),
+                                onSelect: () => {
+                                  if (!isSaving) handleDelete(user.id, user.name)
                                 },
-                              ]}
-                            />
-                          </div>
-                        )}
+                                tone: 'danger',
+                              },
+                            ]}
+                          />
+                        </div>
                       </td>
                     </tr>
                   )

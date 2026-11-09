@@ -44,7 +44,11 @@ vi.mock('../../repositories/vehicle.repository', () => ({
 }));
 
 vi.mock('../../repositories/driver.repository', () => ({
-  driverRepository: { findManyByIds: vi.fn(), findById: vi.fn() },
+  driverRepository: {
+    findManyByIds: vi.fn(),
+    findById: vi.fn(),
+    findExpiredLicenseIds: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 const vehicle = { id: 'vehicle-1', companyId: 'company-a', plate: 'ABC-1234', status: 'ACTIVE' };
@@ -115,6 +119,33 @@ describe('assignmentService — vínculos com período', () => {
     await assignmentService.assignDrivers(makeScope(), 'vehicle-1', ['driver-1']);
 
     expect(assignmentRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('recusa vincular motorista com CNH vencida', async () => {
+    vi.mocked(vehicleRepository.findSummaryById).mockResolvedValue(vehicle as never);
+    vi.mocked(driverRepository.findManyByIds).mockResolvedValue([driver] as never);
+    vi.mocked(driverRepository.findExpiredLicenseIds).mockResolvedValue([{ id: 'driver-1' }]);
+    vi.mocked(assignmentRepository.findActive).mockResolvedValue(null);
+
+    await expect(
+      assignmentService.assignDrivers(makeScope(), 'vehicle-1', ['driver-1']),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'DRIVER_LICENSE_EXPIRED' });
+
+    expect(assignmentRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('CNH vencida não desfaz um vínculo que já existe', async () => {
+    vi.mocked(vehicleRepository.findSummaryById).mockResolvedValue(vehicle as never);
+    vi.mocked(driverRepository.findManyByIds).mockResolvedValue([driver] as never);
+    vi.mocked(driverRepository.findExpiredLicenseIds).mockResolvedValue([{ id: 'driver-1' }]);
+    vi.mocked(assignmentRepository.findActive).mockResolvedValue({
+      id: 'assignment-existente',
+    } as never);
+
+    await assignmentService.assignDrivers(makeScope(), 'vehicle-1', ['driver-1']);
+
+    expect(assignmentRepository.create).not.toHaveBeenCalled();
+    expect(assignmentRepository.end).not.toHaveBeenCalled();
   });
 
   it('desvincular encerra o vínculo em vez de apagá-lo', async () => {

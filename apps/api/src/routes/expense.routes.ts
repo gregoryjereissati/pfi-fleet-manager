@@ -6,11 +6,28 @@ import { authenticate } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
 
+/**
+ * Despesa é gasto que já aconteceu: a data não pode ser posterior a hoje.
+ *
+ * "Hoje" é o fim do dia em UTC. O Brasil está atrás de UTC, então o dia civil
+ * de quem lança nunca cai depois dele — a regra não recusa um lançamento do
+ * próprio dia por causa do fuso. Gasto previsto é manutenção programada, não
+ * despesa.
+ */
+const dataDaDespesa = z.coerce.date().refine(
+  (data) => {
+    const fimDeHoje = new Date();
+    fimDeHoje.setUTCHours(23, 59, 59, 999);
+    return data.getTime() <= fimDeHoje.getTime();
+  },
+  { message: 'EXPENSE_DATE_IN_FUTURE' },
+);
+
 const createExpenseSchema = z.object({
   vehicleId: z.string().trim().min(1),
   type: z.nativeEnum(ExpenseType),
   amount: z.number().positive(),
-  date: z.coerce.date(),
+  date: dataDaDespesa,
   description: z.string().trim().optional(),
 });
 
@@ -25,7 +42,7 @@ const updateExpenseSchema = z
     vehicleId: z.string().trim().min(1).optional(),
     type: z.nativeEnum(ExpenseType).optional(),
     amount: z.number().positive().optional(),
-    date: z.coerce.date().optional(),
+    date: dataDaDespesa.optional(),
     description: z.string().trim().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {

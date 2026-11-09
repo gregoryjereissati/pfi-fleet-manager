@@ -5,6 +5,7 @@ import { EntryStatus, ExpenseType } from '@fleet-manager/shared'
 import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
+import { hojeCivil } from '@/lib/utils'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 
 interface ExpenseFormState {
@@ -113,6 +114,13 @@ export function ExpenseForm() {
       return
     }
 
+    // Despesa é gasto que já aconteceu. A API recusa data futura; a tela avisa
+    // antes, com a mesma regra.
+    if (form.date > hojeCivil()) {
+      setError(t('expenses.error.futureDate'))
+      return
+    }
+
     try {
       setSubmitting(true)
       setError(null)
@@ -211,6 +219,7 @@ export function ExpenseForm() {
             <input
               required
               type="date"
+              max={hojeCivil()}
               value={form.date}
               onChange={(event) => updateField('date', event.target.value)}
               className={inputClass}

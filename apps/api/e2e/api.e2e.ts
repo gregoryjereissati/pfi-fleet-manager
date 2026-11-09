@@ -28,7 +28,8 @@ interface Registro {
  * Suíte de ponta a ponta da API.
  *
  * Cada caso leva o identificador do plano de testes (INF, AUT, RBAC, ISO, OPE,
- * VEI, DES, MAN, DOC, CAD, VAL, PAG), para que o relatório aponte direto para ele.
+ * VEI, DES, MAN, DOC, ALE, CAD, VAL, PAG), para que o relatório aponte direto
+ * para ele.
  */
 describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () => {
   const tokens = {} as Record<Pessoa, string>;
@@ -499,6 +500,17 @@ describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () =>
       expect(res.status).toBe(400);
     });
 
+    it('DES-12 recusa data futura: despesa é gasto que já aconteceu', async () => {
+      const res = await como('helena').post('/expenses', {
+        vehicleId: veiculo,
+        type: 'FUEL',
+        amount: 100,
+        date: diasAPartirDeHoje(2),
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.details.date).toContain('EXPENSE_DATE_IN_FUTURE');
+    });
+
     it('DES-02 recusa categoria inexistente', async () => {
       const res = await como('helena').post('/expenses', {
         vehicleId: veiculo,
@@ -619,6 +631,48 @@ describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () =>
       expect((await como('claudia').delete(`/maintenances/${id}`)).status).toBe(403);
       expect((await como('rogerio').delete(`/maintenances/${id}`)).status).toBeLessThan(300);
       expect((await como('helena').get(`/maintenances/${id}`)).status).toBe(404);
+    });
+
+    it('MAN-05 data prevista no passado volta como atrasada, sem ninguém marcar', async () => {
+      const criada = await como('claudia').post('/maintenances', {
+        vehicleId: veiculo,
+        type: 'CORRECTIVE',
+        description: `Freio e2e ${SUFIXO}`,
+        scheduledDate: diasAPartirDeHoje(-3),
+      });
+      expect(criada.status).toBe(201);
+      expect(criada.body.status).toBe('OVERDUE');
+
+      const atrasadas = (await como('claudia').get('/maintenances?status=OVERDUE'))
+        .body as Registro[];
+      expect(atrasadas.map((m) => m.id)).toContain(criada.body.id);
+
+      const programadas = (await como('claudia').get('/maintenances?status=SCHEDULED'))
+        .body as Registro[];
+      expect(programadas.map((m) => m.id)).not.toContain(criada.body.id);
+
+      const concluida = await como('claudia').put(`/maintenances/${criada.body.id}`, {
+        status: 'DONE',
+      });
+      expect(concluida.body.status).toBe('DONE');
+
+      await como('rogerio').delete(`/maintenances/${criada.body.id}`);
+    });
+
+    it('MAN-06 "atrasada" não pode ser escolhida → 400 OVERDUE_IS_COMPUTED', async () => {
+      const criada = await como('claudia').post('/maintenances', {
+        vehicleId: veiculo,
+        type: 'PREVENTIVE',
+        description: `Alinhamento e2e ${SUFIXO}`,
+        scheduledDate: diasAPartirDeHoje(10),
+      });
+      const res = await como('claudia').put(`/maintenances/${criada.body.id}`, {
+        status: 'OVERDUE',
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('OVERDUE_IS_COMPUTED');
+
+      await como('rogerio').delete(`/maintenances/${criada.body.id}`);
     });
   });
 
@@ -742,6 +796,105 @@ describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () =>
   });
 
   // ===========================================================================
+  describe('ALE — central de alertas e prazos', () => {
+    it('ALE-01 reúne documentos, manutenções e CNH; o contador soma as três', async () => {
+      const lista = await como('helena').get('/alerts');
+      expect(lista.status).toBe(200);
+      expect(Array.isArray(lista.body.documents)).toBe(true);
+      expect(Array.isArray(lista.body.maintenances)).toBe(true);
+      expect(Array.isArray(lista.body.licenses)).toBe(true);
+
+      const contagem = (await como('helena').get('/alerts/count')).body;
+      expect(contagem.documents).toBe(lista.body.documents.length);
+      expect(contagem.maintenances).toBe(lista.body.maintenances.length);
+      expect(contagem.licenses).toBe(lista.body.licenses.length);
+      expect(contagem.count).toBe(
+        contagem.documents + contagem.maintenances + contagem.licenses,
+      );
+    });
+
+    it('ALE-02 a manutenção atrasada aparece; a CNH que vence em breve, uma vez só', async () => {
+      const { documents, maintenances, licenses } = (await como('helena').get('/alerts'))
+        .body as Record<'documents' | 'maintenances' | 'licenses', Registro[]>;
+      expect(maintenances.some((m) => m.status === 'OVERDUE')).toBe(true);
+
+      // O documento CNH da Cláudia está na janela: ele é o aviso, e a ficha
+      // não o repete.
+      expect(
+        documents.some((d) => d.driverId === claudia.driverId && d.type === 'CNH'),
+      ).toBe(true);
+      expect(licenses.map((l) => l.driverId)).not.toContain(claudia.driverId);
+    });
+
+    it('ALE-03 o motorista não vê a CNH de um colega na central', async () => {
+      const { documents, licenses } = (await como('iranildo').get('/alerts')).body as Record<
+        'documents' | 'licenses',
+        Registro[]
+      >;
+      expect(documents.some((d) => d.driverId === claudia.driverId)).toBe(false);
+      expect(licenses.some((l) => l.driverId === claudia.driverId)).toBe(false);
+    });
+
+    it('ALE-04 a rotina diária grava a data da sinalização, e a central a mostra', async () => {
+      const anterior = process.env.CRON_SECRET;
+      process.env.CRON_SECRET = 'segredo-e2e';
+      expect((await cliente('segredo-e2e').get('/jobs/alerts')).status).toBe(200);
+      if (anterior === undefined) delete process.env.CRON_SECRET;
+      else process.env.CRON_SECRET = anterior;
+
+      const documentos = (await como('helena').get('/alerts')).body.documents as Registro[];
+      expect(documentos.length).toBeGreaterThan(0);
+      for (const documento of documentos) {
+        expect(documento.alertSent).toBe(true);
+      }
+      expect(documentos.some((d) => typeof d.alertSentAt === 'string')).toBe(true);
+    });
+
+    it('ALE-05 CNH vencida impede vínculo novo → 409 DRIVER_LICENSE_EXPIRED', async () => {
+      const ficha = (await como('helena').get(`/drivers/${iranildoDriverId}`)).body;
+      const validadeOriginal = ficha.cnhExpiry ? String(ficha.cnhExpiry).slice(0, 10) : null;
+
+      const veiculo = (
+        await como('helena').post('/vehicles', {
+          plate: `C${SUFIXO}`.slice(0, 8),
+          brand: 'Volkswagen',
+          model: 'Saveiro',
+          year: 2023,
+        })
+      ).body.id as string;
+
+      try {
+        await como('helena').put(`/drivers/${iranildoDriverId}`, {
+          cnhExpiry: diasAPartirDeHoje(-1),
+        });
+
+        const recusado = await como('helena').post(`/vehicles/${veiculo}/drivers`, {
+          driverIds: [iranildoDriverId],
+        });
+        expect(recusado.status).toBe(409);
+        expect(recusado.body.error).toBe('DRIVER_LICENSE_EXPIRED');
+
+        // A ficha vencida passa a aparecer na central, já que o documento CNH
+        // dele não está na janela de aviso.
+        const licencas = (await como('helena').get('/alerts')).body.licenses as Registro[];
+        expect(licencas.map((l) => l.driverId)).toContain(iranildoDriverId);
+
+        await como('helena').put(`/drivers/${iranildoDriverId}`, {
+          cnhExpiry: diasAPartirDeHoje(365),
+        });
+        const aceito = await como('helena').post(`/vehicles/${veiculo}/drivers`, {
+          driverIds: [iranildoDriverId],
+        });
+        expect(aceito.status).toBeLessThan(300);
+      } finally {
+        await como('helena').put(`/drivers/${iranildoDriverId}`, { cnhExpiry: validadeOriginal });
+        await como('helena').delete(`/vehicles/${veiculo}`);
+        await como('helena').delete(`/vehicles/${veiculo}/permanent`);
+      }
+    });
+  });
+
+  // ===========================================================================
   describe('CAD — empresa nova, cadastro e aprovação', () => {
     const codigo = `E2E-${SUFIXO}`;
     const email = `e2e.${SUFIXO.toLowerCase()}@example.com`;
@@ -852,6 +1005,14 @@ describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () =>
       expect((await cliente(token).get('/users/me')).status).toBe(200);
     });
 
+    it('CAD-15 a empresa não fica sem administrador ativo → 409 LAST_ACTIVE_ADMIN', async () => {
+      const eu = (await como('helena').get('/users/me')).body.id;
+      const res = await como('helena').patch(`/users/${eu}/role`, { role: 'MANAGER' });
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('LAST_ACTIVE_ADMIN');
+      expect((await como('helena').get('/users/me')).body.role).toBe('ADMIN');
+    });
+
     it('CAD-14 admin não altera o próprio status', async () => {
       const eu = (await como('helena').get('/users/me')).body.id;
       const res = await como('helena').patch(`/users/${eu}/status`, { status: 'BLOCKED' });
@@ -891,6 +1052,15 @@ describe.skipIf(!ehAmbienteLocal)('API de ponta a ponta (Supabase local)', () =>
         .send('{"plate":');
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Invalid JSON body');
+    });
+
+    it('VAL-07 corpo acima do limite de 100 KB responde 413', async () => {
+      const res = await request(app)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${tokens.helena}`)
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({ plate: 'X'.repeat(200 * 1024) }));
+      expect(res.status).toBe(413);
     });
 
     it('VAL-05 autor enviado no corpo é ignorado', async () => {

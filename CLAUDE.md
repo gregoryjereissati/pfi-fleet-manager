@@ -41,7 +41,7 @@ Sistema web de gestão de frotas: veículos, motoristas, despesas, manutenções
 | Controle de acesso | RBAC **por empresa** | ADMIN, MANAGER, OPERATOR, sempre dentro de uma `Company`. Acima delas, o super administrador da plataforma |
 | Deploy | **Vercel, projeto único** | Frontend estático e API serverless no mesmo domínio — sem CORS |
 | Monorepo | **npm workspaces** | Sem Turborepo nem Nx |
-| Testes | Vitest | 246 testes: regras do backend e integração com o banco. Mais 127 de ponta a ponta contra o Supabase local (`npm run test:e2e`). As duas suítes rodam no CI (`.github/workflows/testes.yml`) |
+| Testes | Vitest | 265 testes: regras do backend e integração com o banco. Mais 137 de ponta a ponta contra o Supabase local (`npm run test:e2e`). As duas suítes rodam no CI (`.github/workflows/testes.yml`). Carga com workload misto em `apps/api/carga/` |
 
 > Material anterior a agosto de 2026 pode citar Auth0, autenticação própria com `bcryptjs`, Turborepo, Railway, Redis ou AWS. **Nada disso está no projeto.** A tabela acima prevalece.
 

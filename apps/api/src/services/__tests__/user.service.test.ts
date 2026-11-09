@@ -23,6 +23,7 @@ vi.mock('../../repositories/user.repository', () => ({
     findById: vi.fn(),
     findByEmail: vi.fn(),
     findByCpf: vi.fn(),
+    lockActiveAdmins: vi.fn().mockResolvedValue([]),
     updateRole: vi.fn(),
     updateStatus: vi.fn(),
     updateProfile: vi.fn(),
@@ -233,17 +234,74 @@ describe('userService — aprovação cria a ficha de motorista', () => {
   });
 });
 
-describe('userService — conta protegida e remoção', () => {
-  it('a conta protegida não muda de papel', async () => {
-    vi.mocked(userRepository.findByIdInCompany).mockResolvedValue({
-      ...pendingUser,
-      email: 'admin@fleet-manager.com',
-    } as never);
+describe('userService — a empresa nunca fica sem administrador ativo', () => {
+  const unicoAdmin = {
+    ...pendingUser,
+    id: 'admin-2',
+    role: UserRole.ADMIN,
+    status: UserStatus.ACTIVE,
+  };
+
+  it('recusa rebaixar o único administrador ativo', async () => {
+    vi.mocked(userRepository.findByIdInCompany).mockResolvedValue(unicoAdmin as never);
+    vi.mocked(userRepository.lockActiveAdmins).mockResolvedValue([{ id: 'admin-2' }]);
 
     await expect(
-      userService.updateRole(adminScope, 'user-2', UserRole.OPERATOR),
-    ).rejects.toMatchObject({ statusCode: 403, message: 'PROTECTED_ACCOUNT' });
+      userService.updateRole(adminScope, 'admin-2', UserRole.MANAGER),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'LAST_ACTIVE_ADMIN' });
+
+    expect(userRepository.updateRole).not.toHaveBeenCalled();
   });
+
+  it('recusa bloquear o único administrador ativo', async () => {
+    vi.mocked(userRepository.findByIdInCompany).mockResolvedValue(unicoAdmin as never);
+    vi.mocked(userRepository.lockActiveAdmins).mockResolvedValue([{ id: 'admin-2' }]);
+
+    await expect(
+      userService.updateStatus(adminScope, 'admin-2', UserStatus.BLOCKED),
+    ).rejects.toMatchObject({ statusCode: 409, message: 'LAST_ACTIVE_ADMIN' });
+
+    expect(userRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('recusa excluir o único administrador ativo', async () => {
+    vi.mocked(userRepository.findByIdInCompany).mockResolvedValue(unicoAdmin as never);
+    vi.mocked(userRepository.lockActiveAdmins).mockResolvedValue([{ id: 'admin-2' }]);
+
+    await expect(userService.deleteUser(adminScope, 'admin-2')).rejects.toMatchObject({
+      statusCode: 409,
+      message: 'LAST_ACTIVE_ADMIN',
+    });
+
+    expect(userRepository.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('rebaixa um administrador quando há outro ativo', async () => {
+    vi.mocked(userRepository.findByIdInCompany).mockResolvedValue(unicoAdmin as never);
+    vi.mocked(userRepository.lockActiveAdmins).mockResolvedValue([
+      { id: 'admin-1' },
+      { id: 'admin-2' },
+    ]);
+
+    await userService.updateRole(adminScope, 'admin-2', UserRole.MANAGER);
+
+    expect(userRepository.updateRole).toHaveBeenCalledWith(
+      expect.anything(),
+      'admin-2',
+      UserRole.MANAGER,
+    );
+  });
+
+  it('alterar quem não é administrador não consulta os administradores', async () => {
+    vi.mocked(userRepository.findByIdInCompany).mockResolvedValue(pendingUser as never);
+
+    await userService.updateStatus(adminScope, 'user-2', UserStatus.ACTIVE);
+
+    expect(userRepository.lockActiveAdmins).not.toHaveBeenCalled();
+  });
+});
+
+describe('userService — remoção', () => {
 
   it('recusa remover quem tem ficha de motorista, para não apagar histórico', async () => {
     vi.mocked(userRepository.findByIdInCompany).mockResolvedValue({

@@ -9,6 +9,7 @@ import { maintenanceRouter } from './maintenance.routes';
 import { documentRouter } from './document.routes';
 import { dashboardRouter } from './dashboard.routes';
 import { jobRouter } from './job.routes';
+import { alertRouter } from './alert.routes';
 
 export const router = Router();
 
@@ -21,4 +22,5 @@ router.use('/expenses', expenseRouter);
 router.use('/maintenances', maintenanceRouter);
 router.use('/documents', documentRouter);
 router.use('/dashboard', dashboardRouter);
+router.use('/alerts', alertRouter);
 router.use('/jobs', jobRouter);

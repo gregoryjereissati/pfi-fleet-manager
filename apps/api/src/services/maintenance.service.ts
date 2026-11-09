@@ -115,6 +115,13 @@ export const maintenanceService = {
       throw new AppError(400, 'USE_CANCEL_ENDPOINT');
     }
 
+    // "Atrasada" decorre da data prevista e é calculada a cada consulta; não
+    // é uma situação que alguém escolhe. Para tirar uma manutenção do atraso,
+    // conclui-se ou reprograma-se a data.
+    if (data.status === MaintenanceStatus.OVERDUE) {
+      throw new AppError(400, 'OVERDUE_IS_COMPUTED');
+    }
+
     const normalizedData = pickFields<UpdateMaintenanceData>(data, AUDITED_FIELDS);
 
     if (data.status === MaintenanceStatus.DONE) {

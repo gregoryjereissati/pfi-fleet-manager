@@ -4,9 +4,19 @@ import { useToken } from '@/hooks/useToken'
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000
 
+/** Contagem da central de alertas: o total e quanto vem de cada frente. */
+export interface AlertCounts {
+  count: number
+  documents: number
+  maintenances: number
+  licenses: number
+}
+
+const ZERADO: AlertCounts = { count: 0, documents: 0, maintenances: 0, licenses: 0 }
+
 export function useAlertCount() {
   const getToken = useToken()
-  const [count, setCount] = useState(0)
+  const [counts, setCounts] = useState<AlertCounts>(ZERADO)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,10 +26,10 @@ export function useAlertCount() {
     async function load() {
       try {
         const token = await getToken()
-        const data = await apiFetch<{ count: number }>('/documents/alerts/count', token)
+        const data = await apiFetch<AlertCounts>('/alerts/count', token)
 
         if (!cancelled) {
-          setCount(data.count)
+          setCounts(data)
           setError(null)
         }
       } catch (err) {
@@ -41,5 +51,5 @@ export function useAlertCount() {
     }
   }, [getToken])
 
-  return { count, loading, error }
+  return { count: counts.count, counts, loading, error }
 }

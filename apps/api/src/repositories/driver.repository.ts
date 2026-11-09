@@ -121,6 +121,24 @@ export const driverRepository = {
     return ficha ?? null;
   },
 
+  /**
+   * Entre as fichas indicadas, as de habilitação vencida.
+   *
+   * A comparação é entre datas civis, no banco: o mesmo critério da central
+   * de alertas. Ficha sem data de validade não entra — a ausência do dado não
+   * é tratada como vencimento.
+   */
+  findExpiredLicenseIds(companyId: string, ids: string[]): Promise<{ id: string }[]> {
+    return sql<{ id: string }[]>`
+      select id
+      from drivers
+      where company_id = ${companyId}
+        and id = any(${ids}::uuid[])
+        and cnh_expiry is not null
+        and cnh_expiry < current_date
+    ` as unknown as Promise<{ id: string }[]>;
+  },
+
   findManyByIds(companyId: string, ids: string[]): Promise<DriverWithUser[]> {
     return sql<DriverWithUser[]>`
       select ${fichaComUsuario}

@@ -51,7 +51,7 @@ export type MaintenanceWithVehicle = Maintenance & { vehicle: MaintenanceVehicle
 const ORDENACOES = {
   scheduledDate: 'm.scheduled_date',
   createdAt: 'm.created_at',
-  status: 'm.status',
+  status: 'status',
 } as const;
 
 const CAMPOS_ALTERAVEIS = [
@@ -60,6 +60,62 @@ const CAMPOS_ALTERAVEIS = [
   'scheduledDate',
   'completedDate',
 ] as const satisfies readonly (keyof UpdateMaintenanceData)[];
+
+/**
+ * Situação "atrasada" é calculada, não gravada.
+ *
+ * Uma manutenção pendente — gravada como programada — passa a ser atrasada
+ * quando a data prevista fica para trás. É o mesmo princípio da situação de
+ * vencimento dos documentos: o dado não fica defasado porque ninguém precisa
+ * lembrar de atualizá-lo. Registros antigos gravados como `OVERDUE` (o valor
+ * continua no enum) são tratados como pendentes e reclassificados pela data.
+ *
+ * `current_date` segue o fuso do servidor de banco, UTC, o mesmo critério dos
+ * documentos.
+ */
+const PENDENTE = sql`m.status in ('SCHEDULED', 'OVERDUE')`;
+
+/** Pendente com data prevista anterior a hoje. */
+export const manutencaoAtrasada = sql`(${PENDENTE} and m.scheduled_date < current_date)`;
+
+/** Pendente com data prevista de hoje em diante. */
+export const manutencaoProgramada = sql`(${PENDENTE} and m.scheduled_date >= current_date)`;
+
+/** Pendente com data prevista nos próximos `dias` dias, hoje incluído. */
+export function manutencaoProxima(dias: number) {
+  return sql`(${PENDENTE}
+    and m.scheduled_date >= current_date
+    and m.scheduled_date < current_date + ${dias + 1}::int)`;
+}
+
+/** Situação efetiva, como a API a devolve. */
+export const situacaoDaManutencao = sql`
+  case
+    when ${manutencaoAtrasada} then 'OVERDUE'
+    when ${PENDENTE} then 'SCHEDULED'
+    else m.status::text
+  end
+`;
+
+/** Condição que traduz a situação escolhida no filtro. */
+function condicaoDeSituacao(status: MaintenanceStatus) {
+  if (status === MaintenanceStatus.OVERDUE) return sql`and ${manutencaoAtrasada}`;
+  if (status === MaintenanceStatus.SCHEDULED) return sql`and ${manutencaoProgramada}`;
+  return sql`and m.status = ${status}`;
+}
+
+/**
+ * Colunas da manutenção, com a situação efetiva no lugar da gravada.
+ *
+ * Todas as consultas que devolvem manutenção usam o alias `m`, inclusive as
+ * que leem do resultado de um `insert`/`update ... returning`.
+ */
+const COLUNAS = sql`
+  m.id, m.company_id, m.vehicle_id, m.type, ${situacaoDaManutencao} as status,
+  m.description, m.scheduled_date, m.completed_date, m.created_by_id,
+  m.updated_by_id, m.cancelled_at, m.cancelled_by_id, m.cancel_reason,
+  m.created_at, m.updated_at
+`;
 
 /**
  * Condições do recorte, comuns a toda consulta de manutenção.
@@ -75,7 +131,7 @@ export function condicoesManutencao(filters: MaintenanceFilters) {
     ${createdById ? sql`and m.created_by_id = ${createdById}` : sql``}
     ${vehicleId ? sql`and m.vehicle_id = ${vehicleId}` : sql``}
     ${type ? sql`and m.type = ${type}` : sql``}
-    ${status ? sql`and m.status = ${status}` : sql``}
+    ${status ? condicaoDeSituacao(status) : sql``}
     ${startDate ? sql`and m.scheduled_date >= ${startDate}` : sql``}
     ${endDate ? sql`and m.scheduled_date <= ${endDate}` : sql``}
   `;
@@ -91,7 +147,7 @@ export const maintenanceRepository = {
     // O identificador desempata registros com a mesma data ou situação, para
     // que a ordem não mude entre uma página e outra.
     return sql<MaintenanceWithVehicle[]>`
-      select m.*, ${veiculoResumido('v')} as vehicle
+      select ${COLUNAS}, ${veiculoResumido('v')} as vehicle
       from maintenances m
       join vehicles v on v.id = m.vehicle_id
       where ${condicoesManutencao(filters)}
@@ -116,7 +172,7 @@ export const maintenanceRepository = {
     createdById?: string,
   ): Promise<MaintenanceWithVehicle | null> {
     const [manutencao] = await sql<MaintenanceWithVehicle[]>`
-      select m.*, ${veiculoResumido('v')} as vehicle
+      select ${COLUNAS}, ${veiculoResumido('v')} as vehicle
       from maintenances m
       join vehicles v on v.id = m.vehicle_id
       where m.id = ${id}
@@ -143,7 +199,7 @@ export const maintenanceRepository = {
         )
         returning *
       )
-      select m.*, ${veiculoResumido('v')} as vehicle
+      select ${COLUNAS}, ${veiculoResumido('v')} as vehicle
       from nova m
       join vehicles v on v.id = m.vehicle_id
     `;
@@ -179,7 +235,7 @@ export const maintenanceRepository = {
         where id = ${id}
         returning *
       )
-      select m.*, ${veiculoResumido('v')} as vehicle
+      select ${COLUNAS}, ${veiculoResumido('v')} as vehicle
       from alterada m
       join vehicles v on v.id = m.vehicle_id
     `;
@@ -204,7 +260,7 @@ export const maintenanceRepository = {
         where id = ${id}
         returning *
       )
-      select m.*, ${veiculoResumido('v')} as vehicle
+      select ${COLUNAS}, ${veiculoResumido('v')} as vehicle
       from cancelada m
       join vehicles v on v.id = m.vehicle_id
     `;
@@ -225,7 +281,7 @@ export const maintenanceRepository = {
         where id = ${id}
         returning *
       )
-      select m.*, ${veiculoResumido('v')} as vehicle
+      select ${COLUNAS}, ${veiculoResumido('v')} as vehicle
       from restaurada m
       join vehicles v on v.id = m.vehicle_id
     `;
@@ -238,7 +294,7 @@ export const maintenanceRepository = {
       with removida as (
         delete from maintenances where id = ${id} returning *
       )
-      select m.*, ${veiculoResumido('v')} as vehicle
+      select ${COLUNAS}, ${veiculoResumido('v')} as vehicle
       from removida m
       join vehicles v on v.id = m.vehicle_id
     `;

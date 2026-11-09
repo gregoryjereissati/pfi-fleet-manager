@@ -9,7 +9,37 @@ import { recordChange } from '../lib/audit';
 import type { Sql } from '../config/database';
 import type { AccessScope } from '../lib/access-scope';
 
-const PROTECTED_EMAIL = 'admin@fleet-manager.com';
+/**
+ * A empresa nunca fica sem administrador ativo.
+ *
+ * Só o administrador aprova acessos e muda papéis. Se o último deles fosse
+ * rebaixado, bloqueado ou excluído, ninguém mais conseguiria administrar a
+ * empresa — e a correção dependeria de intervenção direta no banco. A regra
+ * vale para qualquer conta, e não para um endereço fixo: antes, uma única
+ * conta de demonstração era protegida pelo e-mail.
+ *
+ * Chamada dentro da transação da alteração. As linhas dos administradores
+ * ativos ficam travadas até o fim dela, de modo que dois administradores
+ * rebaixando um ao outro ao mesmo tempo não deixem a empresa sem nenhum.
+ */
+async function garantirOutroAdministrador(
+  tx: Sql,
+  companyId: string,
+  atual: { id: string; role: string; status: string },
+  depois: { role: string; status: string } | null,
+) {
+  const eraAdministradorAtivo =
+    atual.role === UserRole.ADMIN && atual.status === UserStatus.ACTIVE;
+  const continuaAdministradorAtivo =
+    depois !== null && depois.role === UserRole.ADMIN && depois.status === UserStatus.ACTIVE;
+
+  if (!eraAdministradorAtivo || continuaAdministradorAtivo) return;
+
+  const administradores = await userRepository.lockActiveAdmins(tx, companyId);
+  const outros = administradores.filter((admin) => admin.id !== atual.id);
+
+  if (outros.length === 0) throw new AppError(409, 'LAST_ACTIVE_ADMIN');
+}
 
 /** Violação de restrição de unicidade no Postgres. */
 function isUniqueViolation(error: unknown): boolean {
@@ -92,9 +122,10 @@ export const userService = {
   async updateRole(scope: AccessScope, id: string, role: UserRole) {
     const user = await userRepository.findByIdInCompany(id, scope.companyId);
     if (!user) throw new AppError(404, 'User not found');
-    if (user.email === PROTECTED_EMAIL) throw new AppError(403, 'PROTECTED_ACCOUNT');
 
     return emTransacao(async (tx) => {
+      await garantirOutroAdministrador(tx, scope.companyId, user, { role, status: user.status });
+
       const updated = await userRepository.updateRole(tx, id, role);
 
       // Passar a atuar como motorista faz a pessoa aparecer na lista de
@@ -129,12 +160,13 @@ export const userService = {
   ) {
     const user = await userRepository.findByIdInCompany(id, scope.companyId);
     if (!user) throw new AppError(404, 'User not found');
-    if (user.email === PROTECTED_EMAIL) throw new AppError(403, 'PROTECTED_ACCOUNT');
     if (user.id === scope.userId) throw new AppError(403, 'CANNOT_CHANGE_OWN_STATUS');
 
     const effectiveRole = role ?? user.role;
 
     return emTransacao(async (tx) => {
+      await garantirOutroAdministrador(tx, scope.companyId, user, { role: effectiveRole, status });
+
       if (role && role !== user.role) {
         await userRepository.updateRole(tx, id, role);
       }
@@ -189,7 +221,6 @@ export const userService = {
   async deleteUser(scope: AccessScope, id: string) {
     const user = await userRepository.findByIdInCompany(id, scope.companyId);
     if (!user) throw new AppError(404, 'User not found');
-    if (user.email === PROTECTED_EMAIL) throw new AppError(403, 'PROTECTED_ACCOUNT');
     if (user.id === scope.userId) throw new AppError(403, 'CANNOT_DELETE_SELF');
 
     // Uma ficha de motorista vinculada representa histórico operacional:
@@ -198,6 +229,8 @@ export const userService = {
     if (user.driverProfile) throw new AppError(409, 'USER_HAS_DRIVER_PROFILE');
 
     return emTransacao(async (tx) => {
+      await garantirOutroAdministrador(tx, scope.companyId, user, null);
+
       await recordChange(tx, {
         entityType: AuditEntity.USER,
         entityId: id,

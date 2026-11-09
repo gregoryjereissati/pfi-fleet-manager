@@ -41,6 +41,12 @@ export enum MaintenanceType {
   CORRECTIVE = 'CORRECTIVE',
 }
 
+/**
+ * Situação da manutenção, como a API a devolve.
+ *
+ * `OVERDUE` é calculada: uma manutenção programada cuja data prevista já
+ * passou é devolvida como atrasada. Não se grava nem se escolhe esse valor.
+ */
 export enum MaintenanceStatus {
   SCHEDULED = 'SCHEDULED',
   DONE = 'DONE',
