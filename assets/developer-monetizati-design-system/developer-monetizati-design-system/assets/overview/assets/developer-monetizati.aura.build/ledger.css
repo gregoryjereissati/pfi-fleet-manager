@@ -1,0 +1,121 @@
+/* Ledger page stylesheet: the page's inline <style> blocks moved here verbatim, in source order, so the
+   Overview and the catalog link the same CSS. Unused Aura editor font-class rules were dropped. */
+
+body { font-family: 'Inter', sans-serif; }
+.font-geist { font-family: 'Geist', sans-serif !important; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+/* Marquee Animation */
+@keyframes marquee-rtl {
+0% { transform: translateX(0); }
+100% { transform: translateX(-50%); }
+}
+@keyframes marquee-ltr {
+0% { transform: translateX(-50%); }
+100% { transform: translateX(0); }
+}
+/* Fade In Animation */
+@keyframes fadeSlideIn {
+from { opacity: 0; transform: translateY(20px); }
+to { opacity: 1; transform: translateY(0); }
+}
+.animate-on-scroll { opacity: 0; } /* Initial state managed by JS intersection observer if needed, keeping CSS simple here */
+.invisible { visibility: hidden !important; }
+/*
+Sequence animation intro. Usage:
+1) Insert this code in the <head>
+2) Add to Tailwind Classes: [animation:animationIn_0.8s_ease-out_0.1s_both]
+*/
+@keyframes animationIn {
+0% {
+opacity: 0;
+transform: translateY(30px);
+filter: blur(8px);
+}
+100% {
+opacity: 1;
+transform: translateY(0);
+filter: blur(0px);
+}
+}
+.font-geist { font-family: 'Geist', sans-serif !important; }
+[style*="--border-gradient"]::before {
+content: "";
+position: absolute;
+inset: 0;
+padding: 1px;
+border-radius: var(--border-radius-before, inherit);
+-webkit-mask: linear-gradient(#fff 0 0) content-box,
+linear-gradient(#fff 0 0);
+-webkit-mask-composite: xor;
+mask-composite: exclude;
+background: var(--border-gradient);
+pointer-events: none;
+}
+/* 3D Transform utilities */
+.perspective-none { perspective: none !important; }
+.perspective-dramatic { perspective: 100px !important; }
+.perspective-near { perspective: 300px !important; }
+.perspective-normal { perspective: 500px !important; }
+.perspective-midrange { perspective: 800px !important; }
+.perspective-distant { perspective: 1200px !important; }
+.transform-style-preserve-3d { transform-style: preserve-3d !important; }
+.transform-style-flat { transform-style: flat !important; }
+/* ---- hero CTA .shiny-cta (inside the hero actions) */
+@property --gradient-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@property --gradient-angle-offset { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@property --gradient-percent { syntax: "<percentage>"; initial-value: 20%; inherits: false; }
+@property --gradient-shine { syntax: "<color>"; initial-value: #34d399; inherits: false; }
+.shiny-cta {
+    --gradient-angle: 0deg; --gradient-angle-offset: 0deg; --gradient-percent: 20%; --gradient-shine: #34d399;
+    position: relative; overflow: hidden; border-radius: 9999px; padding: 1.25rem 2.5rem;
+    font-size: 1.125rem; line-height: 1.2; font-weight: 500; color: #ffffff;
+    background: linear-gradient(#000000, #000000) padding-box, conic-gradient(from calc(var(--gradient-angle) - var(--gradient-angle-offset)), transparent 0%, #059669 5%, var(--gradient-shine) 15%, #059669 30%, transparent 40%, transparent 100%) border-box;
+    border: 2px solid transparent; box-shadow: inset 0 0 0 1px #1a1818; outline: none;
+    transition: all 0.3s; cursor: pointer; isolation: isolate; font-family: 'Geist', sans-serif; z-index: 0;
+    animation: border-spin 2.5s linear infinite;
+}
+@keyframes border-spin { to { --gradient-angle: 360deg; } }
+.shiny-cta:active { transform: translateY(1px); }
+
+/* ---- hero metric card bars */
+@keyframes barCycle {
+  0% { transform: scaleY(0); opacity: 0; }
+  20% { transform: scaleY(1); opacity: 1; }
+  80% { transform: scaleY(1); opacity: 1; }
+  95% { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+.animate-bar-loop {
+  transform-origin: bottom;
+  animation: barCycle 6s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+}
+
+/* ---- market chart candles */
+@keyframes candleCycle {
+  0% { transform: scaleY(0); opacity: 0; }
+  20% { transform: scaleY(1); opacity: 1; }
+  80% { transform: scaleY(1); opacity: 1; }
+  95% { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+.candle-anim {
+  animation: candleCycle 8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  transform-origin: bottom;
+}
+
+/* ---- revenue recovery bars */
+@keyframes barCycle {
+  0% { transform: scaleY(0); opacity: 0; }
+  20% { transform: scaleY(1); opacity: 1; }
+  80% { transform: scaleY(1); opacity: 1; }
+  95% { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+.animate-bar-loop {
+  animation: barCycle 6s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+  transform-origin: bottom;
+}
+

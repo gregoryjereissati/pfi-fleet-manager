@@ -1,0 +1,1762 @@
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger Design System</title>
+<link rel="icon" href="assets/developer-monetizati.aura.build/favicon.ico">
+<script src="assets/cdn.tailwindcss.com/3.4.17.js"></script>
+<script src="assets/developer-monetizati.aura.build/iconify-icons.js"></script>
+<script src="assets/code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<link rel="stylesheet" href="assets/developer-monetizati.aura.build/fonts.css">
+<link rel="stylesheet" href="assets/developer-monetizati.aura.build/ledger.css">
+<script src="assets/developer-monetizati.aura.build/tailwind.config.js"></script>
+<script src="assets/developer-monetizati.aura.build/animate-on-scroll.js"></script>
+<style>
+/* design-system catalog bridge (active only inside the catalog iframe): the catalog draws this page's
+   own navbar above the frame at the same spot, so the page keeps the navbar's space but hides its copy;
+   in "bg" mode (Components view) only the hero's live Unicorn Studio layer stays visible, parked at the top */
+html.ds-embedded body > div > nav { visibility: hidden; }
+html.ds-bg-only { overflow: hidden; }
+html.ds-bg-only body > div > *:not(main),
+html.ds-bg-only body > div > main > *:not(:first-child) { visibility: hidden !important; }
+</style>
+<script>
+(function () {
+  if (window.parent === window) return;
+  var root = document.documentElement, bg = false, saved = 0;
+  root.classList.add('ds-embedded');
+  function post(m) { try { window.parent.postMessage(m, '*'); } catch (e) {} }
+  addEventListener('message', function (e) {
+    var d = e.data;
+    if (e.source !== window.parent || !d || !d.ds) return;
+    if (d.ds === 'bg' && !bg) { bg = true; saved = scrollY; root.classList.add('ds-bg-only'); scrollTo(0, 0); }
+    else if (d.ds === 'page' && bg) { bg = false; root.classList.remove('ds-bg-only'); scrollTo(0, saved); }
+  });
+  /* ready = the Unicorn Studio canvas exists and the hero has settled: entrance fades done (1.4 s) and
+     the looping metric card past its count-up, bars raised and "$2.8M" holding (~2.4-5 s) */
+  var t0 = Date.now();
+  (function wait() {
+    if ((performance.now() > 2600 && document.querySelector('[data-us-project] canvas')) || Date.now() - t0 > 12000) {
+      requestAnimationFrame(function () { requestAnimationFrame(function () { post({ ds: 'ready' }); }); });
+      return;
+    }
+    setTimeout(wait, 100);
+  })();
+})();
+</script>
+</head>
+<body class="antialiased selection:bg-emerald-500 selection:text-white text-slate-300 bg-[#000000]">
+
+    <!-- Navigation (Existing) -->
+    <div class="md:px-8 lg:px-12 max-w-[1400px] mr-auto ml-auto pr-6 pl-6">
+      <nav class="flex sticky [animation:animationIn_0.8s_ease-out_0.1s_both] bg-[#000000] z-50 border-[#ffffff]/10 border rounded-full mt-4 mb-0 pt-4 pr-4 pb-4 pl-4 top-4 backdrop-blur-md items-center justify-between">
+        <div class="flex items-center gap-2">
+          <a href="#" class="inline-flex items-center justify-center bg-center mix-blend-screen w-[80px] h-[40px] bg-[url(assets/cdn.midjourney.com/372600d1-0464-41c8-8632-fecb7f20ff47/0_3__q01172a98.png)] bg-cover rounded-full invert"></a>
+        </div>
+
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+          <a href="#" class="text-white font-geist transition-colors hover:text-emerald-400">Platform</a>
+          <button class="flex items-center gap-1 hover:text-white transition-colors font-geist">
+            Features
+            <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
+          </button>
+          <button class="flex items-center gap-1 hover:text-white transition-colors font-geist">
+            Resources
+            <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
+          </button>
+          <a href="#" class="hover:text-white transition-colors font-geist">Pricing</a>
+          <a href="#" class="hover:text-white transition-colors font-geist">Docs</a>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <button class="hidden md:block px-5 py-2 rounded-full border text-slate-300 hover:bg-slate-900 transition-colors text-sm border-neutral-900 font-geist">
+            Sign In
+          </button>
+          <button class="px-5 py-2 rounded-full bg-white hover:bg-slate-200 transition-colors text-sm text-neutral-950 font-geist font-medium">
+            Get Started
+          </button>
+        </div>
+      </nav>
+
+      <!-- Hero Section (Existing) -->
+      <main class="grid grid-cols-1 lg:grid-cols-2 pt-32 pb-32 relative gap-x-16 gap-y-16 items-center">
+        <!-- Background Script & Div -->
+        <div class="absolute inset-0 -z-10 w-full h-full overflow-hidden">
+            <div data-us-project="vLGJIxHINq2tCeLOR9Dt" data-us-project-src="ledger-us-scene" class="absolute w-full h-full left-0 top-0 -z-10 opacity-60"></div>
+            <script src="assets/developer-monetizati.aura.build/unicorn-scene.js"></script>
+            <script type="text/javascript">!function(){if(!window.UnicornStudio){window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="assets/cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.0.0/dist/unicornStudio.umd.js",i.onload=function(){window.UnicornStudio.isInitialized||(UnicornStudio.init(),window.UnicornStudio.isInitialized=!0)},(document.head || document.body).appendChild(i)}}();</script>
+        </div>
+
+        <!-- Left Content -->
+        <div class="flex flex-col gap-8 max-w-2xl gap-x-8 gap-y-8 items-start">
+            <div class="inline-flex [animation:animationIn_0.8s_ease-out_0.2s_both] bg-slate-900 border-neutral-900 border rounded-full pt-1.5 pr-5 pb-1.5 pl-1.5 gap-x-3 gap-y-3 items-center">
+            <span class="bg-emerald-500 text-white text-xs px-2.5 py-1 rounded-full font-geist font-medium">New</span>
+            <span class="text-slate-300 text-sm font-geist">Lorem ipsum dolor sit</span>
+            </div>
+
+            <h1 class="md:text-7xl leading-[1.1] [animation:animationIn_0.8s_ease-out_0.3s_both] text-5xl font-light text-white tracking-tight font-geist">
+            Ledger Design System
+            </h1>
+
+            <p class="leading-relaxed [animation:animationIn_0.8s_ease-out_0.4s_both] text-lg text-slate-400 font-geist max-w-lg">
+            Pitch-black canvas, hairline white borders and emerald glow over a live
+            laser-beam aurora, with light Geist type and looping bar charts.
+            </p>
+
+            <div class="flex flex-wrap [animation:animationIn_0.8s_ease-out_0.5s_both] pt-2 gap-x-4 gap-y-4 items-center">
+            <div class="inline-block bg-transparent">
+                <button class="shiny-cta focus:outline-none"><span class="font-geist">Lorem Ipsum</span></button>
+            </div>
+            <button class="group px-8 py-4 rounded-full border text-slate-300 text-lg hover:bg-slate-900 transition-all flex items-center gap-3 border-neutral-900 font-geist">
+                Dolor Sit Amet
+                <iconify-icon icon="solar:book-bookmark-linear" class="text-xl group-hover:text-white transition-colors"></iconify-icon>
+            </button>
+            </div>
+        </div>
+
+        <!-- Right Visual (Mockup) - Simplified for brevity in this response but kept structure -->
+        <div class="card-top lg:justify-self-end flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] group hover:border-emerald-500/20 [animation:animationIn_0.8s_ease-out_0.6s_both] bg-[#0A0B0E] w-[32rem] max-w-full h-fit z-10 border-white/10 border rounded-[1.2em] ml-auto relative shadow-2xl justify-self-end">
+  
+
+  <!-- Subtle Gradient Overlay -->
+  <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none">
+  </div>
+
+  <div class="z-10 flex flex-col h-full pt-8 pr-8 pb-8 pl-8 relative">
+    <!-- Header -->
+    <div class="flex items-start justify-between mb-8">
+      <div class="flex items-baseline gap-3">
+        <!-- Metric with ID for JS animation -->
+        <span id="metric-counter-aura" class="text-6xl text-white tabular-nums font-geist tracking-tight font-light">$2.8M</span>
+        <span class="text-base text-neutral-500 font-geist">processed volume</span>
+      </div>
+      <button class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors border border-white/5 shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+      </button>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="flex-1 flex flex-col gap-2 relative">
+      <!-- Goal Labels -->
+      <div class="flex justify-between text-xs font-medium text-neutral-400 uppercase tracking-wide px-1">
+        <span class="text-emerald-500/80 font-geist">Daily Peak</span>
+        <span class="font-geist">$450k</span>
+      </div>
+
+      <!-- Bars Container -->
+      <div class="h-44 flex items-end justify-between gap-3 relative mt-1">
+        <!-- Dashed Goal Line -->
+        <div class="absolute top-0 left-0 right-0 h-px border-t border-dashed border-white/20 w-full z-0"></div>
+
+        <!-- Bars -->
+        <!-- Mon -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <!-- Animated Bar -->
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[65%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 0ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Mon</span>
+        </div>
+
+        <!-- Tue -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[85%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 100ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Tue</span>
+        </div>
+
+        <!-- Wed (Highest) -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-500 to-emerald-300 h-[100%] rounded-lg shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-500 group-hover/bar:brightness-110 animate-bar-loop" style="animation-delay: 200ms;">
+            </div>
+          </div>
+          <span class="text-xs text-white font-geist">Wed</span>
+        </div>
+
+        <!-- Thu -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[55%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 300ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Thu</span>
+        </div>
+
+        <!-- Fri -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[90%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 400ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Fri</span>
+        </div>
+
+        <!-- Sat -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-600 to-emerald-400 h-[45%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-bar-loop" style="animation-delay: 500ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Sat</span>
+        </div>
+
+        <!-- Sun -->
+        <div class="flex flex-col items-center gap-3 w-full h-full group/bar cursor-pointer z-10">
+          <div class="relative w-full h-full rounded-lg overflow-hidden bg-white/[0.02] ring-1 ring-white/5">
+            <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #fff 4px, #fff 6px);"></div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-neutral-600 to-neutral-400 h-[30%] rounded-lg transition-all duration-500 group-hover/bar:brightness-110 animate-bar-loop" style="animation-delay: 600ms;">
+            </div>
+          </div>
+          <span class="text-xs text-neutral-500 group-hover/bar:text-white transition-colors font-geist">Sun</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Stats -->
+    <div class="flex items-end justify-between mt-10 pt-6 border-t border-white/5">
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-xl font-geist">135<span class="text-emerald-500 font-geist">+</span></span>
+          <span class="text-neutral-500 text-sm font-geist">currencies</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-1 text-right">
+        <div class="flex items-center justify-end gap-2">
+          <span class="text-white text-xl font-geist">$42,805</span>
+          <span class="text-neutral-500 text-sm font-geist">tax automated</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const el = document.getElementById('metric-counter-aura');
+      if (!el) return;
+      
+      const loop = () => {
+        const target = 2.8;
+        const duration = 2000;
+        const hold = 3000;
+        const fadeOut = 500;
+        const totalTime = duration + hold + fadeOut;
+        let start = null;
+
+        const animate = (timestamp) => {
+          if (!start) start = timestamp;
+          const elapsed = timestamp - start;
+          
+          if (elapsed < duration) {
+            // Counting phase
+            const progress = 1 - Math.pow(1 - elapsed / duration, 4); // easeOutQuart
+            const current = (progress * target).toFixed(1);
+            el.textContent = '$' + current + 'M';
+            el.style.opacity = '1';
+          } else if (elapsed < duration + hold) {
+            // Hold phase
+            el.textContent = '$2.8M';
+            el.style.opacity = '1';
+          } else if (elapsed < totalTime) {
+            // Fade out phase
+            el.textContent = '$2.8M';
+            const fadeProgress = (elapsed - (duration + hold)) / fadeOut;
+            el.style.opacity = Math.max(0, 1 - fadeProgress).toString();
+          } else {
+            // Reset and restart
+            start = null;
+            el.textContent = '$0.0M';
+            requestAnimationFrame(animate);
+            return;
+          }
+          
+          requestAnimationFrame(animate);
+        };
+        
+        requestAnimationFrame(animate);
+      };
+
+      // Sync start slightly after bars
+      setTimeout(loop, 100);
+    })();
+  </script>
+</div>
+      </main>
+
+      <!-- Dashboard UI Section (Existing) -->
+      <section class="fade-in-up -translate-y-6 [animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll font-geist w-full max-w-[1400px] z-30 mr-auto mb-24 ml-auto">
+  <div class="overflow-hidden flex min-h-[900px] group selection:bg-emerald-500 selection:text-white text-slate-300 bg-[#0A0B0E] border-white/10 border rounded-3xl relative shadow-2xl">
+
+    <!-- Sidebar -->
+    <aside class="w-72 bg-[#0c0d10] border-r border-white/5 flex-col hidden lg:flex relative z-20">
+      <div class="flex flex-col h-full pt-6 pr-6 pb-6 pl-6">
+        <!-- Brand -->
+        <div class="flex gap-3 mb-10 pl-2 gap-x-3 gap-y-3 items-center">
+          
+          <div class="flex flex-col">
+            <span class="text-white font-semibold text-lg tracking-tight leading-none">Ledger</span>
+            <span class="text-[10px] uppercase font-medium text-neutral-500 tracking-wider mt-1">Production</span>
+          </div>
+          <button class="ml-auto text-neutral-600 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex-1 space-y-8">
+          <!-- Main Menu -->
+          <div class="space-y-1">
+            <div class="text-[11px] font-semibold text-neutral-600 uppercase tracking-wider mb-3 px-4">General</div>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 text-white text-sm font-medium border border-white/5 transition-all">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class=""><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+              Overview
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class=""><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
+              Analytics
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class=""><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75" class=""></path></svg>
+              Customers
+            </button>
+          </div>
+
+          <!-- Monetization -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between px-4 mb-3">
+              <div class="text-[11px] font-semibold text-neutral-600 uppercase tracking-wider">Monetization</div>
+            </div>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class=""><path d="M12 2v20" class=""></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" class=""></path></svg>
+              Payments
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>
+              Invoices
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"></path><path d="M12 2v20"></path><path d="m4.93 4.93 14.14 14.14"></path><path d="m19.07 4.93-14.14 14.14"></path></svg>
+              Tax
+            </button>
+          </div>
+
+          <!-- Developers -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between px-4 mb-3">
+              <div class="text-[11px] font-semibold text-neutral-600 uppercase tracking-wider">Developers</div>
+            </div>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"></path><path d="m17 7 2 2-2 2"></path><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect></svg>
+              API Keys
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class=""><path d="M18 8c0 4.5-6 9-6 9s-6-4.5-6-9a6 6 0 0 1 12 0"></path><circle cx="12" cy="8" r="2"></circle></svg>
+              Webhooks
+            </button>
+          </div>
+        </div>
+
+        <!-- User -->
+        <div class="mt-auto pt-6 border-t border-white/5">
+          <div class="flex items-center gap-3">
+            <div class="flex bg-center text-xs font-medium text-white w-8 h-8 bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/6e807631-f507-40d1-92e2-17f496e11b6b_320w.webp)] bg-cover border-white/10 border rounded-full items-center justify-center"></div>
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-white">Alicia Morin</span>
+              <span class="text-[10px] text-neutral-500">alicia@ledger.com</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-hidden flex flex-col bg-[#0c0d10] relative">
+      <!-- Glow FX -->
+      <div class="absolute top-0 right-0 w-[800px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none translate-x-1/3 -translate-y-1/4 z-0">
+      </div>
+      <div class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none -translate-x-1/3 translate-y-1/4 z-0">
+      </div>
+
+      <!-- Header -->
+      <header class="flex sticky z-30 bg-[#0c0d10]/80 h-20 border-white/5 border-b pr-8 pl-8 top-0 backdrop-blur-md items-center justify-between">
+        <div class="flex gap-3 text-sm gap-x-3 gap-y-3 items-center">
+          <span class="text-neutral-500">Ledger</span>
+          <span class="text-neutral-700">/</span>
+          <span class="text-white font-medium">Overview</span>
+        </div>
+
+        <div class="flex items-center gap-6">
+          <div class="relative hidden lg:block group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 group-hover:text-white transition-colors">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+            <input type="text" placeholder="Search or type a command" class="bg-[#121317] border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500/30 w-64 placeholder:text-neutral-600 transition-all hover:bg-[#16171b]">
+          </div>
+
+          <button class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:brightness-110 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)] border border-emerald-400/20">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+            Space
+          </button>
+
+          <div class="flex items-center gap-4 border-l border-white/5 pl-6">
+            <button class="relative text-neutral-400 hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-400 rounded-full border border-[#0c0d10]"></span>
+            </button>
+
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="p-8 overflow-y-auto flex-1 relative z-10 custom-scrollbar">
+        <!-- Title & Filters -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <h1 class="text-2xl text-white font-semibold tracking-tight">Overview</h1>
+          <div class="flex gap-2 bg-[#121317] border-white/5 border rounded-lg pt-1 pr-1 pb-1 pl-1 gap-x-2 gap-y-2 items-center">
+            <button class="px-3 py-1 text-xs font-medium text-white bg-white/10 rounded-md shadow-sm">7d</button>
+            <button class="px-3 py-1 text-xs font-medium text-neutral-500 hover:text-white transition-colors">30d</button>
+            <button class="px-3 py-1 text-xs font-medium text-neutral-500 hover:text-white transition-colors">90d</button>
+          </div>
+        </div>
+
+        <!-- Grid Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 gap-x-6 gap-y-6">
+
+          <!-- Balance Card 1 -->
+          <div class="bg-[#121317] border border-white/5 rounded-2xl p-6 relative group hover:border-white/10 transition-colors">
+            <div class="flex justify-between items-start mb-6">
+              <span class="text-sm font-medium text-neutral-500">Gross Volume</span>
+              <button class="text-neutral-600 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-3xl font-semibold text-white tracking-tight">$42,805</span>
+              <div class="flex text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border-emerald-500/20 border rounded-md pt-1 pr-2.5 pb-1 pl-2.5 shadow-[0_0_10px_rgba(16,185,129,0.1)] gap-x-1.5 gap-y-1.5 items-center">
+                +12.5% </div>
+            </div>
+          </div>
+
+          <!-- Balance Card 2 -->
+          <div class="bg-[#121317] border border-white/5 rounded-2xl p-6 relative group hover:border-white/10 transition-colors">
+            <div class="flex justify-between items-start mb-6">
+              <span class="text-sm font-medium text-neutral-500">Net Revenue</span>
+              <button class="text-neutral-600 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-3xl font-semibold text-white tracking-tight">$36,210</span>
+              <div class="flex text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border-emerald-500/20 border rounded-md pt-1 pr-2.5 pb-1 pl-2.5 shadow-[0_0_10px_rgba(16,185,129,0.1)] gap-x-1.5 gap-y-1.5 items-center">
+                +8.2% </div>
+            </div>
+          </div>
+
+          <!-- Balance Card 3 -->
+          <div class="bg-[#121317] border border-white/5 rounded-2xl p-6 relative group hover:border-white/10 transition-colors">
+            <div class="flex justify-between items-start mb-6">
+              <span class="text-sm font-medium text-neutral-500">Active Subscribers</span>
+              <button class="text-neutral-600 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class=""><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-3xl font-semibold text-white tracking-tight">1,429</span>
+              <div class="flex text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border-emerald-500/20 border rounded-md pt-1 pr-2.5 pb-1 pl-2.5 shadow-[0_0_10px_rgba(16,185,129,0.1)] gap-x-1.5 gap-y-1.5 items-center">
+                +4.1%</div>
+            </div>
+          </div>
+
+          <!-- Cashflow Chart -->
+          <div class="lg:col-span-2 flex flex-col overflow-hidden bg-[#121317] border-white/5 border rounded-2xl pt-6 pr-6 pb-6 pl-6 relative justify-between">
+            <!-- Header -->
+            <div class="flex justify-between items-start z-10 mb-2">
+              <div class="flex flex-col gap-1">
+                <span class="text-sm font-medium text-neutral-500">Revenue Over Time</span>
+                <span class="text-3xl text-white font-semibold tracking-tight">$164,230.00</span>
+              </div>
+              <div class="flex gap-1.5 bg-emerald-500/10 border-emerald-500/20 border rounded-md pt-1 pr-2.5 pb-1 pl-2.5 shadow-[0_0_10px_rgba(16,185,129,0.1)] gap-x-1.5 gap-y-1.5 items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400">
+                  <path d="m18 15-6-6-6 6"></path>
+                </svg>
+                <span class="text-emerald-400 font-medium text-sm">2.1%</span>
+              </div>
+            </div>
+
+            <!-- Chart Simulation -->
+            <div class="h-48 w-full relative mt-4">
+              <!-- Dotted vertical line -->
+              <div class="absolute top-0 bottom-0 left-[60%] w-px border-l border-dashed border-emerald-500/30 z-10">
+              </div>
+              <!-- Tooltip Dot -->
+              <div class="absolute top-[45%] left-[60%] w-3 h-3 bg-[#121317] border-2 border-emerald-400 rounded-full z-20 -translate-x-[5px] shadow-[0_0_10px_rgba(52,211,153,0.5)]">
+              </div>
+              <!-- Tooltip Label -->
+              <div class="absolute top-[10%] left-[60%] -translate-x-1/2 text-[10px] text-neutral-400 font-medium whitespace-nowrap bg-[#1a1b20] border border-white/5 px-2 py-1 rounded">
+                Thu, 25 Jun 2025, 10:45</div>
+
+              <!-- Y-Axis Lines -->
+              <div class="flex flex-col justify-between h-full absolute left-0 right-0 pointer-events-none">
+                <div class="w-full h-px bg-white/[0.02]"></div>
+                <div class="w-full h-px bg-white/[0.02]"></div>
+                <div class="w-full h-px bg-white/[0.02]"></div>
+                <div class="w-full h-px bg-white/[0.02]"></div>
+                <div class="w-full h-px bg-white/[0.02]"></div>
+              </div>
+
+              <!-- Line Chart Paths -->
+              <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="gradientGreen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.2"></stop>
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0"></stop>
+                  </linearGradient>
+                </defs>
+                <!-- Area -->
+                <path d="M0,130 C40,140 80,110 120,115 C160,120 200,90 240,60 C280,75 320,60 360,65 C400,60 440,75 480,90 C520,70 560,90 600,130 L600,200 L0,200 Z" fill="url(#gradientGreen)" class=""></path>
+                <!-- Line 1 (Green) -->
+                <path d="M0,130 C40,140 80,110 120,115 C160,120 200,90 240,60 C280,75 320,60 360,65 C400,60 440,75 480,90 C520,70 560,90 600,130" fill="none" stroke="#34d399" stroke-width="2"></path>
+                <!-- Line 2 (Yellow - subtle) -->
+                <path d="M0,140 C50,150 100,130 150,135 C200,140 250,110 300,100 C350,110 400,100 450,110 C500,100 550,120 600,110" fill="none" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.5" stroke-dasharray="4 4"></path>
+              </svg>
+
+              <!-- X Axis Labels -->
+              <div class="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-neutral-600 font-medium px-2">
+                <span>Jan</span><span>Feb</span><span class="">Mar</span><span class="">Apr</span><span>May</span><span class="">Jun</span><span>Jul</span><span>Aug</span><span>Sep</span>
+              </div>
+            </div>
+
+            <!-- Y Axis Labels -->
+            <div class="absolute left-4 top-20 bottom-8 flex flex-col justify-between text-[10px] text-neutral-600 font-medium pointer-events-none">
+              <span>50k</span><span>40k</span><span>30k</span><span>20k</span><span>10k</span>
+            </div>
+          </div>
+
+          <!-- MODIFIED: Recent Activity -->
+          <div class="bg-[#121317] border border-white/5 rounded-2xl flex flex-col relative overflow-hidden">
+            <!-- Header -->
+            <div class="p-6 pb-4 border-b border-white/5 flex items-center justify-between">
+              <h3 class="text-sm font-medium text-white">Recent Activity</h3>
+              <button class="text-neutral-500 hover:text-white transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto">
+              <div class="flex flex-col">
+                <!-- Item 1 -->
+                <div class="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors border-b border-white/5 last:border-0 group cursor-pointer">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/20 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z">
+                        </path>
+                      </svg>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-medium text-white">Stripe Payout</span>
+                      <span class="text-[10px] text-neutral-500">Today, 9:41 AM</span>
+                    </div>
+                  </div>
+                  <span class="text-xs font-medium text-emerald-400">+$1,420.00</span>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors border-b border-white/5 last:border-0 group cursor-pointer">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-white/10 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+                        <line x1="2" x2="22" y1="10" y2="10"></line>
+                      </svg>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-medium text-white">AWS Invoice</span>
+                      <span class="text-[10px] text-neutral-500">Yesterday</span>
+                    </div>
+                  </div>
+                  <span class="text-xs font-medium text-white">-$64.00</span>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors border-b border-white/5 last:border-0 group cursor-pointer">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-white/10 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        <rect width="20" height="14" x="2" y="6" rx="2"></rect>
+                      </svg>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-medium text-white">Slack</span>
+                      <span class="text-[10px] text-neutral-500">Oct 24, 2024</span>
+                    </div>
+                  </div>
+                  <span class="text-xs font-medium text-white">-$12.00</span>
+                </div>
+
+                <!-- Item 4 -->
+                <div class="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors border-b border-white/5 last:border-0 group cursor-pointer">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-white/10 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4"></path>
+                        <path d="M12 8h.01"></path>
+                      </svg>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-medium text-white">Notion</span>
+                      <span class="text-[10px] text-neutral-500">Oct 22, 2024</span>
+                    </div>
+                  </div>
+                  <span class="text-xs font-medium text-white">-$18.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODIFIED: Expenses -->
+          <div class="bg-[#121317] border border-white/5 rounded-2xl p-6 flex flex-col relative overflow-hidden group hover:border-white/10 transition-all">
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center gap-2">
+                
+                <span class="text-sm font-medium text-neutral-400">Expenses</span>
+              </div>
+              <button class="text-[10px] text-neutral-500 hover:text-white transition-colors">View all</button>
+            </div>
+
+            <div class="mt-auto">
+              <span class="text-2xl font-semibold text-white tracking-tight">$12,402</span>
+              <div class="flex items-center gap-2 mt-1 mb-4">
+                <span class="text-[11px] font-medium text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">+4.2%</span>
+                <span class="text-[11px] text-neutral-600">vs last month</span>
+              </div>
+
+              <!-- Breakdown Bar -->
+              <div class="flex h-1.5 w-full rounded-full overflow-hidden bg-white/5">
+                <div class="h-full bg-rose-500 w-[45%]"></div>
+                <div class="h-full bg-orange-400 w-[30%]"></div>
+                <div class="h-full bg-yellow-400 w-[15%]"></div>
+              </div>
+              <div class="flex justify-between mt-2 text-[10px] text-neutral-500">
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Servers</span>
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-orange-400"></div> Ads</span>
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400"></div> Tools</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODIFIED: Income -->
+          <div class="bg-[#121317] border border-white/5 rounded-2xl p-6 flex flex-col relative overflow-hidden group hover:border-white/10 transition-all">
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center gap-2">
+                
+                <span class="text-sm font-medium text-neutral-400">Income</span>
+              </div>
+              <button class="text-[10px] text-neutral-500 hover:text-white transition-colors">View all</button>
+            </div>
+
+            <div class="mt-auto">
+              <span class="text-2xl font-semibold text-white tracking-tight">$84,230</span>
+              <div class="flex items-center gap-2 mt-1 mb-4">
+                <span class="text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">+12.4%</span>
+                <span class="text-[11px] text-neutral-600">vs last month</span>
+              </div>
+
+              <!-- Breakdown Bar -->
+              <div class="flex h-1.5 w-full rounded-full overflow-hidden bg-white/5">
+                <div class="h-full bg-emerald-500 w-[60%]"></div>
+                <div class="h-full bg-emerald-400 w-[25%]"></div>
+                <div class="h-full bg-teal-400 w-[15%]"></div>
+              </div>
+              <div class="flex justify-between mt-2 text-[10px] text-neutral-500">
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Subs</span>
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div> API</span>
+                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-teal-400"></div> One-time</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODIFIED: Available Balance (Wallet) -->
+          <div class="bg-gradient-to-br from-[#1c1d24] to-[#121317] border border-white/5 rounded-2xl p-6 relative overflow-hidden group hover:border-white/10 transition-all shadow-lg">
+            <!-- Decorative Circle -->
+            <div class="absolute -right-12 -top-12 w-40 h-40 bg-emerald-500/5 rounded-full blur-[40px] pointer-events-none">
+            </div>
+
+            <div class="flex justify-between items-start mb-8 relative z-10">
+              <div class="">
+                <p class="text-sm font-medium text-neutral-400 mb-1">Total Balance</p>
+                <div class="flex items-center gap-2">
+                  <img src="assets/flagcdn.com/w20/us.png" width="16" class="rounded-[2px] opacity-80" alt="US">
+                  <span class="text-xs font-medium text-neutral-500">USD</span>
+                </div>
+              </div>
+              <div class="p-2 rounded-lg bg-white/5 border border-white/5 text-white shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1">
+                  </path>
+                  <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
+                </svg>
+              </div>
+            </div>
+
+            <div class="mb-8 relative z-10">
+              <h2 class="text-4xl font-semibold text-white tracking-tight">
+                $385,430<span class="text-2xl text-neutral-600">.00</span></h2>
+            </div>
+
+            <div class="flex gap-3 relative z-10">
+              <button class="flex-1 bg-white text-neutral-900 hover:bg-neutral-200 text-xs font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg> Transfer
+      </button>
+              <button class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg> Add Funds
+      </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</section><div class="[animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll pt-8 pb-8">
+  <div class="py-6 w-full">
+    <div class="text-center"></div>
+    <div class="relative flex w-full flex-col items-center justify-center overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_20%,black_80%,transparent)]">
+      <div class="flex w-max min-w-full shrink-0 animate-[marquee-rtl_40s_linear_infinite] items-center gap-12 group-hover:[animation-play-state:paused]">
+        
+        <!-- Original Set -->
+        <div class="flex items-center gap-12 shrink-0">
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/b9181a49-20ab-4552-b731-976469c0154b_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ca43984b-3298-41bb-871b-d113545c657c_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/07ee863a-59fe-4785-a806-5592f2439df2_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/be92aecb-6303-4bbe-9283-ba238ac8b0ee_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/9f9002c0-4b36-4d16-b000-15655b25b879_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1040d3ec-8da2-47f6-b134-1341261ccfb9_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+        </div>
+
+        <!-- Duplicate Set for Seamless Loop -->
+        <div class="flex items-center gap-12 shrink-0" aria-hidden="true">
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/b9181a49-20ab-4552-b731-976469c0154b_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ca43984b-3298-41bb-871b-d113545c657c_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/07ee863a-59fe-4785-a806-5592f2439df2_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/be92aecb-6303-4bbe-9283-ba238ac8b0ee_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[100px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/9f9002c0-4b36-4d16-b000-15655b25b879_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+          <a href="#" class="inline-flex items-center justify-center h-[40px] w-[150px] bg-center mix-blend-screen bg-[url(assets/hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1040d3ec-8da2-47f6-b134-1341261ccfb9_320w.jpg)] bg-cover rounded transition-opacity hover:opacity-80"></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><section class="fade-in-up -translate-y-6 [animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll bg-gradient-to-br from-white/10 via-white/0 to-white/10 from-white/20 w-full max-w-[1400px] rounded-3xl mt-24 mr-auto mb-24 ml-auto pt-8 pr-8 pb-8 pl-8 relative" style="position: relative; --border-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1)); --border-radius-before: 24px">
+  
+  <!-- Section Header -->
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-16 gap-x-4 gap-y-4">
+    <div class="">
+      <div class="flex items-center gap-2 mb-4">
+          <span class="w-6 h-[1px] bg-emerald-500"></span>
+          <p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Lorem Ipsum Dolor</p>
+      </div>
+      <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">
+        Lorem ipsum dolor sit
+      </h2>
+      <p class="sm:text-lg max-w-[60ch] text-base text-slate-400 mt-6 font-geist font-light">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor. Ut enim ad minim veniam, quis nostrud exercitation.
+      </p>
+    </div>
+  </div>
+
+  <!-- Card Component -->
+  <div class="overflow-hidden group bg-[#0A0B0E] w-full border-white/10 border rounded-3xl relative shadow-2xl">
+
+    <!-- Background Effects -->
+    <div class="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none">
+    </div>
+    <div class="absolute -bottom-[20%] -right-[10%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none">
+    </div>
+
+    <div class="md:p-10 pt-6 pr-6 pb-6 pl-6 relative">
+      
+      <!-- Header Row -->
+      <div class="z-10 flex flex-col gap-8 relative gap-x-8 gap-y-8">
+        <!-- Top Bar -->
+        <div class="flex flex-wrap gap-4 items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                <polyline points="16 7 22 7 22 13"></polyline>
+              </svg>
+            </div>
+            <h2 class="text-xl text-emerald-400 font-geist" style="">BTC/USD Spot</h2>
+          </div>
+
+          <!-- Controls mimic the reference image style -->
+          <div class="flex items-center gap-2">
+            <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-neutral-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+        </button>
+            <button class="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-neutral-400 hover:text-white text-xs transition-colors font-geist" style="">
+          Options
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class=""><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+          </div>
+        </div>
+
+        <!-- Stats & Filters -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div class="">
+            <div class="flex items-center gap-3 mb-1">
+              <span class="text-4xl md:text-5xl text-white font-geist tracking-tight font-light" style="">$38,492.10</span>
+              <span class="px-2.5 py-1 rounded-md text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)] font-geist" style="">+3.4%</span>
+            </div>
+            <p class="text-sm text-neutral-500 font-geist" style="">+$1,265.40 past 24 hours</p>
+          </div>
+
+          <!-- Time Pills -->
+          <div class="flex p-1 bg-[#14181F] rounded-xl border border-white/5 shadow-inner">
+            <button class="px-4 py-1.5 rounded-lg text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-geist" style="">12M</button>
+            <button class="px-4 py-1.5 rounded-lg text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-geist" style="">30D</button>
+            <button class="px-4 py-1.5 rounded-lg text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-geist" style="">7D</button>
+            <button class="px-4 py-1.5 rounded-lg text-xs bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] font-geist" style="">24H</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart Area -->
+      <div class="h-[400px] w-full relative">
+        <!-- Grid Lines -->
+        <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+          <div class="w-full h-px bg-white/5"></div>
+          <div class="w-full h-px bg-white/5"></div>
+          <div class="w-full h-px bg-white/5"></div>
+          <div class="w-full h-px bg-white/5"></div>
+          <div class="w-full h-px bg-white/5"></div>
+        </div>
+
+        <!-- Main Chart Layout -->
+        <div class="absolute inset-0 flex">
+          <!-- Candles Area -->
+          <div class="flex-1 flex items-end justify-between px-2 pb-8 relative z-10">
+
+            <!-- Highlight Overlay (Selected Range) -->
+            <div class="absolute top-[10%] bottom-8 left-[35%] right-[35%] bg-gradient-to-b from-emerald-500/10 to-transparent border-x border-t border-emerald-500/20 rounded-t-lg backdrop-blur-[2px] z-0">
+              <div class="absolute -top-3 -left-3 w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center backdrop-blur-md border border-emerald-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-300">
+                  <path d="m15 18-6-6 6-6"></path>
+                </svg>
+              </div>
+              <div class="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center backdrop-blur-md border border-emerald-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-300">
+                  <path d="m9 18 6-6-6-6"></path>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Tooltip -->
+            <div class="absolute top-[8%] left-[50%] -translate-x-1/2 z-20">
+              <div class="bg-slate-900/90 backdrop-blur-md border border-white/10 text-white text-sm py-1.5 px-3 rounded-lg shadow-xl flex items-center gap-1 font-geist" style="">
+                $38,154 <span class="text-neutral-400 font-geist" style="">USD</span>
+              </div>
+              <div class="w-px h-16 bg-white/20 mx-auto mt-1 border-r border-dashed border-white/30"></div>
+            </div>
+
+            <!-- Candles (Simulated with div blocks) -->
+            <!-- Candle Logic: Flex container for col, justify-center for wick, relative for body -->
+
+            <!-- Set 1 -->
+            <div class="w-2 h-[40%] flex justify-center relative group candle-anim" style="animation-delay: 0ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[60%] w-[6px] bg-emerald-400 rounded-[1px] top-[20%] shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+              </div>
+            </div>
+            <div class="w-2 h-[45%] flex justify-center relative group candle-anim" style="animation-delay: 100ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[30%] w-[6px] bg-emerald-400 rounded-[1px] top-[10%]"></div>
+            </div>
+            <div class="w-2 h-[35%] flex justify-center relative group candle-anim" style="animation-delay: 200ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[50%] w-[6px] bg-purple-500 rounded-[1px] top-[20%]"></div>
+            </div>
+            <div class="w-2 h-[42%] flex justify-center relative group candle-anim" style="animation-delay: 300ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[40%] w-[6px] bg-purple-500 rounded-[1px] top-[30%]"></div>
+            </div>
+            <div class="w-2 h-[30%] flex justify-center relative group candle-anim" style="animation-delay: 400ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[70%] w-[6px] bg-emerald-400 rounded-[1px] top-[15%]"></div>
+            </div>
+            <div class="w-2 h-[25%] flex justify-center relative group candle-anim" style="animation-delay: 500ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[40%] w-[6px] bg-emerald-400 rounded-[1px] top-[30%]"></div>
+            </div>
+            <div class="w-2 h-[38%] flex justify-center relative group candle-anim" style="animation-delay: 600ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[50%] w-[6px] bg-emerald-400 rounded-[1px] top-[10%]"></div>
+            </div>
+            <div class="w-2 h-[45%] flex justify-center relative group candle-anim" style="animation-delay: 700ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[30%] w-[6px] bg-purple-500 rounded-[1px] top-[40%]"></div>
+            </div>
+
+            <!-- Set 2 (Middle/Highlight Area) -->
+            <div class="w-2 h-[55%] flex justify-center relative group candle-anim" style="animation-delay: 800ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[40%] w-[6px] bg-purple-500 rounded-[1px] top-[20%]"></div>
+            </div>
+            <div class="w-2 h-[65%] flex justify-center relative group candle-anim" style="animation-delay: 900ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[50%] w-[6px] bg-emerald-400 rounded-[1px] top-[25%] shadow-[0_0_15px_rgba(52,211,153,0.5)]">
+              </div>
+            </div>
+            <div class="w-2 h-[60%] flex justify-center relative group candle-anim" style="animation-delay: 1000ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[20%] w-[6px] bg-purple-500 rounded-[1px] top-[10%]"></div>
+            </div>
+            <div class="w-2 h-[50%] flex justify-center relative group candle-anim" style="animation-delay: 1100ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[60%] w-[6px] bg-purple-500 rounded-[1px] top-[20%]"></div>
+            </div>
+            <div class="w-2 h-[40%] flex justify-center relative group candle-anim" style="animation-delay: 1200ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[30%] w-[6px] bg-emerald-400 rounded-[1px] top-[40%]"></div>
+            </div>
+
+            <!-- Set 3 -->
+            <div class="w-2 h-[45%] flex justify-center relative group candle-anim" style="animation-delay: 1300ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[50%] w-[6px] bg-purple-500 rounded-[1px] top-[20%]"></div>
+            </div>
+            <div class="w-2 h-[52%] flex justify-center relative group candle-anim" style="animation-delay: 1400ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[20%] w-[6px] bg-emerald-400 rounded-[1px] top-[40%]"></div>
+            </div>
+            <div class="w-2 h-[48%] flex justify-center relative group candle-anim" style="animation-delay: 1500ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="bg-purple-500 w-[6px] h-[60%] rounded-[1px] absolute top-[10%]"></div>
+            </div>
+            <div class="w-2 h-[35%] flex justify-center relative group candle-anim" style="animation-delay: 1600ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[40%] w-[6px] bg-emerald-400 rounded-[1px] top-[30%]"></div>
+            </div>
+            <div class="w-2 h-[55%] flex justify-center relative group candle-anim" style="animation-delay: 1700ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[50%] w-[6px] bg-emerald-400 rounded-[1px] top-[10%] shadow-[0_0_15px_rgba(52,211,153,0.4)]">
+              </div>
+            </div>
+            <div class="w-2 h-[65%] flex justify-center relative group candle-anim" style="animation-delay: 1800ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[30%] w-[6px] bg-emerald-400 rounded-[1px] top-[10%]"></div>
+            </div>
+            <div class="w-2 h-[62%] flex justify-center relative group candle-anim" style="animation-delay: 1900ms">
+              <div class="w-[1px] h-full bg-purple-500/50"></div>
+              <div class="absolute h-[20%] w-[6px] bg-purple-500 rounded-[1px] top-[40%]"></div>
+            </div>
+            <div class="w-2 h-[68%] flex justify-center relative group candle-anim" style="animation-delay: 2000ms">
+              <div class="w-[1px] h-full bg-emerald-500/50"></div>
+              <div class="absolute h-[40%] w-[6px] bg-emerald-400 rounded-[1px] top-[20%] shadow-[0_0_15px_rgba(52,211,153,0.4)]">
+              </div>
+            </div>
+          </div>
+
+          <!-- Y Axis Labels -->
+          <div class="flex flex-col justify-between items-end h-full pb-8 pl-4 text-xs font-normal text-neutral-500">
+            <span class="font-geist" style="">40k</span>
+            <span class="font-geist" style="">35k</span>
+            <span class="font-geist" style="">30k</span>
+            <span class="font-geist" style="">25k</span>
+            <span class="font-geist" style="">20k</span>
+          </div>
+        </div>
+
+        <!-- X Axis Labels -->
+        <div class="absolute bottom-0 left-0 right-10 flex justify-between text-xs font-normal text-neutral-500 px-2">
+          <span class="font-geist" style="">8:00AM</span>
+          <span class="font-geist max-sm:hidden" style="">9:00AM</span>
+          <span class="font-geist max-sm:hidden" style="">10:00AM</span>
+          <span class="font-geist" style="">11:00AM</span>
+          <span class="font-geist max-sm:hidden" style="">12:00AM</span>
+          <span class="font-geist max-sm:hidden" style="">01:00PM</span>
+          <span class="font-geist" style="">02:00PM</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+      <!-- FEATURES SECTION -->
+      <section class="fade-in-up -translate-y-6 [animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll bg-gradient-to-br from-white/10 via-white/0 to-white/10 w-full max-w-[1400px] rounded-3xl mt-24 mr-auto mb-24 ml-auto pt-8 pr-8 pb-8 pl-8 relative">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-16">
+          <div class="">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-6 h-[1px] bg-emerald-500"></span>
+                <p class="text-sm font-semibold text-emerald-400 tracking-wide uppercase font-geist">Consectetur Elit</p>
+            </div>
+            <h2 class="sm:text-5xl text-3xl text-white tracking-tight font-light font-geist leading-[1.1]">
+              Lorem ipsum dolor sit amet elit
+            </h2>
+            <p class="sm:text-lg max-w-[60ch] text-base text-slate-400 mt-6 font-geist font-light">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore.
+            </p>
+          </div>
+        </div>
+    
+        <div class="font-geist space-y-6">
+          <!-- Row 1: 2/3 - 1/3 -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Large feature (2/3) -->
+            <div class="relative lg:col-span-2 group border border-white/10 md:p-10 overflow-hidden bg-[#0A0B0E] rounded-3xl pt-8 pr-8 pb-8 pl-8 shadow-2xl hover:border-white/20 transition-all duration-500">
+              <div class="absolute -right-20 -top-20 h-96 w-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-emerald-500/20 transition-all duration-500"></div>
+              
+              <div class="flex items-center gap-4 mb-8 relative z-10">
+                <div class="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <iconify-icon icon="lucide:shield-check" class="text-emerald-400 text-2xl"></iconify-icon>
+                </div>
+                <h3 class="text-2xl md:text-3xl font-semibold tracking-tight text-white">Lorem Ipsum Dolor</h3>
+              </div>
+              
+              <p class="text-slate-400 max-w-2xl text-lg font-light mb-10 relative z-10">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim.
+              </p>
+    
+              <!-- Feature Icons Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 relative z-10">
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:globe-2" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Lorem Ipsum</span>
+                </div>
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:lock" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Dolor Sit Amet</span>
+                </div>
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:file-check" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Consectetur</span>
+                </div>
+                <div class="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  <iconify-icon icon="lucide:scale" class="text-slate-400 text-2xl"></iconify-icon>
+                  <span class="text-xs font-medium text-slate-300">Adipiscing</span>
+                </div>
+              </div>
+            </div>
+    
+            <!-- Small card (1/3) - GPU/API Visual -->
+            <div class="lg:col-span-1">
+              <div class="group relative overflow-hidden h-full bg-[#0A0B0E] border border-white/10 rounded-3xl shadow-lg hover:border-emerald-500/30 transition-all duration-500">
+                <div class="flex flex-col h-full pt-8 pr-8 pb-8 pl-8">
+  <!-- Visual -->
+  <div class="relative h-48 w-full mb-8 rounded-2xl bg-gradient-to-br from-[#0f1115] to-[#000000] border border-white/5 overflow-hidden shadow-2xl group">
+    <!-- Code/Terminal Visual -->
+    <div id="terminal-logs-aura" class="absolute inset-5 font-mono text-[11px] leading-relaxed transition-opacity duration-700" style="opacity: 1;"><div class="flex items-center flex-wrap min-h-[1.5em]"><span class="text-slate-500">&gt;</span><span class="w-1.5 h-3 bg-emerald-500 ml-1 opacity-100 inline-block align-middle shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span></div></div>
+    
+    <!-- Activity Pulse Badge -->
+    <div class="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm z-20">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="text-xs font-medium text-emerald-400">99.99% Uptime</span>
+    </div>
+
+    <!-- Scanline effect -->
+    <div class="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-20 pointer-events-none"></div>
+  </div>
+
+  <div class="mt-auto">
+    <div class="flex items-center gap-3 mb-3">
+      <iconify-icon icon="lucide:zap" class="text-emerald-400 text-xl"></iconify-icon>
+      <h3 class="text-xl font-semibold text-white tracking-tight">Dolor Sit Amet</h3>
+    </div>
+    <p class="text-sm text-slate-400 font-light leading-relaxed">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod. Ut enim ad minim veniam quis nostrud.
+    </p>
+  </div>
+
+  <script>
+    (function() {
+      const container = document.getElementById('terminal-logs-aura');
+      if (!container) return;
+
+      const lines = [
+        { text: "> initializing_ledger_api...", class: "text-slate-500" },
+        { text: "> connecting_webhooks...", class: "text-slate-500" },
+        { 
+          segments: [
+            { text: "> status: ", class: "text-slate-500" },
+            { text: "active", class: "text-emerald-400" }
+          ]
+        },
+        { 
+          segments: [
+            { text: "> latency: ", class: "text-slate-500" },
+            { text: "12ms", class: "text-white" }
+          ]
+        },
+        { 
+          segments: [
+            { text: "> region: ", class: "text-slate-500" },
+            { text: "us-east-1", class: "text-white" }
+          ]
+        },
+        { text: "> verifying_signature...", class: "text-slate-500" },
+        { 
+          segments: [
+            { text: "> 200 OK: ", class: "text-slate-500" },
+            { text: "event_processed", class: "text-emerald-400" }
+          ]
+        }
+      ];
+
+      const typeDelay = 30; // ms per char
+      const lineDelay = 300; // ms between lines
+      const resetDelay = 3500; // ms before restart
+
+      async function typeLine(lineData) {
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'flex items-center flex-wrap min-h-[1.5em]';
+        
+        // Active cursor
+        const cursor = document.createElement('span');
+        cursor.className = 'w-1.5 h-3 bg-emerald-500 ml-1 opacity-100 inline-block align-middle shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+        lineDiv.appendChild(cursor);
+        container.appendChild(lineDiv);
+
+        const segments = lineData.segments || [{ text: lineData.text, class: lineData.class }];
+        
+        for (let segment of segments) {
+            const span = document.createElement('span');
+            span.className = segment.class;
+            lineDiv.insertBefore(span, cursor);
+            
+            for (let char of segment.text) {
+                span.textContent += char;
+                await new Promise(r => setTimeout(r, Math.random() * 20 + typeDelay));
+            }
+        }
+        
+        // Remove solid cursor, we will add blinking one at the end if needed or next line handles it
+        cursor.remove();
+      }
+
+      async function run() {
+        while (true) { // Infinite loop
+            container.innerHTML = '';
+            container.style.opacity = '1';
+            
+            for (let i = 0; i < lines.length; i++) {
+                await typeLine(lines[i]);
+                await new Promise(r => setTimeout(r, lineDelay));
+            }
+
+            // Add blinking cursor at the end
+            const finalLine = document.createElement('div');
+            finalLine.className = 'flex items-center mt-0.5';
+            finalLine.innerHTML = '<span class="text-slate-500 mr-1">></span><span class="w-1.5 h-3 bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>';
+            container.appendChild(finalLine);
+
+            await new Promise(r => setTimeout(r, resetDelay));
+            
+            // Soft fade out
+            container.style.opacity = '0';
+            await new Promise(r => setTimeout(r, 700)); // Match transition duration
+        }
+      }
+
+      // Start animation
+      run();
+    })();
+  </script>
+</div>
+              </div>
+            </div>
+          </div>
+    
+          <!-- Row 2: 1/3 - 2/3 -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Small card (1/3) -->
+            <div class="lg:col-span-1">
+              <article class="relative bg-[#0A0B0E] border border-white/10 rounded-3xl p-8 h-full hover:border-white/20 transition-all">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-white text-lg font-semibold tracking-tight">Lorem Ipsum Dolor</h3>
+                  <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">Optimized</span>
+                </div>
+                <p class="text-sm text-slate-400 font-light mb-6">Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod.</p>
+        
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Lorem &amp; Ipsum Dolor</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Consectetur Adipiscing</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                  <div class="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 group hover:border-emerald-500/20 transition-colors">
+                    <span class="text-sm text-slate-300">Sed Do Eiusmod</span>
+                    <iconify-icon icon="lucide:check" class="text-emerald-500 text-sm"></iconify-icon>
+                  </div>
+                </div>
+              </article>
+            </div>
+    
+            <!-- Large feature (2/3) -->
+            <div class="lg:col-span-2">
+              <aside class="overflow-hidden flex flex-col hover:border-white/20 transition-all bg-[#0A0B0E] h-full border-white/10 border rounded-3xl pt-8 pr-8 pb-8 pl-8 relative">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h4 class="text-2xl font-semibold text-white tracking-tight">
+                    Lorem Ipsum &amp; Dolor Sit
+                    </h4>
+                    <div class="flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5">
+                        <iconify-icon icon="lucide:trending-up" class="text-emerald-400"></iconify-icon>
+                        <span class="text-xs text-slate-300 font-medium">+15% Recovery Rate</span>
+                    </div>
+                </div>
+                
+                <p class="text-slate-400 max-w-lg font-light mb-8">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim.
+                </p>
+        
+                <!-- Graph Visualization -->
+                <div class="mt-auto h-32 w-full flex items-end gap-2 opacity-80">
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[30%] animate-bar-loop" style="animation-delay: 0ms"></div>
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[45%] animate-bar-loop" style="animation-delay: 100ms"></div>
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[35%] animate-bar-loop" style="animation-delay: 200ms"></div>
+                  <div class="w-full bg-slate-800/50 rounded-t-sm h-[50%] animate-bar-loop" style="animation-delay: 300ms"></div>
+                  <!-- Recovery Highlight -->
+                  <div class="w-full h-[75%] relative group cursor-pointer">
+                    <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-black text-[10px] font-bold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Recovered</div>
+                    <div class="w-full h-full bg-gradient-to-t from-emerald-900/50 to-emerald-500 rounded-t-sm animate-bar-loop" style="animation-delay: 400ms"></div>
+                  </div>
+                  <div class="w-full bg-emerald-500/20 rounded-t-sm h-[60%] animate-bar-loop" style="animation-delay: 500ms"></div>
+                  <div class="w-full bg-emerald-500/30 rounded-t-sm h-[80%] animate-bar-loop" style="animation-delay: 600ms"></div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TESTIMONIALS SECTION -->
+      <section class="fade-in-up -translate-y-6 [animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll bg-gradient-to-br from-white/10 via-white/0 to-white/10 w-full max-w-[1400px] rounded-3xl mt-24 mr-auto mb-24 ml-auto pt-8 pr-8 pb-8 pl-8 relative">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-16 gap-x-4 gap-y-4">
+    <div class="">
+      <div class="flex items-center gap-2 mb-4">
+          <span class="w-6 h-[1px] bg-emerald-500"></span>
+          <p class="uppercase text-sm font-semibold text-emerald-400 tracking-wide font-geist">LOREM IPSUM</p>
+      </div>
+      <h2 class="sm:text-5xl leading-[1.1] text-3xl font-light text-white tracking-tight font-geist">Lorem ipsum dolor sit amet</h2>
+      <p class="sm:text-lg text-base font-light text-slate-400 font-geist max-w-[60ch] mt-6">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore</p>
+    </div>
+  </div>
+      
+        <div class="overflow-hidden relative">
+    <!-- Fade Edges -->
+
+    <!-- Testimonials Container -->
+    <div class="flex flex-col md:block md:h-[650px] group/container w-full max-w-[1200px] mr-auto ml-auto pt-12 pr-4 pb-12 pl-4 relative perspective-distant" id="testimonials-container">
+
+        <!-- Navigation Arrows -->
+        <div class="hidden md:flex -translate-x-1/2 gap-6 z-40 absolute bottom-8 left-1/2">
+            <button onclick="handleTestimonialSwipe(-1)" class="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center transition-all duration-300 bg-[#0A0B0E] hover:bg-white/5 hover:border-white/20 text-neutral-400 hover:text-white hover:scale-105 active:scale-95 shadow-lg group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 group-hover:-translate-x-0.5 transition-transform">
+                    <path d="m15 18-6-6 6-6"></path>
+                </svg>
+            </button>
+            <button onclick="handleTestimonialSwipe(1)" class="w-14 h-14 rounded-full border border-emerald-500/30 flex items-center justify-center hover:bg-emerald-500/10 hover:border-emerald-500 transition-all duration-300 bg-[#0A0B0E] shadow-lg shadow-emerald-500/10 hover:scale-105 active:scale-95 text-emerald-400 group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 group-hover:translate-x-0.5 transition-transform">
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Card 1: Sarah (Initial Left) -->
+        <div id="testimonial-card-1" class="transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] md:absolute md:top-1/2 md:left-1/2 w-full p-8 md:w-[400px] mb-6 md:mb-0 border bg-[#0A0B0E] border-white/10 shadow-2xl md:-translate-x-[125%] md:-translate-y-[60%] md:-rotate-[6deg] md:scale-[0.9] z-10 opacity-100 md:opacity-40 hover:md:opacity-100 hover:z-20 hover:border-white/20 rounded-[2rem]">
+            <div class="flex items-center gap-1 mb-6 text-emerald-500/40">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+            </div>
+            <blockquote class="leading-relaxed text-lg text-slate-300 mb-8 font-geist font-light">
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do
+                eiusmod tempor incididunt."
+            </blockquote>
+            <div class="flex items-center gap-4 pt-4 border-t border-white/5">
+                <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-emerald-400 text-sm ring-1 ring-white/10 font-geist font-medium">
+                    LI
+                </div>
+                <div>
+                    <div class="text-sm text-white font-geist font-medium">
+                        Lorem Ipsum
+                    </div>
+                    <div class="text-xs text-neutral-500 font-geist">
+                        Dolor at Sit Amet
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Michael (Initial Center) -->
+        <div id="testimonial-card-2" class="transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] md:absolute md:top-1/2 md:left-1/2 md:w-[460px] md:mb-0 md:-translate-x-1/2 md:-translate-y-[65%] md:rotate-0 md:scale-100 z-30 hover:border-emerald-500/30 bg-[#121317] opacity-100 w-full border-emerald-500/20 border rounded-[2.5rem] mb-6 pt-10 pr-10 pb-10 pl-10 shadow-[0_0_40px_-10px_rgba(16,185,129,0.1)]">
+            <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50"></div>
+            <div class="flex flex-wrap gap-3 items-center justify-between mb-8">
+                <div class="flex items-center gap-1.5 text-emerald-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs uppercase border border-emerald-500/20 font-geist font-bold tracking-wider">
+                    Featured
+                </span>
+            </div>
+            <blockquote class="text-[1.35rem] text-white mb-10 leading-snug font-geist font-light">
+                "Ut enim ad minim veniam, quis nostrud exercitation ullamco. Duis
+                aute irure dolor in reprehenderit."
+            </blockquote>
+            <div class="flex items-center gap-5 pt-6 border-t border-white/5">
+                <div class="relative">
+                    <div class="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white text-base ring-2 ring-emerald-500/20 shadow-md font-geist font-medium">
+                        CE
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-[3px] border-[#121317]">
+                    </div>
+                </div>
+                <div class="">
+                    <div class="text-base text-white font-geist font-medium">
+                        Consectetur Elit
+                    </div>
+                    <div class="text-sm text-neutral-500 font-geist">
+                        Sed Do Eiusmod at Tempor
+                    </div>
+                </div>
+                <div class="ml-auto md:opacity-100 opacity-0 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-neutral-700">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Emily (Initial Right) -->
+        <div id="testimonial-card-3" class="transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] md:absolute md:top-1/2 md:left-1/2 w-full p-8 md:w-[400px] mb-6 md:mb-0 border bg-[#0A0B0E] border-white/10 shadow-2xl md:translate-x-[25%] md:-translate-y-[60%] md:rotate-[6deg] md:scale-[0.9] z-10 opacity-100 md:opacity-40 hover:md:opacity-100 hover:z-20 hover:border-white/20 rounded-[2rem]">
+            <div class="flex items-center gap-1 mb-6 text-emerald-500/40">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+            </div>
+            <blockquote class="leading-relaxed text-lg text-slate-300 mb-8 font-geist font-light">
+                "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
+                officia deserunt mollit anim."
+            </blockquote>
+            <div class="flex items-center gap-4 pt-4 border-t border-white/5">
+                <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-emerald-400 text-sm ring-1 ring-white/10 font-geist font-medium">
+                    UE
+                </div>
+                <div>
+                    <div class="text-sm text-white font-geist font-medium">
+                        Ut Enim
+                    </div>
+                    <div class="text-xs text-neutral-500 font-geist">
+                        Ad Minim at Veniam
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic for Swiping -->
+    <script>
+        // Use an IIFE or window attachment to ensure scope safety in different environments
+        (function() {
+            window.currentTestimonialIndex = 1; // Start with card 2 (index 1) in center
+
+            window.handleTestimonialSwipe = function(direction) {
+                const cards = [
+                    document.getElementById('testimonial-card-1'),
+                    document.getElementById('testimonial-card-2'),
+                    document.getElementById('testimonial-card-3')
+                ];
+
+                if (!cards[0] || !cards[1] || !cards[2]) return;
+
+                // Update index cyclically
+                window.currentTestimonialIndex = (window.currentTestimonialIndex + direction + 3) % 3;
+
+                cards.forEach((card, index) => {
+                    // Calculate visual position relative to current index
+                    // 0 = Left, 1 = Center, 2 = Right
+                    // If direction is +1 (Next), index 1 moves to pos 0, index 2 moves to pos 1, index 0 moves to pos 2
+                    const pos = (index - window.currentTestimonialIndex + 1 + 3) % 3;
+
+                    // Base classes common to all cards
+                    const baseCls = "transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] md:absolute md:top-1/2 md:left-1/2 w-full mb-6 md:mb-0 border";
+
+                    let stateCls = "";
+
+                    if (pos === 0) {
+                        // Left State
+                        stateCls = " p-8 md:p-8 md:w-[400px] bg-[#0A0B0E] border-white/10 shadow-2xl md:-translate-x-[125%] md:-translate-y-[60%] md:-rotate-[6deg] md:scale-[0.9] z-10 opacity-100 md:opacity-40 hover:md:opacity-100 hover:z-20 hover:border-white/20 rounded-[2rem]";
+                    } else if (pos === 1) {
+                        // Center State
+                        stateCls = " p-10 md:p-10 md:w-[460px] bg-[#121317] border-emerald-500/20 shadow-[0_0_40px_-10px_rgba(16,185,129,0.1)] md:-translate-x-1/2 md:-translate-y-[65%] md:rotate-0 md:scale-100 z-30 opacity-100 hover:border-emerald-500/30 rounded-[2.5rem]";
+                    } else {
+                        // Right State
+                        stateCls = " p-8 md:p-8 md:w-[400px] bg-[#0A0B0E] border-white/10 shadow-2xl md:translate-x-[25%] md:-translate-y-[60%] md:rotate-[6deg] md:scale-[0.9] z-10 opacity-100 md:opacity-40 hover:md:opacity-100 hover:z-20 hover:border-white/20 rounded-[2rem]";
+                    }
+
+                    card.className = baseCls + stateCls;
+                });
+            };
+        })();
+    </script>
+</div>
+      </section>
+
+      <!-- PRICING SECTION -->
+      <section class="fade-in-up -translate-y-6 [animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll bg-gradient-to-br from-white/10 via-white/0 to-white/10 w-full max-w-[1400px] rounded-3xl mt-24 mr-auto mb-24 ml-auto pt-8 pr-8 pb-8 pl-8 relative">
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between animate-[slideUp_0.6s_ease-out] mb-12">
+    <div class="">
+      <div class="flex mb-4 gap-x-2 gap-y-2 items-center">
+        <span class="w-6 h-[1px] bg-emerald-500"></span>
+        <p class="uppercase text-sm font-semibold text-emerald-400 tracking-wide font-geist">Lorem</p>
+      </div>
+      <h2 class="sm:text-5xl leading-[1.1] text-3xl font-light text-white tracking-tight font-geist">
+        Lorem ipsum dolor
+      </h2>
+      <p class="sm:text-lg max-w-[60ch] text-base text-slate-400 mt-6 font-geist font-light">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.
+      </p>
+    </div>
+    <!-- Billing toggle -->
+    <div class="flex items-center gap-3 select-none">
+      <span class="text-sm text-white font-geist transition-colors duration-300" id="labelMonthly">Monthly</span>
+      <button id="billingToggleBtn" class="w-12 h-6 rounded-full bg-white/10 border border-white/10 relative transition-colors hover:border-emerald-500/50 focus:outline-none cursor-pointer" onclick="togglePricing()">
+        <div id="billingKnob" class="absolute top-1 left-1 w-4 h-4 rounded-full bg-emerald-500 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"></div>
+      </button>
+      <div class="flex items-center">
+        <span class="text-sm text-neutral-400 font-geist font-medium transition-colors duration-300" id="labelAnnual">Yearly</span>
+        <span class="text-emerald-500 text-xs font-semibold ml-1.5 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">-20%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="pricingCard" class="overflow-hidden animate-[slideUp_0.6s_ease-out_0.1s_both] bg-[#0A0B0E] border border-white/10 rounded-2xl shadow-2xl relative group" onmousemove="updateCursor(event)" style="--x: 724px; --y: 330.90625px;">
+    
+    <!-- Flashlight Effect: Border (High opacity emerald) -->
+    <div class="pointer-events-none absolute -inset-px p-px rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100 z-10" style="background: radial-gradient(600px circle at var(--x, 0px) var(--y, 0px), rgba(16, 185, 129, 0.4), transparent 40%); 
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); 
+                mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); 
+                -webkit-mask-composite: xor; 
+                mask-composite: exclude;">
+    </div>
+
+    <!-- Flashlight Effect: Background (Low opacity white) -->
+    <div class="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100 z-0" style="background: radial-gradient(800px circle at var(--x, 0px) var(--y, 0px), rgba(255, 255, 255, 0.03), transparent 40%)">
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 relative z-10">
+      <!-- Left: Plan summary -->
+      <div class="flex flex-col bg-[#121317]/80 h-full border-r border-white/5 pt-8 pr-8 pb-8 pl-8 relative backdrop-blur-sm">
+          <div class="absolute top-0 right-0 p-px rounded-bl-xl rounded-tr-xl bg-gradient-to-br from-white/10 to-white/0 overflow-hidden"></div>
+          
+          <div class="mb-8">
+            <h3 class="text-xl font-medium text-white font-geist mb-2">Lorem Ipsum Dolor</h3>
+            <p class="text-sm text-neutral-400 font-geist leading-relaxed">Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.</p>
+          </div>
+
+          <div class="flex items-baseline gap-1 mb-8">
+            <span class="text-5xl font-light text-white font-geist tracking-tight flex items-start">
+              $<span class="price-value tabular-nums transition-all duration-300" id="priceValue" data-monthly="29" data-annual="279">29</span>
+            </span>
+            <span class="text-neutral-500 font-geist transition-opacity duration-300" id="billingPeriod">/month</span>
+          </div>
+
+          <div class="mt-auto pt-8 border-t border-white/5">
+             <div class="flex items-center gap-3 mb-2">
+                 <div class="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                 <span class="text-xs text-emerald-400 font-medium uppercase tracking-wider font-geist">Dolor Sit</span>
+             </div>
+             <p class="text-sm text-neutral-300 font-geist">Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.</p>
+          </div>
+        </div>
+
+      <!-- Right: Features + CTA -->
+      <div class="lg:p-8 pt-6 pr-6 pb-6 pl-6 flex flex-col justify-between bg-gradient-to-br from-white/[0.02] to-transparent">
+        <div class="">
+          <div class="text-sm font-medium text-white mb-6 font-geist">Lorem ipsum dolor sit:</div>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Lorem ipsum dolor sit amet</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Consectetur adipiscing elit sed do eiusmod</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Tempor incididunt ut labore &amp; dolore</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" text-emerald-500"=""><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Magna aliqua enim &amp; ad minim</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+              <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Veniam quis nostrud &amp; exercitation</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm font-geist text-neutral-300">
+               <div class="mt-0.5 rounded-full bg-emerald-500/10 p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="">Ullamco laboris nisi ut</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="mt-10 flex items-center justify-between gap-6 border-t border-white/5 pt-8">
+          <div class="">
+             <div class="flex items-center -space-x-2">
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/images.unsplash.com/photo-1534528741775-53994a69daeb__q94a704e6.jpg)] bg-cover"></div>
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/images.unsplash.com/photo-1506794778202-cad84cf45f1d__q94a704e6.jpg)] bg-cover"></div>
+                <div class="h-8 w-8 rounded-full ring-2 ring-[#0A0B0E] bg-neutral-700 bg-[url(assets/images.unsplash.com/photo-1494790108377-be9c29b29330__q94a704e6.jpg)] bg-cover"></div>
+             </div>
+             <div class="text-[10px] text-neutral-500 mt-2 font-geist">Lorem ipsum dolor sit amet</div>
+          </div>
+          <button class="flex gap-2 ring-1 ring-white/10 hover:bg-white/10 transition-all text-sm text-white font-geist bg-white/5 rounded-full py-3 px-6 items-center justify-center font-medium shadow-lg hover:shadow-emerald-500/10 hover:border-emerald-500/30">
+            Lorem ipsum
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Flashlight cursor effect
+    window.updateCursor = function(e) {
+      const card = e.currentTarget;
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--x', `${x}px`);
+      card.style.setProperty('--y', `${y}px`);
+    }
+
+    // Toggle logic
+    window.togglePricing = function() {
+      const knob = document.getElementById('billingKnob');
+      const annualLabel = document.getElementById('labelAnnual');
+      const monthlyLabel = document.getElementById('labelMonthly');
+      const priceValue = document.getElementById('priceValue');
+      const billingPeriod = document.getElementById('billingPeriod');
+      
+      const isAnnual = knob.classList.contains('translate-x-6');
+      
+      // Animate opacity of values for smoothness
+      priceValue.style.opacity = '0.5';
+      billingPeriod.style.opacity = '0.5';
+      
+      setTimeout(() => {
+          if (!isAnnual) {
+            // Switch to Annual
+            knob.classList.add('translate-x-6');
+            knob.style.transform = 'translateX(24px)';
+            
+            annualLabel.classList.add('text-white');
+            annualLabel.classList.remove('text-neutral-400');
+            monthlyLabel.classList.remove('text-white');
+            monthlyLabel.classList.add('text-neutral-400');
+            
+            priceValue.textContent = priceValue.dataset.annual;
+            billingPeriod.textContent = '/year';
+          } else {
+            // Switch to Monthly
+            knob.classList.remove('translate-x-6');
+            knob.style.transform = 'translateX(0px)';
+            
+            annualLabel.classList.remove('text-white');
+            annualLabel.classList.add('text-neutral-400');
+            monthlyLabel.classList.add('text-white');
+            monthlyLabel.classList.remove('text-neutral-400');
+            
+            priceValue.textContent = priceValue.dataset.monthly;
+            billingPeriod.textContent = '/month';
+          }
+          
+          priceValue.style.opacity = '1';
+          billingPeriod.style.opacity = '1';
+      }, 150);
+    }
+  </script>
+</section>
+
+      <!-- CONTACT / FOOTER SECTION -->
+      <section class="[animation:animationIn_0.8s_ease-out_0.1s_both] animate-on-scroll max-w-[1400px] z-10 mt-24 mr-auto ml-auto pb-6">
+  <div class="overflow-hidden bg-[#0A0B0E] border-white/10 border rounded-3xl relative">
+    <!-- Decorative Background -->
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_40%)]"></div>
+      <div class="absolute bottom-0 left-0 w-full h-[300px] bg-gradient-to-t from-emerald-950/20 to-transparent"></div>
+    </div>
+
+    <div class="md:p-12 lg:p-16 flex flex-col z-10 font-geist pt-8 pr-8 pb-8 pl-8 relative">
+      
+      <!-- Top Grid Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-16 md:mb-24">
+        
+        <!-- Brand / Contact Column (Left Side - 4 cols) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+          <div class="flex flex-col gap-2">
+            <span class="text-emerald-400 font-semibold text-xs tracking-widest uppercase">Lorem</span>
+            <h3 class="text-slate-300 text-lg font-medium">Lorem &amp; Ipsum Dolor</h3>
+          </div>
+          <a href="mailto:hello@ledger.com" class="text-3xl text-white hover:text-emerald-400 transition-colors tracking-tight font-light">hello@ledger.com</a>
+          
+          <div class="flex items-center gap-3 mt-2">
+             <a href="#" class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5 group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter transition-transform group-hover:scale-110"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+             </a>
+             <a href="#" class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5 group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github transition-transform group-hover:scale-110"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+             </a>
+             <a href="#" class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5 group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin transition-transform group-hover:scale-110"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect width="4" height="12" x="2" y="9"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+             </a>
+          </div>
+        </div>
+
+        <!-- Links Grid (Right Side - 8 cols) -->
+        <div class="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+          <!-- Column 1 -->
+          <div class="flex flex-col gap-4">
+            <span class="text-white font-medium text-sm">Product</span>
+            <ul class="flex flex-col gap-3 text-sm text-slate-500">
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Payments</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Billing</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Tax &amp; Invoicing</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Checkout</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Pricing</a></li>
+            </ul>
+          </div>
+          
+          <!-- Column 2 -->
+          <div class="flex flex-col gap-4">
+            <span class="text-white font-medium text-sm">Resources</span>
+            <ul class="flex flex-col gap-3 text-sm text-slate-500">
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Documentation</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">API Reference</a></li>
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Integrations</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Help Center</a></li>
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Changelog</a></li>
+            </ul>
+          </div>
+          
+          <!-- Column 3 -->
+          <div class="flex flex-col gap-4">
+            <span class="text-white font-medium text-sm">Company</span>
+            <ul class="flex flex-col gap-3 text-sm text-slate-500">
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">About</a></li>
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Customers</a></li>
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Blog</a></li>
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Careers</a></li>
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Contact</a></li>
+            </ul>
+          </div>
+          
+          <!-- Column 4 -->
+          <div class="flex flex-col gap-4">
+            <span class="text-white font-medium text-sm">Legal</span>
+            <ul class="flex flex-col gap-3 text-sm text-slate-500">
+              <li class=""><a href="#" class="hover:text-emerald-400 transition-colors">Privacy</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Terms</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Cookie Policy</a></li>
+              <li><a href="#" class="hover:text-emerald-400 transition-colors">Licenses</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Brand Area -->
+      <div class="flex flex-col gap-8 pt-8 border-t border-white/5">
+        <!-- Copyright & Status -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs text-slate-500">
+           <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+             <span>© 2025 Ledger Financial Infrastructure Inc.</span>
+             <div class="flex items-center gap-2">
+               <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+               <span class="text-slate-400">All systems operational</span>
+             </div>
+           </div>
+           
+           <div class="flex items-center gap-6 opacity-60">
+             <span>San Francisco</span>
+             <span>London</span>
+             <span>Singapore</span>
+           </div>
+        </div>
+
+        <!-- Big Footer Text -->
+        <div class="w-full pt-8">
+           <p class="text-[13vw] leading-[0.75] font-bold text-white/5 tracking-tighter w-full select-none text-center lg:text-left pointer-events-none">
+              LEDGER
+           </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+    </div>
+</body></html>
