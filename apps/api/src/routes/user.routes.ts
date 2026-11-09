@@ -12,7 +12,7 @@ const updateCurrentUserSchema = z.object({
   name: z.string().trim().min(1),
   cpf: z.string().trim().min(1),
   phone: z.string().trim().min(1),
-  email: z.string().trim().email(),
+  email: z.string().trim().pipe(z.email()),
   addressStreet: z.string().trim().min(1),
   addressNumber: z.string().trim().min(1),
   addressDistrict: z.string().trim().min(1),

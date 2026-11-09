@@ -6,7 +6,7 @@ import { getScope } from '../lib/request-scope';
 
 const dashboardQuerySchema = z.object({
   vehicleId: z.string().trim().min(1).optional(),
-  type: z.nativeEnum(ExpenseType).optional(),
+  type: z.enum(ExpenseType).optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
 });

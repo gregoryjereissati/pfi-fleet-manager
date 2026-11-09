@@ -10,7 +10,7 @@ const vehicleQuerySchema = z.object({
   plate: z.string().optional(),
   brand: z.string().optional(),
   model: z.string().optional(),
-  status: z.nativeEnum(VehicleStatus).optional(),
+  status: z.enum(VehicleStatus).optional(),
   yearMin: z.coerce.number().int().min(1900).max(2030).optional(),
   yearMax: z.coerce.number().int().min(1900).max(2030).optional(),
   orderBy: z.enum(['plate', 'brand', 'model', 'year', 'createdAt']).optional(),

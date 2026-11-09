@@ -8,17 +8,17 @@ import { getScope } from '../lib/request-scope';
 import { AppError } from '../middlewares/error-handler';
 
 const updateRoleSchema = z.object({
-  role: z.nativeEnum(UserRole),
+  role: z.enum(UserRole),
 });
 
 const updateStatusSchema = z.object({
-  status: z.nativeEnum(UserStatus),
-  role: z.nativeEnum(UserRole).optional(),
+  status: z.enum(UserStatus),
+  role: z.enum(UserRole).optional(),
 });
 
 const listUsersQuerySchema = z.object({
-  status: z.nativeEnum(UserStatus).optional(),
-  role: z.nativeEnum(UserRole).optional(),
+  status: z.enum(UserStatus).optional(),
+  role: z.enum(UserRole).optional(),
 });
 
 export const userController = {

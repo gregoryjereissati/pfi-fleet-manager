@@ -8,14 +8,14 @@ import { validate } from '../middlewares/validate';
 
 const createMaintenanceSchema = z.object({
   vehicleId: z.string().trim().min(1),
-  type: z.nativeEnum(MaintenanceType),
+  type: z.enum(MaintenanceType),
   description: z.string().trim().min(1),
   scheduledDate: z.coerce.date(),
 });
 
 const updateMaintenanceSchema = z
   .object({
-    status: z.nativeEnum(MaintenanceStatus).optional(),
+    status: z.enum(MaintenanceStatus).optional(),
     description: z.string().trim().min(1).optional(),
     scheduledDate: z.coerce.date().optional(),
     completedDate: z.union([z.coerce.date(), z.null()]).optional(),

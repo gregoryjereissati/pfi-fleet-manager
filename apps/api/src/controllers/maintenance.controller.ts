@@ -7,8 +7,8 @@ import { CABECALHO_TOTAL, camposDePaginacao } from '../lib/paginacao';
 
 const maintenanceQuerySchema = z.object({
   vehicleId: z.string().trim().min(1).optional(),
-  type: z.nativeEnum(MaintenanceType).optional(),
-  status: z.nativeEnum(MaintenanceStatus).optional(),
+  type: z.enum(MaintenanceType).optional(),
+  status: z.enum(MaintenanceStatus).optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   orderBy: z.enum(['scheduledDate', 'createdAt', 'status']).optional(),

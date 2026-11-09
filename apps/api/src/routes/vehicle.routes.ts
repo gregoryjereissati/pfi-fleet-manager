@@ -12,7 +12,7 @@ const createVehicleSchema = z.object({
   model: z.string().trim().min(1),
   year: z.number().int().min(1900).max(2030),
   color: z.string().trim().optional(),
-  status: z.nativeEnum(VehicleStatus).optional(),
+  status: z.enum(VehicleStatus).optional(),
 });
 
 const updateVehicleSchema = createVehicleSchema

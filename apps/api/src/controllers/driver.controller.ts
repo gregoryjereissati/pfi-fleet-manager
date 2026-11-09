@@ -8,7 +8,7 @@ import { toAssignmentDto, toDriverDto } from '../lib/driver-dto';
 
 const driverQuerySchema = z.object({
   search: z.string().optional(),
-  status: z.nativeEnum(DriverStatus).optional(),
+  status: z.enum(DriverStatus).optional(),
 });
 
 export const driverController = {

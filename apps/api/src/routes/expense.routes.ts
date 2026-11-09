@@ -25,7 +25,7 @@ const dataDaDespesa = z.coerce.date().refine(
 
 const createExpenseSchema = z.object({
   vehicleId: z.string().trim().min(1),
-  type: z.nativeEnum(ExpenseType),
+  type: z.enum(ExpenseType),
   amount: z.number().positive(),
   date: dataDaDespesa,
   description: z.string().trim().optional(),
@@ -40,7 +40,7 @@ const createExpenseSchema = z.object({
 const updateExpenseSchema = z
   .object({
     vehicleId: z.string().trim().min(1).optional(),
-    type: z.nativeEnum(ExpenseType).optional(),
+    type: z.enum(ExpenseType).optional(),
     amount: z.number().positive().optional(),
     date: dataDaDespesa.optional(),
     description: z.string().trim().optional(),

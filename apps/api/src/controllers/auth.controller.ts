@@ -8,10 +8,10 @@ const registerProfileSchema = z.object({
   name: z.string().trim().min(2).max(100),
   cpf: z.string().trim().min(11).max(18),
   phone: z.string().trim().min(8).max(20),
-  email: z.string().trim().email(),
+  email: z.string().trim().pipe(z.email()),
   /** Código da empresa em que se pede acesso. */
   companyJoinCode: z.string().trim().min(1).max(40),
-  requestedRole: z.nativeEnum(UserRole).default(UserRole.OPERATOR),
+  requestedRole: z.enum(UserRole).default(UserRole.OPERATOR),
   addressStreet: z.string().trim().min(1),
   addressNumber: z.string().trim().min(1),
   addressDistrict: z.string().trim().min(1),
@@ -38,7 +38,7 @@ export const authController = {
 
       const parsed = registerProfileSchema.safeParse(req.body);
       if (!parsed.success) {
-        res.status(400).json({ error: 'Invalid data', details: parsed.error.flatten() });
+        res.status(400).json({ error: 'Invalid data', details: z.flattenError(parsed.error) });
         return;
       }
 

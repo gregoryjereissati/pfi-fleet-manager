@@ -22,7 +22,7 @@ const updateDriverSchema = z
     cnh: z.string().trim().min(1).nullable().optional(),
     cnhExpiry: dataCivil.nullable().optional(),
     phone: z.string().trim().nullable().optional(),
-    status: z.nativeEnum(DriverStatus).optional(),
+    status: z.enum(DriverStatus).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field is required',

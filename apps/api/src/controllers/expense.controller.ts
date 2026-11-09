@@ -8,8 +8,8 @@ import { CABECALHO_TOTAL, camposDePaginacao } from '../lib/paginacao';
 
 const expenseQuerySchema = z.object({
   vehicleId: z.string().trim().min(1).optional(),
-  type: z.nativeEnum(ExpenseType).optional(),
-  status: z.nativeEnum(EntryStatus).optional(),
+  type: z.enum(ExpenseType).optional(),
+  status: z.enum(EntryStatus).optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   orderBy: z.enum(['date', 'amount', 'createdAt']).optional(),
