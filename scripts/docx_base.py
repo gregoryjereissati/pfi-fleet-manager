@@ -192,7 +192,7 @@ def _campo(par, instrucao, resultado='', tamanho=None):
     run(fim)
 
 
-_TOKENS = re.compile(r'(\*\*.+?\*\*|\*.+?\*|\{(?:fig|qua):\w+\})')
+_TOKENS = re.compile(r'(\*\*.+?\*\*|\*.+?\*|\{(?:fig|qua|tab):\w+\})')
 
 
 def texto_rico(par, texto, tamanho=None, negrito=False):
