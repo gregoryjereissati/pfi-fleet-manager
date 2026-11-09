@@ -6,7 +6,7 @@
 # zero no próprio runner a cada execução — nenhuma credencial de produção
 # entra nesse job.
 #
-# `publicar` só existe num push na main e só começa depois que `validar`
+# `publicar` só existe na main (push ou execução manual) e só começa depois que `validar`
 # termina com sucesso: um teste vermelho impede a publicação. A publicação
 # automática da Vercel na main está desligada em vercel.json; a produção sai
 # daqui, pela CLI da Vercel. Branches que não são a main continuam recebendo
@@ -22,6 +22,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Execução manual pela aba Actions: republica a main quando uma execução
+  # falha por erro do próprio GitHub e não aceita nova tentativa.
+  workflow_dispatch:
 
 concurrency:
   group: testes-${{ github.ref }}
@@ -91,7 +94,9 @@ jobs:
 
   publicar:
     needs: validar
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # Uma publicação por vez: duas em paralelo poderiam chegar fora de ordem.
