@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
-import { Bell, Building2, ChevronDown, Menu } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { useAlertCount } from '@/hooks/useAlertCount'
+import { Building2, ChevronDown, Menu } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { NotificationsPopover } from '@/components/NotificationsPopover'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { definirEmpresaAtiva } from '@/lib/empresa-ativa'
 
@@ -21,8 +21,6 @@ const pageTitleMatchers: Array<{ pattern: RegExp; key: string }> = [
 export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { t, i18n } = useTranslation()
   const { pathname } = useLocation()
-  const navigate = useNavigate()
-  const { count } = useAlertCount()
   const { currentUser } = useCurrentUser()
 
   const toggleLanguage = () => {
@@ -77,16 +75,7 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
             <ChevronDown size={12} />
           </button>
         )}
-        <button
-          onClick={() => navigate('/alerts')}
-          className="lg-icon-btn"
-          aria-label={t('alerts.title')}
-        >
-          <Bell size={17} strokeWidth={1.5} />
-          {count > 0 && (
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-lg-app bg-yellow-400" />
-          )}
-        </button>
+        <NotificationsPopover />
         <button
           onClick={toggleLanguage}
           className="flex h-9 items-center rounded-lg border border-white/5 bg-white/5 px-3 text-xs font-medium text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"

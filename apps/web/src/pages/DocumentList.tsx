@@ -15,6 +15,7 @@ import { EmptyState, LoadingState, PageHeader } from '@/components/ledger/Ui'
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
 import { formatDate } from '@/lib/utils'
+import { Select } from '@/components/ledger/Select'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
@@ -95,7 +96,7 @@ export function DocumentList() {
       />
 
       <div className="lg-inner grid gap-3 p-4 md:grid-cols-3">
-        <select
+        <Select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
           className={inputClass}
@@ -106,8 +107,8 @@ export function DocumentList() {
               {vehicle.plate} - {vehicle.brand} {vehicle.model}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={type}
           onChange={(event) => setType(event.target.value as DocumentType | '')}
           className={inputClass}
@@ -118,8 +119,8 @@ export function DocumentList() {
               {t(`documents.types.${documentType}`)}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={status}
           onChange={(event) => setStatus(event.target.value as DocumentStatus | '')}
           className={inputClass}
@@ -128,7 +129,7 @@ export function DocumentList() {
           <option value="OK">{t('documents.statuses.OK')}</option>
           <option value="EXPIRING_SOON">{t('documents.statuses.EXPIRING_SOON')}</option>
           <option value="EXPIRED">{t('documents.statuses.EXPIRED')}</option>
-        </select>
+        </Select>
       </div>
 
       {loading ? (

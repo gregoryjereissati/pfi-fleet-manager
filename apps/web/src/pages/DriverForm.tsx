@@ -8,6 +8,7 @@ import { useUsers } from '@/hooks/useUsers'
 import { useToken } from '@/hooks/useToken'
 import { formatCpf } from '@/lib/utils'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { Select } from '@/components/ledger/Select'
 
 interface DriverFormState {
   /** Só no cadastro: de quem é a ficha. */
@@ -174,7 +175,7 @@ export function DriverForm() {
         ) : (
           <div>
             <label className={labelClass}>{t('drivers.columns.person')}</label>
-            <select
+            <Select
               required
               value={form.userId}
               onChange={(event) => updateField('userId', event.target.value)}
@@ -189,7 +190,7 @@ export function DriverForm() {
                   {user.name} — {t(`users.roles.${user.role}`)}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1.5 text-xs text-neutral-500">
               {candidates.length === 0 && !usersLoading
                 ? t('drivers.noCandidates')
@@ -227,7 +228,7 @@ export function DriverForm() {
           {isEdit && (
             <div>
               <label className={labelClass}>{t('drivers.columns.status')}</label>
-              <select
+              <Select
                 value={form.status}
                 onChange={(event) =>
                   updateField('status', event.target.value as DriverStatus)
@@ -236,7 +237,7 @@ export function DriverForm() {
               >
                 <option value={DriverStatus.ACTIVE}>{t('status.active')}</option>
                 <option value={DriverStatus.INACTIVE}>{t('status.inactive')}</option>
-              </select>
+              </Select>
             </div>
           )}
         </div>

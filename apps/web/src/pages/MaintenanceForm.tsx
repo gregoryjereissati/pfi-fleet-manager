@@ -6,6 +6,7 @@ import { useVehicleOptions } from '@/hooks/useVehicleOptions'
 import { useToken } from '@/hooks/useToken'
 import { apiFetch } from '@/lib/api'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
+import { Select } from '@/components/ledger/Select'
 
 interface MaintenanceFormState {
   vehicleId: string
@@ -160,7 +161,7 @@ export function MaintenanceForm() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className={labelClass}>{t('maintenances.columns.vehicle')}</label>
-            <select
+            <Select
               required
               disabled={loading || isEdit}
               value={form.vehicleId}
@@ -173,11 +174,11 @@ export function MaintenanceForm() {
                   {vehicle.plate} • {vehicle.brand} {vehicle.model}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <label className={labelClass}>{t('maintenances.columns.type')}</label>
-            <select
+            <Select
               value={form.type}
               onChange={(event) => updateField('type', event.target.value as MaintenanceType)}
               className={inputClass}
@@ -187,7 +188,7 @@ export function MaintenanceForm() {
                   {t(`maintenances.types.${maintenanceType}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <label className={labelClass}>{t('maintenances.columns.scheduledDate')}</label>

@@ -14,6 +14,7 @@ import { EmptyState, LoadingState, PageHeader, SearchField } from '@/components/
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
 import { Car, Plus } from 'lucide-react'
+import { Select } from '@/components/ledger/Select'
 
 type VehicleSortField = 'createdAt' | 'plate' | 'brand' | 'model' | 'year'
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
@@ -159,7 +160,7 @@ export function VehicleList() {
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('vehicles.searchPlaceholder')}
         />
-        <select
+        <Select
           value={status}
           onChange={(event) => setStatus(event.target.value)}
           className={inputClass}
@@ -167,7 +168,7 @@ export function VehicleList() {
           <option value="">{t('filters.allStatuses')}</option>
           <option value={VehicleStatus.ACTIVE}>{t('status.active')}</option>
           <option value={VehicleStatus.INACTIVE}>{t('status.inactive')}</option>
-        </select>
+        </Select>
         <input
           type="number"
           value={yearMin}

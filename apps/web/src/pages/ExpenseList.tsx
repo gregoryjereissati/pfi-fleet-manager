@@ -17,6 +17,7 @@ import { EmptyState, LoadingState, PageHeader, Pagination } from '@/components/l
 import { RowActions } from '@/components/ledger/RowActions'
 import { useToast } from '@/components/ledger/Toast'
 import { formatDate } from '@/lib/utils'
+import { Select } from '@/components/ledger/Select'
 
 type ConfirmDialogVariant = 'danger' | 'warning' | 'default'
 
@@ -142,7 +143,7 @@ export function ExpenseList() {
       />
 
       <div className="lg-inner grid gap-3 p-4 md:grid-cols-4">
-        <select
+        <Select
           value={vehicleId}
           onChange={(event) => setVehicleId(event.target.value)}
           className={inputClass}
@@ -153,8 +154,8 @@ export function ExpenseList() {
               {vehicle.plate} • {vehicle.brand} {vehicle.model}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={type}
           onChange={(event) => setType(event.target.value as ExpenseType | '')}
           className={inputClass}
@@ -165,7 +166,7 @@ export function ExpenseList() {
               {t(`expenses.types.${expenseType}`)}
             </option>
           ))}
-        </select>
+        </Select>
         <input
           type="date"
           value={startDate}
