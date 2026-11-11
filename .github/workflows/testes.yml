@@ -16,6 +16,9 @@
 #   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID  obrigatórios;
 #   PRODUCAO_DIRECT_URL                             opcional — quando existe,
 #     as migrations pendentes são aplicadas à produção antes da publicação.
+# Variáveis do repositório usadas por `publicar` (obrigatórias):
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY  valores públicos do frontend de
+#     produção; o `vercel pull` não baixa as variáveis sensíveis da Vercel.
 name: testes
 
 on:
@@ -146,8 +149,40 @@ jobs:
       - name: Configuração do projeto na Vercel
         run: npx --yes vercel@65.12.1 pull --yes --environment=production --token="$VERCEL_TOKEN"
 
+      # As variáveis de produção da Vercel são sensíveis: o `vercel pull` não as
+      # baixa e grava "[SENSITIVE]" no lugar. A API não sofre, porque a Vercel
+      # injeta os valores reais nas funções em tempo de execução. Já o Vite
+      # embute as VITE_* no bundle durante o build, e com o placeholder o
+      # frontend quebra ao criar o cliente do Supabase (tela preta). A URL e a
+      # chave publicável vão para o navegador de qualquer forma, então ficam
+      # nas variáveis do repositório e substituem o placeholder aqui.
+      - name: Variáveis públicas do frontend
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          for variavel in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
+            if [ -z "${!variavel}" ]; then
+              echo "::error::Variável $variavel ausente. Cadastre-a em Settings > Secrets and variables > Actions > Variables."
+              exit 1
+            fi
+          done
+          arquivo=.vercel/.env.production.local
+          sed -i '/^VITE_SUPABASE_URL=/d;/^VITE_SUPABASE_ANON_KEY=/d' "$arquivo"
+          printf 'VITE_SUPABASE_URL="%s"\nVITE_SUPABASE_ANON_KEY="%s"\n' \
+            "$VITE_SUPABASE_URL" "$VITE_SUPABASE_ANON_KEY" >> "$arquivo"
+
       - name: Build
         run: npx --yes vercel@65.12.1 build --prod --token="$VERCEL_TOKEN"
+
+      # Trava de segurança: um placeholder no bundle significa frontend quebrado
+      # em produção. Melhor não publicar e manter a versão anterior no ar.
+      - name: Conferência do bundle
+        run: |
+          if grep -rl '\[SENSITIVE\]' .vercel/output/static; then
+            echo "::error::O bundle do frontend contém o placeholder [SENSITIVE] de uma variável da Vercel. Publicação cancelada."
+            exit 1
+          fi
 
       - name: Publicação
         run: npx --yes vercel@65.12.1 deploy --prebuilt --prod --token="$VERCEL_TOKEN"

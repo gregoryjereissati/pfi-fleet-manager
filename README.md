@@ -565,6 +565,20 @@ Segredos do repositório (Settings → Secrets and variables → Actions):
 Sem os três obrigatórios, o job `publicar` falha com a mensagem do segredo
 ausente e a produção fica na última versão publicada.
 
+Variáveis do repositório (mesma tela, aba **Variables**), ambas obrigatórias:
+
+| Variável | Valor |
+|---|---|
+| `VITE_SUPABASE_URL` | URL do projeto Supabase de produção |
+| `VITE_SUPABASE_ANON_KEY` | chave publicável do mesmo projeto |
+
+As variáveis de produção da Vercel são sensíveis, e o `vercel pull` grava
+`[SENSITIVE]` no lugar delas. A API não é afetada, porque a Vercel injeta os
+valores nas funções em tempo de execução, mas o Vite embute as `VITE_*` no
+bundle durante o build. Por isso o job substitui as duas pelos valores destas
+variáveis e, depois do build, recusa publicar se ainda houver `[SENSITIVE]` no
+bundle.
+
 ### Demais comandos
 
 | Comando | Ação |
