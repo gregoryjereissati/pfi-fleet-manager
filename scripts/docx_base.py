@@ -12,15 +12,17 @@ Unifor: NBR 14724, 10520, 6023, 6024, 6027 e 6028). Reúne o objeto do
 documento e as funções de composição — parágrafos, títulos, figuras, quadros,
 campos automáticos e seções — usadas por gerar-documento.py.
 
-Marcação aceita nos textos passados a p(), item(), quadro() e referencia():
+Marcação aceita nos textos passados a p(), alineas(), quadro() e referencia():
     *texto*        itálico (estrangeirismos, et al.)
     **texto**      negrito (título da obra nas referências)
+    ***texto***    negrito e itálico (estrangeirismo no glossário)
     {fig:chave}    número da figura, por referência cruzada automática
     {qua:chave}    número do quadro, por referência cruzada automática
 """
 
 import os
 import re
+import unicodedata
 
 from docx import Document
 from docx.enum.section import WD_SECTION
@@ -49,7 +51,7 @@ ORDEM = {
     'fig': ['visao_geral', 'casos_de_uso', 'camadas', 'pacotes', 'modelo_er',
             'autenticacao', 'ciclo_usuario', 'tela_painel', 'tela_alertas', 'upload',
             'implantacao', 'ci_cd'],
-    'qua': ['tecnologias', 'camadas_verificacao', 'entidades', 'acesso', 'rf', 'rnf', 'rn',
+    'qua': ['relacionados', 'comparacao', 'tecnologias', 'camadas_verificacao', 'entidades', 'acesso', 'rf', 'rnf', 'rn',
             'verificacoes', 'e2e_areas', 'objetivos', 'cronograma', 'partes', 'arquitetura'],
     'tab': ['cobertura', 'workload_niveis', 'workload_rotas', 'carga_rotas', 'estresse',
             'volume', 'producao', 'resiliencia'],
@@ -192,7 +194,7 @@ def _campo(par, instrucao, resultado='', tamanho=None):
     run(fim)
 
 
-_TOKENS = re.compile(r'(\*\*.+?\*\*|\*.+?\*|\{(?:fig|qua|tab):\w+\})')
+_TOKENS = re.compile(r'(\*\*\*.+?\*\*\*|\*\*.+?\*\*|\*.+?\*|\{(?:fig|qua|tab):\w+\})')
 
 
 def texto_rico(par, texto, tamanho=None, negrito=False):
@@ -207,7 +209,10 @@ def texto_rico(par, texto, tamanho=None, negrito=False):
             _campo(par, f'REF {_marcador(tipo, chave)} \\h \\* CHARFORMAT',
                    str(_numero(tipo, chave)), tamanho)
             continue
-        if parte.startswith('**'):
+        if parte.startswith('***'):
+            r = par.add_run(parte[3:-3])
+            r.bold = r.italic = True
+        elif parte.startswith('**'):
             r = par.add_run(parte[2:-2])
             r.bold = True
         elif parte.startswith('*'):
@@ -271,13 +276,18 @@ def h2(texto):
     return doc.add_heading(texto, 2)
 
 
-def item(texto, nivel=0):
-    par = doc.add_paragraph(style='List Bullet' if nivel == 0 else 'List Bullet 2')
-    texto_rico(par, texto)
-    par.paragraph_format.line_spacing = 1.5
-    par.paragraph_format.space_after = Pt(0)
-    par.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    return par
+def alineas(textos):
+    """Alíneas da NBR 6024: letra minúscula e parêntese, texto em minúscula,
+    ponto e vírgula entre elas e ponto na última."""
+    ultimo = len(textos) - 1
+    for i, texto in enumerate(textos):
+        fim = '.' if i == ultimo else ('; e' if i == ultimo - 1 else ';')
+        par = doc.add_paragraph()
+        f = par.paragraph_format
+        f.left_indent = Cm(1.88)
+        f.first_line_indent = Cm(-0.63)
+        f.tab_stops.add_tab_stop(Cm(1.88))
+        texto_rico(par, f'{chr(97 + i)})\t{texto}{fim}')
 
 
 def natureza(texto, espaco_antes=None):
@@ -354,6 +364,7 @@ def _fonte_objeto(fonte='Fonte: Elaborado pelos autores (2026).',
     par.paragraph_format.first_line_indent = Cm(0)
     texto_rico(par, fonte, tamanho=10)
     if nota:
+        par.paragraph_format.keep_with_next = True
         n = doc.add_paragraph()
         n.alignment = alinhamento
         n.paragraph_format.line_spacing = 1.0
@@ -375,7 +386,24 @@ def figura(chave, arquivo, titulo, largura=15.5):
     _fonte_objeto()
 
 
-def quadro(chave, titulo, cabecalho, linhas, larguras=None):
+def _larguras(t, larguras):
+    """Fixa a largura das colunas e impede que uma linha se parta entre páginas.
+
+    O Word obedece à largura da célula; o LibreOffice, à da grade da tabela.
+    """
+    for row in t.rows:
+        nao_partir = OxmlElement('w:cantSplit')
+        row._tr.get_or_add_trPr().insert(0, nao_partir)
+    if not larguras:
+        return
+    t.autofit = False
+    for i, w in enumerate(larguras):
+        t.columns[i].width = Cm(w)
+        for row in t.rows:
+            row.cells[i].width = Cm(w)
+
+
+def quadro(chave, titulo, cabecalho, linhas, larguras=None, nota=None):
     """Quadro: informação textual, com grade fechada (F, p. 49–50)."""
     _legenda('qua', chave, titulo)
 
@@ -402,12 +430,15 @@ def quadro(chave, titulo, cabecalho, linhas, larguras=None):
         cels = t.add_row().cells
         for i, v in enumerate(ln):
             celula(cels[i], v)
-    if larguras:
+    _larguras(t, larguras)
+    if len(linhas) <= 12:
+        # Quadro de até uma página não se divide: cada linha fica com a
+        # seguinte, e a última, com a fonte.
         for row in t.rows:
-            for i, w in enumerate(larguras):
-                row.cells[i].width = Cm(w)
+            for cel in row.cells:
+                cel.paragraphs[0].paragraph_format.keep_with_next = True
 
-    _fonte_objeto()
+    _fonte_objeto(nota=nota)
     return t
 
 
@@ -464,10 +495,7 @@ def tabela(chave, titulo, cabecalho, linhas, larguras=None, fonte=None, nota=Non
         cels = t.add_row().cells
         for i, v in enumerate(ln):
             celula(cels[i], v, primeira=(i == 0))
-    if larguras:
-        for row in t.rows:
-            for i, w in enumerate(larguras):
-                row.cells[i].width = Cm(w)
+    _larguras(t, larguras)
 
     _fonte_objeto(fonte or 'Fonte: Elaborado pelos autores (2026).',
                   WD_ALIGN_PARAGRAPH.LEFT, nota)
@@ -487,13 +515,16 @@ def referencia(texto):
     f.line_spacing = 1.0
     f.first_line_indent = Cm(0)
     f.space_after = Pt(12)
+    f.keep_together = True
     return par
 
 
 def sigla(abreviatura, extenso):
     par = doc.add_paragraph()
+    par.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    par.paragraph_format.left_indent = Cm(3)
+    par.paragraph_format.first_line_indent = Cm(-3)
     par.paragraph_format.tab_stops.add_tab_stop(Cm(3))
-    par.paragraph_format.first_line_indent = Cm(0)
     par.add_run(f'{abreviatura}\t')
     texto_rico(par, extenso)
     return par
@@ -547,6 +578,31 @@ def numerar_paginas(secao):
     par.paragraph_format.line_spacing = 1.0
     par.paragraph_format.first_line_indent = Cm(0)
     _campo(par, 'PAGE', '', tamanho=10)
+
+
+def _entrada(texto):
+    """Chave alfabética de uma referência: sem marcação e sem acentos."""
+    limpo = unicodedata.normalize('NFD', texto.replace('*', ''))
+    return ''.join(c for c in limpo if not unicodedata.combining(c)).lower()
+
+
+def verificar_referencias(entradas):
+    """Confere a lista de referências: ordem alfabética e citação no texto.
+
+    Cada entrada é um par (chamada, texto). A chamada é um trecho que precisa
+    aparecer no documento, como 'Fielding (2000)' ou 'Menezes, 2022'.
+    """
+    textos = [texto for _, texto in entradas]
+    ordenados = sorted(textos, key=_entrada)
+    for atual, esperado in zip(textos, ordenados):
+        if atual != esperado:
+            raise ValueError(f'Referência fora da ordem alfabética: {atual[:60]}')
+    lista = {texto.replace('*', '') for texto in textos}
+    corpo = '\n'.join(par.text for par in doc.paragraphs if par.text not in lista)
+    for chamada, texto in entradas:
+        formas = (chamada, re.sub(r'^(.*), (\[?\d{4}\]?)$', r'\1 (\2)', chamada))
+        if not any(forma in corpo for forma in formas):
+            raise ValueError(f'Referência sem citação no texto: {chamada}')
 
 
 def verificar_objetos():
