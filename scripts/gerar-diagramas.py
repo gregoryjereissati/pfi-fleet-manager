@@ -149,6 +149,20 @@ def elipse(cx, cy, rx, ry, s, tam=12):
             f'stroke="{BORDA}" stroke-width="1.2"/>' + texto(cx, cy + 4, s, tam))
 
 
+def _faixa_util(pagina, folga=8):
+    """Recorta as faixas brancas acima e abaixo do desenho.
+
+    O título da figura fica na legenda do documento (ABNT), não na imagem.
+    """
+    pix = pagina.get_pixmap(alpha=False)
+    passo, dados = pix.stride, pix.samples
+    branca = b'\xff' * passo
+    cheias = [i for i in range(pix.height) if dados[i * passo:(i + 1) * passo] != branca]
+    escala = pagina.rect.height / pix.height
+    return fitz.Rect(0, max(0, cheias[0] * escala - folga), pagina.rect.width,
+                     min(pagina.rect.height, (cheias[-1] + 1) * escala + folga))
+
+
 def salvar(nome, svg):
     os.makedirs(SAIDA, exist_ok=True)
     svg += '</svg>'
@@ -156,7 +170,9 @@ def salvar(nome, svg):
     with open(caminho_svg, 'w', encoding='utf-8') as f:
         f.write(svg)
     doc = fitz.open('svg', svg.encode('utf-8'))
-    pix = doc[0].get_pixmap(matrix=fitz.Matrix(2.6, 2.6), alpha=False)
+    pagina = doc[0]
+    pix = pagina.get_pixmap(matrix=fitz.Matrix(2.6, 2.6), alpha=False,
+                            clip=_faixa_util(pagina))
     pix.save(os.path.join(SAIDA, nome + '.png'))
     print(f'  {nome}.png  ({pix.width}x{pix.height})')
 
@@ -165,37 +181,40 @@ def salvar(nome, svg):
 # Figura 1 — Visão geral da solução
 # ---------------------------------------------------------------------------
 def fig01():
-    s = cab(880, 400)
-    s += texto(440, 30, 'Visão geral da solução', 15, '600')
+    s = cab(960, 420)
 
-    s += caixa(40, 70, 170, 70, ['Usuário', 'navegador web'], FUNDO_B)
+    s += caixa(30, 70, 150, 70, ['Usuário', 'navegador web'], FUNDO_B)
 
-    s += caixa(280, 60, 250, 90,
+    # O projeto da Vercel abriga as duas aplicações, no mesmo domínio.
+    for x1, y1, x2, y2 in ((225, 25, 575, 25), (575, 25, 575, 350),
+                           (575, 350, 225, 350), (225, 350, 225, 25)):
+        s += _segmentos_tracejados(x1, y1, x2, y2)
+    s += texto(400, 46, 'Projeto Vercel, um só domínio', 12, '600', BORDA)
+
+    s += caixa(260, 62, 280, 86,
                ['Aplicação React (SPA)', 'interface, rotas e', 'consumo da API'], FUNDO_A)
-    s += caixa(280, 230, 250, 90,
+    s += caixa(260, 240, 280, 86,
                ['API REST (Express)', 'regras de negócio e', 'acesso a dados'], FUNDO_A)
 
-    s += caixa(620, 40, 220, 62, ['Supabase Auth', 'contas e sessões'], FUNDO_C)
-    s += caixa(620, 130, 220, 62, ['Supabase Storage', 'arquivos de documentos'], FUNDO_C)
-    s += caixa(620, 240, 220, 72, ['PostgreSQL', 'no Supabase'], FUNDO_C)
+    s += caixa(710, 40, 200, 62, ['Supabase Auth', 'contas e sessões'], FUNDO_C)
+    s += caixa(710, 150, 200, 62, ['Supabase Storage', 'arquivos de documentos'], FUNDO_C)
+    s += caixa(710, 268, 200, 62, ['PostgreSQL', 'no Supabase'], FUNDO_C)
 
-    s += linha(210, 105, 278, 105)
-    s += linha(405, 150, 405, 228)
-    s += rotulo(405, 194, 'HTTP/JSON + token')
+    s += linha(180, 105, 258, 105)
+    s += linha(400, 148, 400, 238)
+    s += rotulo(400, 197, 'HTTP/JSON + token')
 
-    s += linha(530, 80, 618, 71)
-    s += rotulo(575, 66, 'login')
-    s += linha(530, 128, 618, 155)
-    s += rotulo(578, 150, 'upload')
-    s += linha(530, 265, 618, 268)
-    s += rotulo(575, 258, 'SQL')
-    s += linha(530, 250, 618, 95, tracejada=True)
-    s += rotulo(566, 178, 'JWKS')
-
-    s += caixa(40, 230, 170, 90,
-               ['Projeto Vercel', 'estáticos e função', 'serverless no mesmo', 'domínio'],
-               FUNDO_D, tracejado=True)
-    s += linha(210, 250, 278, 200, seta=False, tracejada=True)
+    s += linha(540, 85, 708, 74)
+    s += rotulo(640, 70, 'login')
+    s += linha(540, 125, 708, 168)
+    s += rotulo(640, 137, 'envio do arquivo')
+    s += linha(540, 262, 708, 198)
+    s += rotulo(640, 250, 'assina endereços')
+    s += linha(540, 298, 708, 298)
+    s += rotulo(640, 292, 'SQL')
+    # A API busca a chave pública para conferir os tokens.
+    s += polilinha([(400, 326), (400, 385), (940, 385), (940, 71), (912, 71)], seta=True)
+    s += rotulo(670, 389, 'busca a chave pública (JWKS)')
     salvar('fig01-visao-geral', s)
 
 
@@ -204,7 +223,6 @@ def fig01():
 # ---------------------------------------------------------------------------
 def fig02():
     s = cab(880, 560)
-    s += texto(440, 28, 'Casos de uso significativos para a arquitetura', 15, '600')
 
     s += f'<rect x="235" y="55" width="415" height="470" rx="6" fill="none" stroke="{BORDA}" stroke-width="1.2"/>'
     s += texto(442, 78, 'Fleet Manager', 13, '600', BORDA)
@@ -247,13 +265,12 @@ def fig02():
 # ---------------------------------------------------------------------------
 def fig03():
     s = cab(760, 520)
-    s += texto(380, 30, 'Camadas da aplicação e sentido das dependências', 15, '600')
 
     camadas = [
         ('Apresentação', 'React · páginas, componentes e hooks', FUNDO_A),
         ('Rotas e middlewares', 'Express · autenticação, autorização e validação', FUNDO_B),
         ('Controladores', 'tradução entre HTTP e serviços', FUNDO_B),
-        ('Serviços', 'regras de negócio — sem dependência de HTTP', FUNDO_D),
+        ('Serviços', 'regras de negócio, sem dependência de HTTP', FUNDO_D),
         ('Repositórios', 'única camada com SQL (postgres.js)', FUNDO_B),
         ('Persistência', 'PostgreSQL no Supabase', FUNDO_C),
     ]
@@ -275,7 +292,6 @@ def fig03():
 # ---------------------------------------------------------------------------
 def fig04():
     s = cab(820, 440)
-    s += texto(410, 30, 'Organização em pacotes (npm workspaces)', 15, '600')
 
     s += f'<rect x="40" y="55" width="740" height="350" rx="6" fill="none" stroke="{BORDA}" stroke-width="1.2"/>'
     s += texto(120, 78, 'fleet-manager', 13, '600', BORDA)
@@ -304,10 +320,9 @@ def fig04():
 # ---------------------------------------------------------------------------
 def fig05():
     s = cab(980, 850)
-    s += texto(490, 30, 'Modelo entidade-relacionamento', 15, '600')
 
     def ent(x, y, w, nome, campos, cor=FUNDO_A):
-        h = 30 + len(campos) * 17
+        h = 36 + len(campos) * 17
         t = (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="4" fill="{BRANCO}" '
              f'stroke="{TINTA}" stroke-width="1.3"/>'
              f'<rect x="{x}" y="{y}" width="{w}" height="26" rx="4" fill="{cor}" '
@@ -325,8 +340,8 @@ def fig05():
           f'stroke="{BORDA}" stroke-width="1.3" stroke-dasharray="7 5"/>')
     s += texto(950, 186, 'company_id presente em cada entidade operacional',
                11.5, '500', BORDA, anc='end')
-    s += linha(490, 138, 490, 165, seta=False)
-    s += rotulo(516, 155, '1 : N')
+    s += linha(490, 144, 490, 165, seta=False)
+    s += rotulo(520, 159, '1 : N')
 
     s += ent(280, 195, 205, 'Expense',
              ['PK id', 'FK companyId', 'FK vehicleId', 'type, amount, date',
@@ -353,26 +368,26 @@ def fig05():
              ['PK id', 'FK companyId', 'entityType, entityId', 'action, changes',
               'actorId, actorName'])
 
-    # Vehicle 1:N Maintenance
-    s += linha(667, 310, 667, 390, seta=False)
-    s += rotulo(694, 348, '1 : N')
-    # Vehicle 1:N Expense
-    s += polilinha([(382, 310), (382, 350), (600, 350), (600, 390)])
-    s += rotulo(480, 345, '1 : N')
+    # Maintenance N:1 Vehicle
+    s += linha(667, 316, 667, 390, seta=False)
+    s += rotulo(694, 352, 'N : 1')
+    # Expense N:1 Vehicle
+    s += polilinha([(382, 316), (382, 353), (600, 353), (600, 390)])
+    s += rotulo(480, 347, 'N : 1')
     # Driver N:M Vehicle, através do vínculo com período
     s += linha(235, 447, 275, 447, seta=False)
     s += rotulo(255, 441, '1 : N')
     s += linha(490, 447, 555, 447, seta=False)
     s += rotulo(522, 441, 'N : 1')
     # Vehicle 1:N Document
-    s += polilinha([(600, 505), (600, 545), (435, 545), (435, 590)])
+    s += polilinha([(600, 511), (600, 545), (435, 545), (435, 590)])
     s += rotulo(520, 540, '1 : N')
     # Driver 1:N Document
-    s += polilinha([(200, 505), (200, 565), (380, 565), (380, 590)])
+    s += polilinha([(200, 511), (200, 565), (380, 565), (380, 590)])
     s += rotulo(282, 560, '1 : N')
-    # User 1:0..1 Driver
-    s += linha(110, 505, 110, 590, seta=False)
-    s += rotulo(138, 550, '1 : 0..1')
+    # Ficha e perfil são opcionais um para o outro, e únicos quando vinculados.
+    s += linha(110, 511, 110, 590, seta=False)
+    s += rotulo(150, 554, '0..1 : 0..1')
 
     s += texto(490, 768,
                'Um documento pertence a um veículo OU a um motorista, nunca a ambos '
@@ -395,7 +410,6 @@ def fig05():
 # ---------------------------------------------------------------------------
 def fig06():
     s = cab(900, 560)
-    s += texto(450, 28, 'Autenticação e acesso a recurso protegido', 15, '600')
 
     atores = [('Usuário', 90), ('Frontend', 265), ('Supabase Auth', 440), ('API', 620), ('PostgreSQL', 810)]
     for nome, x in atores:
@@ -412,7 +426,7 @@ def fig06():
         (620, 620, 360, 'verifica assinatura, emissor e público'),
         (620, 810, 400, 'busca perfil por authUserId'),
         (810, 620, 435, 'papel e situação atuais'),
-        (620, 620, 472, 'rejeita se PENDING ou BLOCKED'),
+        (620, 620, 472, 'recusa se não estiver ACTIVE'),
         (620, 265, 505, '200 OK'),
     ]
     for x1, x2, y, txt in msgs:
@@ -431,7 +445,6 @@ def fig06():
 # ---------------------------------------------------------------------------
 def fig07():
     s = cab(980, 500)
-    s += texto(490, 28, 'Anexo de arquivo ao documento', 15, '600')
 
     atores = [('Usuário', 85), ('Frontend', 265), ('API', 470),
               ('Supabase Storage', 700), ('PostgreSQL', 880)]
@@ -440,10 +453,10 @@ def fig07():
         s += _segmentos_tracejados(x, 84, x, 462, 5, 5)
 
     msgs = [
-        (85, 265, 120, 'seleciona arquivo e preenche o formulário'),
+        (85, 265, 120, 'seleciona o arquivo'),
         (265, 470, 156, 'POST /documents/arquivo/url-de-envio'),
-        (470, 470, 194, 'confere alcance da entidade e a extensão'),
-        (470, 700, 238, 'assina envio para {companyId}/{entityId}/{uuid}.{ext}'),
+        (470, 470, 194, 'confere alcance e extensão'),
+        (470, 700, 238, 'assina o envio para o caminho definido'),
         (700, 470, 274, 'endereço assinado'),
         (470, 265, 308, '{ url, caminho }'),
         (265, 700, 344, 'PUT do arquivo no endereço assinado'),
@@ -460,8 +473,8 @@ def fig07():
             s += rotulo((x1 + x2) / 2, y - 7, txt, 11)
 
     s += texto(490, 484,
-               'O repositório é privado e sem política: apenas o servidor o alcança. '
-               'A leitura segue o mesmo caminho, com endereço de validade curta.',
+               'O repositório é privado e sem política: só se chega a ele com endereço assinado pelo '
+               'servidor. A leitura também usa endereço assinado, de validade curta.',
                11.5, '400', BORDA)
     salvar('fig07-sequencia-upload', s)
 
@@ -471,7 +484,6 @@ def fig07():
 # ---------------------------------------------------------------------------
 def fig08():
     s = cab(860, 470)
-    s += texto(430, 30, 'Diagrama de implantação', 15, '600')
 
     def no(x, y, w, h, titulo, itens, cor):
         t = (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="5" fill="{cor}" '
@@ -483,8 +495,8 @@ def fig08():
 
     s += no(40, 90, 210, 110, '«dispositivo»', ['Navegador do usuário', 'HTTPS'], FUNDO_B)
     s += no(320, 70, 260, 180, '«nó» Vercel', [
-        'Projeto único', '— artefatos estáticos (SPA)',
-        '— função serverless (API)', '— agendador diário'], FUNDO_A)
+        'Projeto único:', 'artefatos estáticos (SPA)',
+        'função serverless (API)', 'agendador diário'], FUNDO_A)
     s += no(650, 70, 190, 180, '«nó» Supabase', [
         'PostgreSQL', 'Auth', 'Storage'], FUNDO_C)
 
@@ -492,12 +504,12 @@ def fig08():
     s += rotulo(284, 140, 'HTTPS')
     s += linha(580, 130, 648, 130)
     s += rotulo(614, 125, 'TLS')
-    s += linha(250, 175, 648, 200, tracejada=True)
-    s += rotulo(430, 196, 'Auth e Storage direto do navegador')
+    s += polilinha([(145, 200), (145, 285), (745, 285), (745, 252)], seta=True)
+    s += rotulo(445, 289, 'login e arquivos, estes com endereço assinado pela API')
 
-    s += caixa(320, 300, 520, 60,
+    s += caixa(190, 325, 520, 60,
                ['Mesma origem',
-                'interface e API compartilham o domínio — não há requisição entre origens distintas'],
+                'interface e API compartilham o domínio, sem requisição entre origens distintas'],
                FUNDO_D, tam=12)
     s += texto(430, 420, 'Publicado em https://pfi-fleet-manager-api.vercel.app', 12, '600')
     salvar('fig08-implantacao', s)
@@ -507,25 +519,28 @@ def fig08():
 # Figura 9 — Ciclo de vida da conta de usuário
 # ---------------------------------------------------------------------------
 def fig09():
-    s = cab(880, 300)
-    s += texto(440, 30, 'Ciclo de vida da conta de usuário', 15, '600')
+    s = cab(880, 330)
 
-    s += f'<circle cx="70" cy="150" r="11" fill="{TINTA}"/>'
-    s += caixa(140, 120, 150, 62, ['PENDING', 'aguarda aprovação'], FUNDO_D)
-    s += caixa(390, 120, 150, 62, ['ACTIVE', 'acesso liberado'], FUNDO_C)
-    s += caixa(650, 120, 150, 62, ['BLOCKED', 'acesso negado'], FUNDO_B)
+    s += f'<circle cx="70" cy="100" r="11" fill="{TINTA}"/>'
+    s += caixa(160, 70, 150, 62, ['PENDING', 'aguarda aprovação'], FUNDO_D)
+    s += caixa(410, 70, 150, 62, ['ACTIVE', 'acesso liberado'], FUNDO_C)
+    s += caixa(670, 70, 150, 62, ['BLOCKED', 'acesso negado'], FUNDO_B)
+    s += caixa(160, 220, 150, 62, ['REJECTED', 'acesso negado'], FUNDO_B)
 
-    s += linha(81, 150, 138, 150)
-    s += rotulo(112, 145, 'cadastro')
-    s += linha(290, 140, 388, 140)
-    s += rotulo(339, 135, 'aprovação')
-    s += linha(540, 140, 648, 140)
-    s += rotulo(594, 135, 'bloqueio')
-    s += (f'<path d="M648,168 q-54,34 -108,0" fill="none" stroke="{TINTA}" '
-          f'stroke-width="1.3"/>') + ponta(570, 178, 540, 168)
-    s += texto(594, 205, 'reativação', 11)
+    s += linha(81, 100, 158, 100)
+    s += rotulo(120, 94, 'cadastro')
+    s += linha(310, 100, 408, 100)
+    s += rotulo(359, 94, 'aprovação')
+    s += linha(560, 90, 668, 90)
+    s += rotulo(614, 84, 'bloqueio')
+    s += linha(668, 116, 560, 116)
+    s += texto(614, 134, 'reativação', 11)
+    s += linha(205, 132, 205, 218)
+    s += texto(176, 180, 'recusa', 11)
+    s += linha(265, 220, 265, 134)
+    s += texto(300, 180, 'reabertura', 11)
 
-    s += texto(440, 255,
+    s += texto(440, 312,
                'A situação é reconsultada a cada requisição: o bloqueio tem efeito imediato, '
                'sem aguardar a expiração do token.', 11.5, '400', BORDA)
     salvar('fig09-ciclo-usuario', s)
@@ -536,7 +551,6 @@ def fig09():
 # ---------------------------------------------------------------------------
 def fig10():
     s = cab(900, 600)
-    s += texto(450, 22, 'Integração e entrega contínuas', 15, '600')
 
     s += ator(60, 70, 'Desenvolvedor')
     s += caixa(150, 85, 150, 56, ['GitHub', 'push ou pull request'], FUNDO_B)
@@ -545,13 +559,13 @@ def fig10():
     # Job de validação: as nove etapas, em ordem.
     s += (f'<rect x="360" y="60" width="300" height="440" rx="5" fill="{FUNDO_A}" '
           f'stroke="{TINTA}" stroke-width="1.4"/>')
-    s += texto(510, 84, 'GitHub Actions — job "validar"', 13, '600')
+    s += texto(510, 84, 'GitHub Actions: job "validar"', 13, '600')
     s += texto(510, 102, 'banco criado do zero, sem credencial de produção', 11, '400', BORDA)
-    etapas = ['1  npm ci — dependências', '2  tsc — tipagem da API e da interface',
-              '3  ESLint — padrões de código', '4  build da interface',
+    etapas = ['1  npm ci: dependências', '2  tsc: tipagem da API e da interface',
+              '3  ESLint: padrões de código', '4  build da interface',
               '5  Supabase local no runner', '6  migrations e seed',
-              '7  suíte padrão — unitários e integração', '8  suíte de ponta a ponta',
-              '9  npm audit — vulnerabilidades']
+              '7  suíte padrão: unitários e integração', '8  suíte de ponta a ponta',
+              '9  npm audit: vulnerabilidades']
     for i, etapa in enumerate(etapas):
         y = 120 + i * 40
         s += (f'<rect x="380" y="{y}" width="260" height="30" rx="3" fill="{BRANCO}" '
@@ -573,8 +587,8 @@ def fig10():
         if i < 2:
             s += linha(790, y + 40, 790, y + 62)
     s += texto(790, 480, 'migrations: só com o segredo', 10.5, '400', BORDA)
-    s += polilinha([(660, 280), (680, 280), (680, 310), (713, 310)], seta=True)
-    s += rotulo(680, 250, 'sucesso')
+    s += polilinha([(660, 240), (680, 240), (680, 310), (713, 310)], seta=True)
+    s += texto(680, 226, 'sucesso', 11)
 
     # Prévias: a Vercel continua construindo os demais branches sozinha.
     s += caixa(700, 85, 180, 70, ['Vercel', 'prévia por branch'], FUNDO_B)
