@@ -77,6 +77,9 @@ export function SessionDataProvider({ children }: { children: React.ReactNode })
    */
   const loadedAuthUserId = useRef<string | null | undefined>(undefined)
 
+  /** A última busca do perfil foi recusada ou falhou. */
+  const lastLoadFailed = useRef(false)
+
   /**
    * Busca o perfil. Recebe a sessão quando quem chama já a tem — caso do
    * evento de autenticação —, o que evita disputar de novo a trava da sessão
@@ -85,6 +88,7 @@ export function SessionDataProvider({ children }: { children: React.ReactNode })
   const loadCurrentUser = useCallback(async (session?: Session | null) => {
     try {
       setLoading(true)
+      lastLoadFailed.current = false
       const current =
         session !== undefined ? session : (await supabase.auth.getSession()).data.session
       loadedAuthUserId.current = current?.user.id ?? null
@@ -100,6 +104,7 @@ export function SessionDataProvider({ children }: { children: React.ReactNode })
       setCurrentUser(data)
       setError(null)
     } catch (err) {
+      lastLoadFailed.current = true
       setCurrentUser(null)
       setError((err as Error).message)
     } finally {
@@ -131,7 +136,18 @@ export function SessionDataProvider({ children }: { children: React.ReactNode })
       // repassa o evento a todas as outras abas abertas. Para a mesma conta
       // isso não é um login novo: recarregar ali derrubava a tela inteira para
       // "Carregando…" e refazia todas as requisições, em cascata entre abas.
-      if (event === 'SIGNED_IN' && session?.user.id === loadedAuthUserId.current) return
+      //
+      // Só vale para quem tem o perfil carregado. Uma recusa não pode ser
+      // reaproveitada: o cadastro guarda PROFILE_NOT_FOUND (a conta nasce antes
+      // do perfil) e a espera guarda PENDING_APPROVAL. Sem nova consulta, quem
+      // era aprovado e entrava na mesma aba voltava para "Solicitar acesso".
+      if (
+        event === 'SIGNED_IN' &&
+        session?.user.id === loadedAuthUserId.current &&
+        !lastLoadFailed.current
+      ) {
+        return
+      }
 
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         clear()

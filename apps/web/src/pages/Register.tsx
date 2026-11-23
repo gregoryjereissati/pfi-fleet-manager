@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { UserRole, UserStatus } from '@fleet-manager/shared'
 import type { RegisterProfileResponseDto } from '@fleet-manager/shared'
 import { apiFetch } from '@/lib/api'
+import { useSessionData } from '@/lib/session-data'
 import { getAccessToken, hasSession, signIn, signUp } from '@/lib/supabase'
 import { BrandMark } from '@/components/ledger/Ui'
 
@@ -11,6 +12,7 @@ export function Register() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [params] = useSearchParams()
+  const { refreshCurrentUser } = useSessionData()
 
   // Modo "completar cadastro": a conta de acesso já existe no Supabase, mas o
   // perfil da aplicação não chegou a ser criado.
@@ -90,7 +92,10 @@ export function Register() {
 
       // Um perfil vinculado a cadastro preexistente já aprovado dispensa a
       // espera; nesse caso a sessão criada acima já dá acesso ao sistema.
+      // A consulta feita ao criar a conta ainda não encontrava o perfil; sem
+      // refazê-la, o painel devolveria a pessoa para esta tela.
       if (result.user?.status === UserStatus.ACTIVE) {
+        await refreshCurrentUser()
         navigate('/dashboard', { replace: true })
       } else {
         navigate('/login?registered=true', { replace: true })
