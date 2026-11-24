@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { signOut } from '@/lib/supabase'
 import { CompanyPicker } from '@/components/CompanyPicker'
 import { definirEmpresaAtiva, empresaAtiva } from '@/lib/empresa-ativa'
+import { podeAbrirTela, TELA_INICIAL_DO_MOTORISTA } from '@/lib/roles'
 import { BrandMark, LoadingState } from '@/components/ledger/Ui'
 
 interface AccessGateProps {
@@ -24,6 +25,7 @@ type CodigoBloqueio = keyof typeof BLOQUEIOS
 
 export function AccessGate({ children }: AccessGateProps) {
   const { t } = useTranslation()
+  const { pathname } = useLocation()
   const { currentUser, loading, error } = useCurrentUser()
 
   // A empresa escolhida some do sistema — excluída ou nunca existiu — e toda
@@ -103,6 +105,12 @@ export function AccessGate({ children }: AccessGateProps) {
   // é uma etapa do fluxo, não um erro.
   if (currentUser.isSuperAdmin && !empresaAtiva()) {
     return <CompanyPicker />
+  }
+
+  // Endereço digitado, favorito antigo ou o painel depois do login: o motorista
+  // vai para a tela inicial dele antes que a outra chegue a ser montada.
+  if (!podeAbrirTela(currentUser.role, pathname)) {
+    return <Navigate to={TELA_INICIAL_DO_MOTORISTA} replace />
   }
 
   return <>{children}</>

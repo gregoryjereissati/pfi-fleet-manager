@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useAlertCount } from '@/hooks/useAlertCount'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { isAdminRole } from '@/lib/roles'
+import { isAdminRole, podeAbrirTela } from '@/lib/roles'
 import { BrandMark } from '@/components/ledger/Ui'
 
 interface SidebarProps {
@@ -32,13 +32,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const { currentUser } = useCurrentUser()
   const isAdmin = isAdminRole(currentUser?.role)
 
+  const role = currentUser?.role
+
   const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', enabled: true },
-    { to: '/vehicles', icon: Car, labelKey: 'nav.vehicles', enabled: true },
-    { to: '/drivers', icon: Users, labelKey: 'nav.drivers', enabled: true },
+    { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', enabled: podeAbrirTela(role, '/dashboard') },
+    { to: '/vehicles', icon: Car, labelKey: 'nav.vehicles', enabled: podeAbrirTela(role, '/vehicles') },
+    { to: '/drivers', icon: Users, labelKey: 'nav.drivers', enabled: podeAbrirTela(role, '/drivers') },
     { to: '/expenses', icon: Receipt, labelKey: 'nav.expenses', enabled: true },
     { to: '/maintenances', icon: Wrench, labelKey: 'nav.maintenances', enabled: true },
-    { to: '/documents', icon: FileText, labelKey: 'nav.documents', enabled: true },
+    { to: '/documents', icon: FileText, labelKey: 'nav.documents', enabled: podeAbrirTela(role, '/documents') },
     { to: '/alerts', icon: Bell, labelKey: 'nav.alerts', enabled: true },
     { to: '/users', icon: UserCog, labelKey: 'nav.users', enabled: isAdmin },
     // Tela de plataforma: existe acima das empresas, e só o super
@@ -112,7 +114,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             ) : (
               <div
                 key={to}
-                title={t('nav.comingSoon')}
+                title={t('nav.noAccess')}
                 className="flex cursor-not-allowed select-none items-center gap-3 rounded-xl border border-transparent px-4 py-2.5 text-sm font-medium text-neutral-700"
               >
                 <Icon size={16} strokeWidth={1.5} />

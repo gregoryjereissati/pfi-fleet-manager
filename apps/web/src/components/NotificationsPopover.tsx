@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { ArrowRight, Bell } from 'lucide-react'
 import { useAlertCount } from '@/hooks/useAlertCount'
 import { useAlerts } from '@/hooks/useAlerts'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { alertasEmOrdem } from '@/lib/alertas'
+import { podeAbrirTela } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 
 /** Quantos alertas a prévia mostra antes do botão para a central. */
@@ -107,6 +109,7 @@ export function NotificationsPopover() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const { currentUser } = useCurrentUser()
   const { count } = useAlertCount()
   const [aberto, setAberto] = useState(false)
   const raizRef = useRef<HTMLDivElement>(null)
@@ -141,7 +144,8 @@ export function NotificationsPopover() {
 
   function ir(destino: string) {
     setAberto(false)
-    navigate(destino)
+    // O alerta cuja tela o perfil não abre leva à central, onde ele aparece.
+    navigate(podeAbrirTela(currentUser?.role, destino) ? destino : '/alerts')
   }
 
   return (
