@@ -608,6 +608,11 @@ administrador de todas as empresas.
 | Aprovar, recusar e bloquear acessos | ✅ | ❌ | ❌ |
 | Listar usuários da empresa | ✅ | ✅ | ❌ |
 
+A tabela descreve o que a **API** responde. Na interface, o OPERATOR abre
+somente Despesas, Manutenções, Alertas e Meu perfil: as demais telas ficam
+apagadas no menu, e o endereço direto leva a Despesas. A lista está em
+`apps/web/src/lib/roles.ts`.
+
 Três pontos que a tabela não mostra e o código garante:
 
 - **a empresa nunca fica sem administrador ativo.** Rebaixar, bloquear ou

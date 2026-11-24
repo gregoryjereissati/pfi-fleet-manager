@@ -2,8 +2,10 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { DocumentDto } from '@fleet-manager/shared'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useAlerts, type LicenseAlert, type MaintenanceAlert } from '@/hooks/useAlerts'
 import { formatDate } from '@/lib/utils'
+import { podeAbrirTela } from '@/lib/roles'
 import { prazoDeManutencao, prazoDeVencimento, type Traduzir } from '@/lib/alertas'
 import { LoadingState, PageHeader } from '@/components/ledger/Ui'
 
@@ -22,6 +24,8 @@ function AlertCard({
   rodape?: string
   link: { to: string; label: string }
 }) {
+  const { currentUser } = useCurrentUser()
+
   return (
     <div className="lg-card lg-flashlight lg-reveal group p-6">
       <div className="relative z-10 flex h-full flex-col gap-4">
@@ -38,9 +42,11 @@ function AlertCard({
           {prazo}
         </span>
         {rodape && <p className="text-xs text-neutral-500">{rodape}</p>}
-        <Link to={link.to} className="lg-link mt-auto self-start">
-          {link.label}
-        </Link>
+        {podeAbrirTela(currentUser?.role, link.to) && (
+          <Link to={link.to} className="lg-link mt-auto self-start">
+            {link.label}
+          </Link>
+        )}
       </div>
     </div>
   )
